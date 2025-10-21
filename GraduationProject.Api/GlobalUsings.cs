@@ -1,0 +1,9 @@
+﻿global using FluentValidation;
+global using FluentValidation.AspNetCore;
+global using Mapster;
+global using MapsterMapper;
+global using Microsoft.AspNetCore.Authorization;
+global using Microsoft.AspNetCore.Mvc;
+global using Microsoft.EntityFrameworkCore;
+global using GraduationProject.Core.Entities;
+//global using GraduationProject.Core.Service;
