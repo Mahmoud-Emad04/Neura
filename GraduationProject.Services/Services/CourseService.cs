@@ -56,6 +56,4 @@ public class CourseService(ApplicationDbContext context) : ICourseService
         await _context.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
-    
-    
 }

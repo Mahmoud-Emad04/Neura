@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDependencies(builder.Configuration);
 
 builder.Host.UseSerilog((context, configuration) =>
-	configuration.ReadFrom.Configuration(context.Configuration)
+    configuration.ReadFrom.Configuration(context.Configuration)
 );
 
 var app = builder.Build();
@@ -16,25 +16,25 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-	app.UseSwagger();
-	app.UseSwaggerUI();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
-//#region ApplyPendingMigration
+#region ApplyPendingMigration
 
-//using var scopeApplicationContext = app.Services.CreateScope();
-//var context = scopeApplicationContext.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-//try
-//{
-//	await context.Database.MigrateAsync();
-//}
-//catch (Exception e)
-//{
-//	var logger = scopeApplicationContext.ServiceProvider.GetRequiredService<ILogger<Program>>();
-//	logger.LogError(e, "An error occurred while migrating the database.");
-//}
+using var scopeApplicationContext = app.Services.CreateScope();
+var context = scopeApplicationContext.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+try
+{
+    await context.Database.MigrateAsync();
+}
+catch (Exception e)
+{
+    var logger = scopeApplicationContext.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogError(e, "An error occurred while migrating the database.");
+}
 
-//#endregion
+#endregion
 
 app.UseSerilogRequestLogging();
 
