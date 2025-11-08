@@ -1,0 +1,39 @@
+\documentclass[a4paper,12pt]{report}
+
+% Include settings
+\input{settings/packages.tex}
+\input{settings/commands.tex}
+\usepackage{float}
+\begin{document}
+
+% Front matter
+\input{sections/title_page.tex}
+\input{sections/acknowledgments.tex}
+\input{sections/abstract.tex}
+
+% Table of contents, figures, tables
+\tableofcontents
+\clearpage
+\listoffigures
+\clearpage
+\listoftables
+\clearpage
+
+% Chapters
+\input{chapters/chapter1.tex}
+\input{chapters/chapter2.tex}
+\input{chapters/chapter3.tex}
+\input{chapters/chapter4.tex}
+% \input{chapters/chapter5.tex}
+% \input{chapters/chapter6.tex}
+
+
+% Bibliography
+\bibliographystyle{unsrt}
+\bibliography{bibliography/bibliography}
+
+% \input{chapters/appendices}
+
+
+
+\end{document}

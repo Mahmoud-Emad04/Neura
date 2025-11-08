@@ -1,0 +1,100 @@
+\chapter{Technology Stack}
+
+\section{Introduction}
+The technology stack for the "Neura" platform was selected to meet foundational requirements of scalability, security, performance, and maintainability. Given the platform's nature as an integrated system—combining real-time services, high-integrity assessment, and data-intensive AI models—our architecture is a modern, decoupled system. It consists of a high-performance backend, a reactive web frontend, and a suite of specialized AI and infrastructure services.
+
+\section{Core Platform Architecture}
+The central platform handles user management, content delivery, and course administration.
+
+\subsection{Backend: \textbf{.NET 9}}
+The entire backend API and core business logic are built on the .NET 9 framework, specifically using ASP.NET Core.
+\begin{itemize}
+    \item \textbf{Rationale:} .NET 9 offers exceptional performance, robust security features, and a unified development model. Its asynchronous processing capabilities are ideal for handling a high volume of concurrent users.
+    \item \textbf{Language:} We utilize \textbf{C\# 13}, a modern, type-safe, object-oriented language.
+    \item \textbf{API:} A RESTful API serves as the primary communication layer between the frontend and backend, using JSON as the standard data interchange format.
+    \item \textbf{ORM:} We use \textbf{Entity Framework Core 9 (EF Core)} as the Object-Relational Mapper (ORM) to manage database interactions, enabling rapid and secure data access.
+\end{itemize}
+
+\subsection{Frontend: \textbf{React (v19)}}
+The user interface is a Single Page Application (SPA) built using React.
+\begin{itemize}
+    \item \textbf{Rationale:} React's component-based architecture allows for the creation of a complex, reusable, and maintainable UI. Its Virtual DOM ensures a fast and responsive user experience.
+    \item \textbf{Features:} We leverage modern React features, including Hooks for state management, React Context for global state, and the new capabilities introduced in React 19 to optimize rendering.
+    \item \textbf{Styling:} Tailwind CSS is used for a utility-first styling approach, allowing for rapid prototyping and custom-designed components without leaving the HTML.
+\end{itemize}
+
+\subsection{Database: \textbf{Microsoft SQL Server}}
+Microsoft SQL Server is our primary relational database management system (RDBMS).
+\begin{itemize}
+    \item \textbf{Rationale:} As a .NET project, SQL Server provides seamless integration, enterprise-grade security, and high performance. It is designed for high-concurrency applications and complex data models.
+\end{itemize}
+
+\subsection{Real-time Communication: \textbf{SignalR}}
+For the community and chat features, real-time bidirectional communication is managed by \textbf{ASP.NET Core SignalR}.
+\begin{itemize}
+    \item \textbf{Rationale:} SignalR is deeply integrated into the .NET ecosystem, simplifying the process of adding real-time web functionality. It handles connection management and scales efficiently.
+\end{itemize}
+
+\section{Specialized Subsystems}
+The core features of Neura are implemented as distinct services, which may be co-located or deployed independently.
+
+\subsection{Adaptive Recommendation Engine}
+This service provides the logic for recommending appropriate practice questions.
+\begin{itemize}
+    \item \textbf{Technology:} Python
+    \item \textbf{Models:} The engine is built using \textbf{TensorFlow} and \textbf{Keras} to implement a Deep Knowledge Tracing (DKT) model. This neural network analyzes a student's sequence of past answers to model their knowledge state and predict future performance.
+\end{itemize}
+
+\subsection{AI Chatbot Teacher (RAG)}
+The chatbot provides contextual, course-aware assistance to students.
+\begin{itemize}
+    \item \textbf{Architecture:} Retrieval-Augmented Generation (RAG).
+    \item \textbf{Technology:} Python, \textbf{LangChain} (or a similar orchestration framework), and a vector database (e.g., \textbf{FAISS} or \textbf{ChromaDB}).
+    \item \textbf{Process:} When a student asks a question, the system vectorizes the query, retrieves relevant chunks of text from the course materials (e.g., PDFs, lecture notes) stored in the vector database, and passes this context to an LLM API to generate a "grounded" and factual answer.
+\end{itemize}
+
+\subsection{Online Judge \& Code Execution}
+This subsystem is responsible for securely compiling and executing student-submitted code.
+\begin{itemize}
+    \item \textbf{Technology:} \textbf{Docker} and a custom microservice built in Python (using \textbf{Flask} or \textbf{FastAPI}).
+    \item \textbf{Security:} This is a critical security component. We follow the architectural principles of systems like \textbf{Judge0}. Each code submission is executed within a new, ephemeral, and isolated Docker container with strict resource limits (CPU time, memory, network access) to prevent malicious code from affecting the host system.
+\end{itemize}
+
+\subsection{Source Code Plagiarism Detection}
+This model analyzes all code submissions for a given assignment to detect similarity.
+\begin{itemize}
+    \item \textbf{Technology:} Python
+    \item \textbf{Models:} We employ a hybrid approach. First, code is parsed into an \textbf{Abstract Syntax Tree (AST)} using Python's \texttt{ast} module. Feature vectors (e.g., node counts, TF-IDF of tokens) are extracted from the ASTs and then fed into \textbf{scikit-learn} machine learning models (e.g., Gradient Boosting) to compute a robust similarity score.
+\end{itemize}
+
+\subsection{Secure Examination \& AI Proctoring}
+This system combines client-side lockdown with real-time AI monitoring.
+\begin{itemize}
+    \item \textbf{Client-Side:} A custom lockdown browser (built with \textbf{Electron.js}) or integration with existing lockdown browsers.
+    \item \textbf{Media Streaming:} \textbf{WebRTC} is used to capture and stream the student's webcam and desktop feeds to the proctoring service.
+    \item \textbf{AI Analysis:} A Python service using \textbf{OpenCV} and \textbf{TensorFlow} processes the video feeds in real-time to detect anomalies, such as multiple faces, mobile phone presence, or gaze deviation.
+\end{itemize}
+
+\section{Summary of Technologies}
+The complete technology stack is summarized in Table 3.1.
+
+\begin{table}[H]
+\centering
+\caption{Summary of Technology Stack per Feature}
+\label{tab:tech_stack}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Component / Feature} & \textbf{Primary Technology} & \textbf{Rationale} \\
+\midrule
+Core Backend (API, Logic) & .NET 9 (C\#) & Performance, Security, Unified Stack \\
+Core Frontend (UI) & React (v19) & Component-Based, Responsive UI \\
+Database & MS SQL Server & RDBMS, .NET Integration, Scalability \\
+Real-time Chat/Community & SignalR & Integrated Real-time Communication \\
+Adaptive Practice & Python, TensorFlow (DKT) & Sequential Data Modeling \\
+AI Chatbot Teacher & Python, RAG, Vector DB & Context-Aware, Grounded Answers \\
+Online Judge & Docker, Python & Secure, Sandboxed Code Execution \\
+Plagiarism Detection & Python, AST, scikit-learn & Robust Similarity Analysis \\
+Secure Exam Proctoring & WebRTC, OpenCV, TensorFlow & Real-time Anomaly Detection \\
+\bottomrule
+\end{tabular}
+\end{table}
