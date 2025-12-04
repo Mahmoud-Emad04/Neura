@@ -2,6 +2,7 @@ using Neura.Api;
 using Neura.Repository.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,8 +17,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 }
 
 #region ApplyPendingMigration

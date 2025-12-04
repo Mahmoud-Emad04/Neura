@@ -20,6 +20,7 @@ using Neura.Core.Entities;
 using System.Reflection;
 using System.Text;
 using Neura.Core.Services;
+using Neura.Api.OpenApiTransformers;
 
 namespace Neura.Api;
 
@@ -38,14 +39,11 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
-
         services.AddAuth(configuration);
 
         services.AddDatabase(configuration);
-
-        services.AddSwagger();
 
         services.AddFluentValidation();
 
@@ -55,40 +53,46 @@ public static class DependencyInjection
 
         services.AddHangfire(configuration);
 
+        services.AddOpenApiServices();
+
         services.AddExceptionHandler<GlobalExceptionHandler>();
-        
+
         services.AddDataProtection().SetApplicationName(nameof(Neura));
         services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", minHashLength: 11));
 
         #region AddInjection
 
-        services.AddScoped<IAuthService , AuthService>();
-        services.AddScoped<ICourseService,CourseService>();
-        services.AddScoped<IUserService,UserService>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ICourseService, CourseService>();
+        services.AddScoped<IUserService, UserService>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         #endregion
 
-        
+
         return services;
     }
+
+    private static IServiceCollection AddOpenApiServices(this IServiceCollection services)
+    {
+        var serviceProvider = services.BuildServiceProvider();
+
+        services.AddOpenApi(options =>
+        {
+            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+        });
+
+        return services;
+    }
+
 
     private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection") ??
                                throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-        
+
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(connectionString));
-
-        return services;
-    }
-
-    private static IServiceCollection AddSwagger(this IServiceCollection services)
-    {
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
 
         return services;
     }
@@ -122,15 +126,15 @@ public static class DependencyInjection
 
 
         services.AddSingleton<IJwtProvider, JwtProvider>();
-        
+
         //services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddOptions<JwtOptions>()
             .BindConfiguration(JwtOptions.SectionName)
             .ValidateDataAnnotations()
             .ValidateOnStart();
-        
+
         var jwtSettings = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
-        
+
         services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -150,7 +154,7 @@ public static class DependencyInjection
                     ValidAudience = jwtSettings?.Audience
                 };
             });
-        
+
         services.Configure<IdentityOptions>(options =>
         {
             options.Password.RequiredLength = 8;
