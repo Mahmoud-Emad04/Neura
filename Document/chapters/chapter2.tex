@@ -1,0 +1,154 @@
+\chapter{Related Work}
+
+\section{Introduction}
+
+This chapter situates the "Neura" project within the broader context of the modern e-learning technology landscape. The platform's innovation is not the invention of a novel, singular technology, but rather the \textbf{architectural synthesis} of five distinct, high-integrity, and specialized technological domains into a single, unified, and customizable platform. Current platforms are typically strong in one or two of these domains but fail to provide a cohesive solution.
+
+The analysis herein is structured in two primary sections. First, an examination of current commercial and open-source platforms is conducted to identify the "integration gap" in the existing market. Second, a review of the specialized academic and technical literature is presented for each of Neura's five core functional pillars: (1) adaptive practice, (2) AI-driven tutoring, (3) secure examination, (4) source code plagiarism detection, and (5) sandboxed code execution. This review establishes the established, state-of-the-art foundations upon which Neura is built.
+
+\section{Analysis of Commercial E-Learning Platforms}
+
+The contemporary e-learning market is highly fragmented, forcing institutions to "bolt together" multiple disparate systems to achieve the functionality Neura provides natively. Existing platforms can be broadly classified into two categories:
+
+\begin{enumerate}
+    \item \textbf{Massive Open Online Course (MOOC) Platforms:} These platforms, such as Coursera and edX, are masters of content distribution and scale but are architecturally closed and offer weak, non-customizable tooling for high-integrity assessment.\cite{coursera, edx} While they provide verified certificates and may integrate with third-party proctoring services \cite{coursera}, their native coding environments are typically basic text boxes, lacking the secure sandboxing of a true online judge or the sophisticated, AST-based analysis of a dedicated code plagiarism detector.
+
+    \item \textbf{Specialized, Single-Purpose Platforms:} This category includes tools that perform one function exceptionally well. For example, \textbf{beecrowd} (formerly URI Online Judge) is a widely used platform in academia for competitive programming and serves as an excellent online judge.\cite{beecrowd} Similarly, \textbf{Respondus LockDown Browser} is a market leader in secure browsers for exams \cite{respondus}, and \textbf{MOSS (Measure of Software Similarity)} is a long-standing tool for code plagiarism detection.\cite{aikenMOSS} The fundamental limitation is that these are standalone products, requiring institutions to manage separate contracts, integrations, and data silos.
+
+    \item \textbf{Open-Source Learning Management Systems (LMS):} Platforms like \textbf{Moodle} represent a third-point solution, offering customization through a vast plugin ecosystem.\cite{moodle} However, this modularity often introduces complexity and security concerns. An institution would need to find, vet, and maintain separate plugins for proctoring \cite{moodle, moodle_plugins}, secure exam windows \cite{moodle_plugins}, and code evaluation. The community has long sought robust online judge integration for Moodle \cite{moodle_judge}, highlighting the difficulty. Furthermore, some modules may have significant security vulnerabilities, such as a described exam module with "zero authentication and authorization".[10]
+\end{enumerate}
+
+This analysis reveals a clear market gap. A computer science department, for example, must currently license Moodle \cite{moodle}, integrate a proctoring service like Respondus \cite{respondus}, manually run submissions through MOSS \cite{aikenMOSS}, and subscribe to a separate service like beecrowd \cite{beecrowd} for assignments. Neura's value proposition is the elimination of this fragmented and costly integration by providing all five functions in a single, secure, and unified platform. This "integration gap" is visualized in Table 2.1.
+
+\begin{table}[h]
+    \centering
+    \caption{Feature Matrix of Competing E-Learning Platforms}
+    \label{tab:feature_matrix}
+    \footnotesize
+    \setlength{\tabcolsep}{6pt} % reduce horizontal padding
+    \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}m{2.6cm}
+                                   *{5}{>{\centering\arraybackslash}X}@{}}
+        \toprule
+        \textbf{Platform} &
+        \makecell{\textbf{Adaptive}\\\textbf{Practice}} &
+        \makecell{\textbf{AI Tutor}\\\textbf{(RAG)}} &
+        \makecell{\textbf{Secure Exam}\\\textbf{(AI Proctored)}} &
+        \makecell{\textbf{Code}\\\textbf{Plagiarism}\\\textbf{(AST-based)}} &
+        \makecell{\textbf{Online Judge}\\\textbf{(Sandboxed)}} \\
+        \midrule
+        \textbf{Neura (Proposed)} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes} & \textbf{Yes} \\
+        \midrule
+        \textbf{Coursera}\footnotemark[1] & Partial & No & Yes (3rd party) & No & Partial (basic) \\
+        \midrule
+        \textbf{edX}\footnotemark[1] & Partial & No & Yes (3rd party) & No & Partial (basic) \\
+        \midrule
+        \textbf{Moodle}\footnotemark[2] & Plugin-dependent & Plugin-dependent & Requires plugins & Requires MOSS/JPlag & Plugin-dependent \\
+        \midrule
+        \textbf{beecrowd}\footnotemark[3] & No & No & No & No & \textbf{Yes} \\
+        \midrule
+        \textbf{HackerRank} & No & No & No (recruitment) & Yes & \textbf{Yes} \\
+        \bottomrule
+    \end{tabularx}
+
+    \footnotetext[1]{\cite{coursera, edx}}
+    \footnotetext[2]{\cite{moodle, moodle_plugins, moodle_judge}}
+    \footnotetext[3]{\cite{beecrowd}}
+\end{table}
+
+
+
+
+\section{Literature Review of Specialized E-Learning Subsystems}
+
+Neura's architecture is grounded in established computer science research. Each of its core features represents a domain of academic study.
+
+\subsection{Advancements in Adaptive Learning \\ and Knowledge Tracing}
+
+Neura's adaptive practice feature is an implementation of \textbf{Computerized Adaptive Testing (CAT)}.\cite{cat_survey, cat_book} CAT is a testing paradigm that dynamically adjusts the difficulty of questions presented to a student based on their real-time performance.\cite{cat_book, cat_adaptive} This approach provides a more accurate and efficient assessment of student proficiency compared to static tests.\cite{cat_book}
+
+The engine that powers CAT is a \textbf{Knowledge Tracing (KT)} model.\cite{piech2015dkt, bkt} KT is a task that aims to model a student's "evolving knowledge state" as they interact with a series of practice problems.\cite{piech2015dkt, kt_survey1, kt_survey2}
+\begin{itemize}
+    \item \textbf{Traditional Models:} Early models, such as Bayesian Knowledge Tracing (BKT), modeled knowledge as a binary, latent variable (known or unknown).
+    \item \textbf{Modern Models:} The field has advanced significantly with the application of deep learning. \textbf{Deep Knowledge Tracing (DKT)} \cite{piech2015dkt} utilizes Recurrent Neural Networks (RNNs) and Long Short-Term Memory (LSTM) networks to process the \textit{sequence} of student interactions (e.g., \texttt{[question\_id, correct\_boolean]}). This sequential modeling allows DKT to capture the nuances of learning and forgetting over time, providing a more accurate prediction of performance on future exercises.\cite{piech2015dkt}
+\end{itemize}
+
+Neura's adaptive engine is based on this modern DKT approach, allowing it to recommend the optimal question to maximize a student's learning efficiency.
+
+\subsection{AI-Driven Educational Chatbots (RAG)}
+
+The "AI Chatbot Teacher" moves beyond simple, scripted responses. The primary challenge with using foundational Large Language Models (LLMs) in education is their propensity to "hallucinate" or provide plausible-sounding but incorrect information, and their lack of specific knowledge about a given course's content.\cite{lewis2020rag}
+
+The state-of-the-art solution to this problem is \textbf{Retrieval-Augmented Generation (RAG)}.\cite{lewis2020rag} A recent survey of RAG chatbots in education confirms their effectiveness and growing adoption.\cite{rag_survey} The RAG architecture fundamentally "grounds" the LLM by following a two-step process:
+\begin{enumerate}
+    \item \textbf{Retrieve:} When a student asks a question, the system first vectorizes the query and searches a trusted knowledge base (i.e., the course's PDFs, lecture transcripts, and materials) for the most relevant passages of text.\cite{rag_vector_db}
+    \item \textbf{Augment:} The system then passes \textit{both} the original question and this retrieved, "grounded" context to the LLM, instructing it to formulate an answer \textit{only} using the provided information.\cite{lewis2020rag, rag_chatbot}
+\end{enumerate}
+
+This RAG model ensures the chatbot's answers are faithful to the course material, prevents hallucination, and provides a safe, reliable study assistant that students can use without the "apprehension" of exposing their lack of knowledge to peers or instructors.\cite{rag_survey}
+
+\subsection{Architectures for Secure Online Examination}
+
+Maintaining academic integrity in remote exams is a multi-layered problem, as documented in surveys on the topic.\cite{proctor_su, proctor_survey_methods} Neura's architecture implements a state-of-the-art, two-layer solution.
+
+\begin{itemize}
+    \item \textbf{Layer 1: Client-Side Lockdown:} The first layer involves restricting the student's testing environment. This is accomplished using a \textbf{lockdown browser} application, such as the widely used Respondus LockDown Browser.\cite{respondus} This custom browser prevents students from opening new tabs, taking screenshots, copy-pasting, or accessing other applications during an exam.\cite{respondus_video}
+
+    \item \textbf{Layer 2: AI-Powered Proctoring:} The second layer is a sophisticated multimedia analytics system that monitors the student for behavioral anomalies.\cite{proctor_anomalies} A survey of proctoring system architectures \cite{proctor_survey_arch} and case studies, such as the "Proctor SU" system \cite{proctor_su}, reveal a common technical design. This design, which Neura adopts, involves:
+    \begin{enumerate}
+        \item \textbf{Stream Ingestion:} Capturing the student's webcam and desktop feeds using \textbf{WebRTC} technology.\cite{webrtc1, webrtc2}
+        \item \textbf{AI Analysis Pipeline:} Processing the streams in real-time using a pipeline of machine learning models.\cite{webrtc2, proctor_pipeline1} This typically includes:
+        \begin{itemize}
+            \item \textbf{Face Detection/Recognition (CNN):} To ensure the registered student is present and not an imposter.\cite{proctor_pipeline1, proctor_pipeline2}
+            \item \textbf{Object Detection (e.g., YOLOv3):} To detect forbidden items, such as a mobile phone.\cite{proctor_su}
+            \item \textbf{Gaze/Head Pose Estimation:} To detect if the student is consistently looking off-screen.
+            \item \textbf{Audio Analysis:} To detect if another person is speaking in the room.
+            \item \textbf{Active Window Detection:} To monitor for forbidden applications on the desktop feed.\cite{proctor_su}
+        \end{itemize}
+    \end{enumerate}
+\end{itemize}
+
+This multi-model, AI-driven approach provides a robust and scalable method for ensuring academic integrity.\cite{proctor_su}
+
+\subsection{Source Code Plagiarism Detection}
+
+Detecting plagiarism in programming assignments is significantly more complex than in text, as students can easily rename variables, reorder functions, or add spurious comments to disguise copying.
+
+\begin{itemize}
+    \item \textbf{Traditional Tools:} The foundational tools in this domain are \textbf{MOSS (Measure of Software Similarity)} \cite{aikenMOSS} and \textbf{JPlag}.\cite{jplag1, jplag2, jplag3} These systems are far more advanced than simple text diffs. Their core algorithm, as described for JPlag \cite{jplag3}, involves:
+    \begin{enumerate}
+        \item \textbf{Tokenization:} The source code is parsed into a stream of abstract tokens (e.g., \texttt{int x = 10;} becomes \texttt{TYPE\_INT VAR ASSIGN INT\_LITERAL SEMICOLON}). This makes the system immune to changes in variable names or whitespace.
+        \item \textbf{String Matching:} The system applies a \textbf{Greedy String Tiling} algorithm \cite{jplag3} to find the longest common token sequences between all pairs of submissions.
+    \end{enumerate}
+    \item \textbf{Modern Techniques \& Limitations:} While effective, these tools can be defeated by more sophisticated obfuscation, such as refactoring code structure.\cite{plagiarism_obfuscation} Modern research, and the approach adopted by Neura, enhances this process by:
+    \begin{enumerate}
+        \item \textbf{Abstract Syntax Trees (ASTs):} Parsing the code into an AST—a tree representation of the code's logical structure—and comparing the \textit{trees} themselves.\cite{ast_plagiarism1, ast_plagiarism2} This allows the system to identify similarity even if functions are reordered or nested differently.
+        \item \textbf{Machine Learning:} Employing ML models \cite{ml_plagiarism1} (e.g., Gradient Boosting, Extra Trees \cite{ml_plagiarism2}) trained on code feature vectors (e.g., TF-IDF of tokens, AST node counts) to produce a similarity score that is robust to a wide range of obfuscation techniques.\cite{ml_plagiarism3}
+    \end{enumerate}
+\end{itemize}
+
+Neura's plagiarism model implements this modern, hybrid AST/ML approach to provide a higher degree of detection accuracy.
+
+\subsection{Online Judge Systems and Secure Code Execution}
+
+An \textbf{Online Judge (OJ)} system is an essential tool for computer science education, enabling the automatic grading of programming assignments by compiling and executing student code against a set of predefined test cases.\cite{oj_intro}
+
+As identified by a comprehensive survey of OJ systems \cite{oj_survey}, the single most critical design challenge is \textbf{security}.\cite{oj_survey} The system must execute untrusted, user-submitted code without allowing that code to compromise the host server. A malicious submission could contain a fork bomb (e.g., \verb|while(true) { fork(); }|), attempt to read server file systems, or initiate network attacks.
+
+The universally accepted solution is \textbf{sandboxing}.\cite{oj_security}
+\begin{itemize}
+    \item \textbf{Modern Architecture (Containerization):} While early systems used virtual machines or complex \texttt{chroot} jails, the modern, scalable, and secure architecture pioneered by open-source systems like \textbf{Judge0} \cite{judge0_1, judge0_2, judge0_3} is based on lightweight \textbf{containerization}.\cite{docker1, docker2}
+    \item \textbf{Execution Flow:} In this model, each code submission triggers the creation of a new, ephemeral \textbf{Docker container}.\cite{docker2, docker3} This container is a minimal, isolated environment with no access to the host system and is given strict resource limits (e.g., 2 seconds of CPU time, 256 MB of RAM).\cite{judge0_1} The student's code is compiled and executed \textit{inside} this sandbox.\cite{oj_security} The system captures its output, compares it to the expected result, and then immediately \textit{destroys} the container.
+\end{itemize}
+
+Neura's Online Judge directly implements this robust, secure, and scalable container-based architecture.
+
+\section{Identifying the Gap: Neura's Novel Contribution}
+
+The related work review confirms two key findings:
+
+\begin{enumerate}
+    \item \textbf{The Commercial Gap:} The major e-learning platforms (Table 2.1) lack the deep, integrated, and specialized tools required for high-integrity, customizable technical education. Institutions are left to use a fragile and expensive patchwork of single-purpose products.
+    \item \textbf{The Academic Gap:} The academic literature is highly \textit{siloed}. Research focuses intensely on one domain at a time: secure proctoring \cite{proctor_su}, RAG chatbots \cite{lewis2020rag}, plagiarism \cite{jplag1}, or online judges.\cite{oj_survey}
+\end{enumerate}
+
+The novelty of the Neura project is the \textbf{architectural synthesis} of all five. It is the first platform designed to \textit{unify} these disparate, high-complexity systems—which are normally standalone products or isolated research projects—into a single, cohesive, and customizable platform. Neura bridges the gap between general-purpose MOOCs and niche, single-feature tools, creating a new category of integrated, high-integrity platforms for modern technical education.
