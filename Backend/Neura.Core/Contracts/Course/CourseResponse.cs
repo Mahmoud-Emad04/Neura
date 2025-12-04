@@ -1,12 +1,18 @@
+using Microsoft.AspNetCore.Http;
+
 namespace Neura.Core.Contracts.Course;
 
 public record CourseResponse(
     string KeyId,
     string Title,
-    bool IsCompleted,
     string Description,
+    bool IsCompleted,
+    DateOnly Startin,
+    DateOnly Endin,
     DateTime CreatedOn,
-    DateTime? UpdatedById,
-    string? LastUpdatedBy,
+    DateTime? UpdatedOn,
+    string ImageUrl,
+    string? UpdatedById,
     string CreatedById,
-    List<TopicResponse> Topics);
+    List<TopicResponse>? Topics,
+    List<TagResponse> Tags);

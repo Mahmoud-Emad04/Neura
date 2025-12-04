@@ -16,6 +16,7 @@ public class ApplicationDbContext(
 
     public DbSet<Course> Courses { get; set; }
     public DbSet<Topic> Topics { get; set; }
+    public DbSet<Tag> Tags { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());

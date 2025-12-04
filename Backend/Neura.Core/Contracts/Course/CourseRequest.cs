@@ -1,6 +1,11 @@
+using Microsoft.AspNetCore.Http;
+
 namespace Neura.Core.Contracts.Course;
 
 public record CourseRequest(
     string Title,
     string Description,
-    List<TopicRequest>? Topics);
+    DateOnly Startin,
+    DateOnly Endin,
+    List<int> Tags
+);

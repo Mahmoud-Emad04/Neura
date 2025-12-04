@@ -1,25 +1,16 @@
-﻿using FluentValidation;
-using FluentValidation.AspNetCore;
-using Neura.Api.Errors;
-using Neura.Api.Mapping;
+﻿using Neura.Api.Errors;
 using Neura.Core.Authentication;
 using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
 using Neura.Services.Services;
 using HashidsNet;
-using Mapster;
-using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Neura.Core.Authentication.Filters;
-using Neura.Core.Entities;
 using System.Reflection;
 using System.Text;
-using Neura.Core.Services;
 using Neura.Api.OpenApiTransformers;
 
 namespace Neura.Api;
@@ -57,14 +48,16 @@ public static class DependencyInjection
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
+        services.AddHttpContextAccessor();
+
         services.AddDataProtection().SetApplicationName(nameof(Neura));
         services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", minHashLength: 11));
-
         #region AddInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IFileService, FileService>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         #endregion
