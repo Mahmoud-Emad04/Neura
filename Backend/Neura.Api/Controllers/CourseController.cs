@@ -1,9 +1,8 @@
-﻿using System.Security.Claims;
-using FileManager.Contracts;
-using Neura.Core.Abstractions.Consts;
+﻿using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication.Filters;
 using Neura.Core.Contracts.Course;
 using Neura.Core.Contracts.Files;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -32,19 +31,29 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
 
     [HttpPost("")]
     [HasPermission(Permissions.AddCourses)]
-    public async Task<IActionResult> Create([FromForm] CourseRequest Request, [FromForm] UploadImageRequest UploadImage, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CourseRequest Request, CancellationToken cancellationToken)
     {
-        var result = await _courseService.CreateAsync(Request, UploadImage, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+        var result = await _courseService.CreateAsync(Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { keyId = result.Value.KeyId } , null)
+            ? CreatedAtAction(nameof(GetById), new { keyId = result.Value.KeyId }, null)
+            : result.ToProblem();
+    }
+
+    [HttpPut("update-image/{KeyId}")]
+    public async Task<IActionResult> UpdateImage([FromRoute] string KeyId, [FromForm] UploadImageRequest UploadImage, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.UpdateImageAsync(KeyId, UploadImage, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
             : result.ToProblem();
     }
 
     [HttpPut("{keyId}")]
-    public async Task<IActionResult> Update([FromRoute] string keyId,[FromForm] CourseUpdateRequest Request, [FromForm] UploadImageRequest? UploadImage, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update([FromRoute] string keyId, [FromBody] CourseUpdateRequest Request, CancellationToken cancellationToken)
     {
-        var result = await _courseService.UpdateAsync(keyId , Request, UploadImage, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+        var result = await _courseService.UpdateAsync(keyId, Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess
             ? NoContent()

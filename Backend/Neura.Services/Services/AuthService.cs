@@ -1,13 +1,12 @@
-﻿using Neura.Core.Authentication;
-using Neura.Core.Contracts.Authentication;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Neura.Core.Abstractions.Consts;
+using Neura.Core.Authentication;
+using Neura.Core.Contracts.Authentication;
 using System.Security.Cryptography;
 using System.Text;
-
 namespace Neura.Services.Services;
 
 public class AuthService(
@@ -42,7 +41,7 @@ public class AuthService(
         if (!isValidPassword)
             return Result.Failure<AuthResponse>(UserErrors.UserNotFound);
 
-        if(!user.EmailConfirmed)
+        if (!user.EmailConfirmed)
             return Result.Failure<AuthResponse>(UserErrors.EmailNotConfirmed);
 
         var (userRoles, userPermissions) = await GetUserRolesAndPermissionsAsync(user, cancellationToken);
@@ -58,7 +57,7 @@ public class AuthService(
 
         await _userManager.UpdateAsync(user);
 
-        var response = new AuthResponse(user.Id,user.UserName! , user.DiscordHandle, user.Email!, user.FirstName, user.LastName, token, expires,
+        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName, user.LastName, token, expires,
             refreshToken,
             refreshTokenExpiry);
 
@@ -98,7 +97,7 @@ public class AuthService(
 
         await _userManager.UpdateAsync(user);
 
-        var response = new AuthResponse(user.Id , user.UserName! , user.DiscordHandle, user.Email!, user.FirstName, user.LastName, newtoken, expires,
+        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName, user.LastName, newtoken, expires,
             newrefreshToken,
             refreshTokenExpiry);
 

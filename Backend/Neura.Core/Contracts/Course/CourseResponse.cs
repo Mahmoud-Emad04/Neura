@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Http;
-
 namespace Neura.Core.Contracts.Course;
 
 public record CourseResponse(

@@ -1,23 +1,23 @@
-
-using Azure.Core;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Neura.Core.Contracts.Files;
-using System.Linq;
+using Neura.Core.FilesConsts;
 
 namespace Neura.Services.Services;
 
-public class CourseService(ApplicationDbContext context, IFileService fileService, IHttpContextAccessor httpContextAccessor) : ICourseService
+public class CourseService(ApplicationDbContext context, IFileService fileService, IHttpContextAccessor httpContextAccessor, ILogger<CourseService> logger) : ICourseService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly ILogger<CourseService> _logger = logger;
     private readonly Hashids _hashids = new("Course", 8);
-    private readonly string _folderName = "Course";
     public async Task<Result<IEnumerable<CourseResponse>>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var courses = await _context.Courses
             .Include(c => c.Topics)
             .Include(c => c.Tags)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         foreach (var course in courses)
@@ -40,6 +40,7 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
         var course = await _context.Courses
             .Include(c => c.Topics)
             .Include(c => c.Tags)
+            .AsNoTracking()
             .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
 
         if (course is null)
@@ -47,10 +48,13 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
 
         var response = course.Adapt<CourseResponse>() with { ImageUrl = Path.Combine(GetBaseUrl(), course.ImageUrl) };
 
+        _logger.LogInformation($"{GetBaseUrl()}");
+        _logger.LogInformation($"{Path.Combine(GetBaseUrl(), course.ImageUrl)}");
+
         return Result.Success(response);
     }
 
-    public async Task<Result<CourseResponse>> CreateAsync(CourseRequest request, UploadImageRequest uploadImage, string userId,
+    public async Task<Result<CourseResponse>> CreateAsync(CourseRequest request, string userId,
         CancellationToken cancellationToken = default)
     {
         var tags = await _context.Tags
@@ -62,20 +66,47 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
 
         var course = request.Adapt<Course>();
 
-        var uploadedPath = await _fileService.UploadImageAsync(uploadImage.Image, _folderName, cancellationToken);
-
         course.CreatedById = userId;
         course.CreatedOn = DateTime.UtcNow;
-        course.ImageUrl = uploadedPath;
         course.Tags = tags;
+        course.ImageUrl = DefaultCourseImagePath();
+
+        _logger.LogInformation("Image with Title {title} & Url {imageurl} Created", course.Title, course.ImageUrl);
 
         _context.Courses.Add(course);
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result.Success(course.Adapt<CourseResponse>());
     }
+    public async Task<Result> UpdateImageAsync(string keyId, UploadImageRequest uploadImage, string userId, CancellationToken cancellationToken = default)
+    {
+        int[] numbers = _hashids.Decode(keyId);
 
-    public async Task<Result<CourseResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, UploadImageRequest? uploadImage, string userId, CancellationToken cancellationToken = default)
+        if (numbers.Length == 0)
+            return Result.Failure(CourseErrors.CourseNotFound);
+
+        int courseId = numbers[0];
+
+        var course = await _context.Courses
+            .Include(c => c.Topics)
+            .Include(c => c.Tags)
+            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        if (course is null)
+            return Result.Failure(CourseErrors.CourseNotFound);
+
+        if (course.ImageUrl != DefaultCourseImagePath())
+            _fileService.Delete(course.ImageUrl);
+
+        course.ImageUrl = await _fileService.UploadImageAsync(uploadImage.Image, ImageConsts.Course, cancellationToken);
+        course.UpdatedOn = DateTime.UtcNow;
+        course.UpdatedById = userId;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
+    public async Task<Result<CourseResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, string userId, CancellationToken cancellationToken = default)
     {
         int[] numbers = _hashids.Decode(keyId);
 
@@ -100,16 +131,6 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
 
         request.Adapt(course);
 
-        if (uploadImage?.Image is not null)
-        {
-            if (!string.IsNullOrWhiteSpace(course.ImageUrl))
-                _fileService.Delete(course.ImageUrl);
-
-            var newImagePath = await _fileService.UploadImageAsync(uploadImage.Image, _folderName, cancellationToken);
-
-            course.ImageUrl = newImagePath;
-        }
-
         course.Tags = tags;
         course.UpdatedOn = DateTime.UtcNow;
         course.UpdatedById = userId;
@@ -121,9 +142,6 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
         return Result.Success(response);
     }
 
-
-
-
     private string GetBaseUrl()
     {
         var request = _httpContextAccessor.HttpContext?.Request;
@@ -131,4 +149,10 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
 
         return $"{request.Scheme}://{request.Host}";
     }
+
+    private string DefaultCourseImagePath()
+    {
+        return Path.Combine("Images", ImageConsts.Course, ImageConsts.DefaultCourseImage);
+    }
+
 }

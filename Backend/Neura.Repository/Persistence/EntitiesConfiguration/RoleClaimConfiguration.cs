@@ -1,9 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
-
-namespace Neura.Repository.Persistence.EntitiesConfiguration;
+﻿namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
 public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim<string>>
 {

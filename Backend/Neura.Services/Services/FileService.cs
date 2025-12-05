@@ -11,11 +11,14 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
 
     public async Task<string> UploadImageAsync(IFormFile file, string folderName, CancellationToken cancellationToken = default)
     {
-        var path = Path.Combine(_imagesPath,folderName,file.FileName);
+        var ext = Path.GetExtension(file.FileName);
+        var uniqueName = $"{Guid.NewGuid()}{ext}";
+
+        var path = Path.Combine(_imagesPath, folderName, uniqueName);
         using var stream = File.Create(path);
         await file.CopyToAsync(stream, cancellationToken);
 
-        return Path.Combine("/Images", folderName, file.FileName);
+        return Path.Combine("Images", folderName, uniqueName);
     }
     public void Delete(string imagePath)
     {
@@ -24,5 +27,4 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
         if (File.Exists(oldImagePath))
             File.Delete(oldImagePath);
     }
-
 }

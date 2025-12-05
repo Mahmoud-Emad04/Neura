@@ -1,16 +1,14 @@
-﻿using Neura.Core.Contracts.Course;
+using Neura.Core.Contracts.Course;
 
 namespace Neura.Api.Validation.Course;
 
-public class CourseUpdateRequestValidator : AbstractValidator<CourseUpdateRequest>
+public class CourseRequestValidator : AbstractValidator<CourseRequest>
 {
-    public CourseUpdateRequestValidator()
+    public CourseRequestValidator()
     {
         RuleFor(c => c.Title).NotEmpty().Length(3, 100);
 
         RuleFor(c => c.Description).NotEmpty().Length(3, 1000);
-
-        RuleFor(c => c.IsCompleted).NotEmpty();
 
         RuleFor(c => c.Startin)
             .NotEmpty()

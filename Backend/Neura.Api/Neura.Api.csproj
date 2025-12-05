@@ -26,8 +26,4 @@
     <ProjectReference Include="..\Neura.Services\Neura.Services.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="wwwroot\Images\Course\" />
-  </ItemGroup>
-
 </Project>
