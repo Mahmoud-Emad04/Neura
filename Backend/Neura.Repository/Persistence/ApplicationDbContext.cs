@@ -1,7 +1,6 @@
-using Neura.Core.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+using Neura.Core.Entities;
 using System.Reflection;
 using System.Security.Claims;
 
@@ -15,6 +14,7 @@ public class ApplicationDbContext(
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
     public DbSet<Course> Courses { get; set; }
+    public DbSet<CourseUser> CourseUsers { get; set; }
     public DbSet<Topic> Topics { get; set; }
     public DbSet<Tag> Tags { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)

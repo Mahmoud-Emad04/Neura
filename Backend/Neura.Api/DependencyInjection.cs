@@ -1,17 +1,17 @@
-﻿using Neura.Api.Errors;
-using Neura.Core.Authentication;
-using Neura.Repository.Persistence;
-using Neura.Services.Authentication;
-using Neura.Services.Services;
-using HashidsNet;
+﻿using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using Neura.Core.Authentication.Filters;
+using Neura.Api.Errors;
+using Neura.Api.OpenApiTransformers;
+using Neura.Core.Authentication;
+using Neura.Repository.Persistence;
+using Neura.Services.Authentication;
+using Neura.Services.Authentication.Filters;
+using Neura.Services.Services;
 using System.Reflection;
 using System.Text;
-using Neura.Api.OpenApiTransformers;
 
 namespace Neura.Api;
 
@@ -154,6 +154,7 @@ public static class DependencyInjection
             options.SignIn.RequireConfirmedEmail = true;
             options.User.RequireUniqueEmail = true;
         });
+
         return services;
     }
 

@@ -13,8 +13,4 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.10" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Authentication\Filters\Course\" />
-  </ItemGroup>
-
 </Project>

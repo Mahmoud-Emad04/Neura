@@ -1,15 +1,20 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Files;
 using Neura.Core.FilesConsts;
 
 namespace Neura.Services.Services;
 
-public class CourseService(ApplicationDbContext context, IFileService fileService, IHttpContextAccessor httpContextAccessor, ILogger<CourseService> logger) : ICourseService
+public class CourseService(ApplicationDbContext context,
+                            IFileService fileService,
+                            IHttpContextAccessor httpContextAccessor,
+                            RoleManager<ApplicationRole> roleManager,
+                            UserManager<ApplicationUser> userManager,
+                            ILogger<CourseService> logger) : ICourseService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly ILogger<CourseService> _logger = logger;
     private readonly Hashids _hashids = new("Course", 8);
     public async Task<Result<IEnumerable<CourseResponse>>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -74,6 +79,23 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
         _logger.LogInformation("Image with Title {title} & Url {imageurl} Created", course.Title, course.ImageUrl);
 
         _context.Courses.Add(course);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        await CreateDynamicRoles(course);
+
+        var ownerUser = await userManager.FindByIdAsync(userId);
+
+        var ownerRoleName = $"{DefaultRoles.CourseOwner}:{course.Id}";
+
+        await userManager.AddToRoleAsync(ownerUser!, ownerRoleName);
+
+        _context.CourseUsers.Add(new CourseUser
+        {
+            CourseId = course.Id,
+            UserId = ownerUser!.Id,
+            Role = DefaultRoles.CourseOwner
+        });
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result.Success(course.Adapt<CourseResponse>());
@@ -142,6 +164,44 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
         return Result.Success(response);
     }
 
+    private async Task CreateDynamicRoles(Course course)
+    {
+        var courseRoles = new List<string>
+                {
+                    DefaultRoles.CourseOwner,
+                    DefaultRoles.CoInstructor,
+                    DefaultRoles.TeachingAssistant,
+                    DefaultRoles.Student
+                };
+
+        foreach (var role in courseRoles)
+        {
+            var roleName = $"{role}:{course.Id}";
+            if (await roleManager.FindByNameAsync(roleName) == null)
+            {
+                await roleManager.CreateAsync(new ApplicationRole { Name = roleName });
+
+                // Copy claims from template
+                var templateRole = await roleManager.FindByIdAsync(
+                    role switch
+                    {
+                        DefaultRoles.CourseOwner => DefaultRoles.CourseOwnerRoleId,
+                        DefaultRoles.CoInstructor => DefaultRoles.CoInstructorRoleId,
+                        DefaultRoles.TeachingAssistant => DefaultRoles.TeachingAssistantRoleId,
+                        DefaultRoles.Student => DefaultRoles.StudentRoleId,
+                        _ => throw new Exception("Unknown role")
+                    });
+
+                var claims = await roleManager.GetClaimsAsync(templateRole!);
+                foreach (var claim in claims)
+                {
+                    await roleManager.AddClaimAsync(await roleManager.FindByNameAsync(roleName), claim);
+                }
+            }
+        }
+
+    }
+
     private string GetBaseUrl()
     {
         var request = _httpContextAccessor.HttpContext?.Request;
@@ -154,5 +214,4 @@ public class CourseService(ApplicationDbContext context, IFileService fileServic
     {
         return Path.Combine("Images", ImageConsts.Course, ImageConsts.DefaultCourseImage);
     }
-
 }

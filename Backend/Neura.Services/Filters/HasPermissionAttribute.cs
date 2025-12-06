@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace Neura.Core.Authentication.Filters;
+namespace Neura.Services.Authentication.Filters;
 
 public class HasPermissionAttribute(string permission) : AuthorizeAttribute(permission)
 {

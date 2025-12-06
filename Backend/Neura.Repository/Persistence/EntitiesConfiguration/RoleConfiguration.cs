@@ -1,7 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
-using Neura.Core.Entities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Neura.Core.Entities;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
@@ -22,6 +19,31 @@ public class RoleConfiguration : IEntityTypeConfiguration<ApplicationRole>
                 IsDefualt = true,
                 NormalizedName = DefaultRoles.Member.ToUpper(),
                 ConcurrencyStamp = DefaultRoles.MemberRoleConcurrencyStamp
-        }]);
+        },
+            new ApplicationRole{
+                Id = DefaultRoles.CourseOwnerRoleId,
+                Name = DefaultRoles.CourseOwner,
+                NormalizedName = DefaultRoles.CourseOwner.ToUpper(),
+                ConcurrencyStamp = DefaultRoles.CourseOwnerConcurrencyStamp
+         },
+            new ApplicationRole{
+                Id = DefaultRoles.CoInstructorRoleId,
+                Name = DefaultRoles.CoInstructor,
+                NormalizedName = DefaultRoles.CoInstructor.ToUpper(),
+                ConcurrencyStamp = DefaultRoles.CoInstructorConcurrencyStamp
+        },
+            new ApplicationRole{
+                Id = DefaultRoles.TeachingAssistantRoleId,
+                Name = DefaultRoles.TeachingAssistant,
+                NormalizedName = DefaultRoles.TeachingAssistant.ToUpper(),
+                ConcurrencyStamp = DefaultRoles.TeachingAssistantConcurrencyStamp
+        },
+            new ApplicationRole{
+                Id = DefaultRoles.StudentRoleId,
+                Name = DefaultRoles.Student,
+                NormalizedName = DefaultRoles.Student.ToUpper(),
+                ConcurrencyStamp = DefaultRoles.StudentConcurrencyStamp
+        },
+        ]);
     }
 }

@@ -13,4 +13,5 @@ public sealed class Course : AuditableEntity
 
     public ICollection<Topic> Topics { get; set; } = [];
     public ICollection<Tag> Tags { get; set; } = [];
+    public ICollection<CourseUser> CourseUsers { get; set; } = [];
 }

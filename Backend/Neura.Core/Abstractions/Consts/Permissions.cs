@@ -1,5 +1,7 @@
 ﻿namespace Neura.Core.Abstractions.Consts;
 
+//TODO Change To ENUM
+
 public static class Permissions
 {
     public static string Type { get; } = "permissions";

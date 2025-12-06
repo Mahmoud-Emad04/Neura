@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using Neura.Core.Contracts.Users;
+﻿using Neura.Core.Contracts.Users;
 
 namespace Neura.Services.Services;
 

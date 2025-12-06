@@ -18,6 +18,31 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim
             });
         }
 
+        int idCounter = roleClaims.Count() + 100;
+
+        foreach (var rolePerm in CoursePermissions.RolePermissions)
+        {
+            var roleId = rolePerm.Key switch
+            {
+                DefaultRoles.CourseOwner => DefaultRoles.CourseOwnerRoleId,
+                DefaultRoles.CoInstructor => DefaultRoles.CoInstructorRoleId,
+                DefaultRoles.TeachingAssistant => DefaultRoles.TeachingAssistantRoleId,
+                DefaultRoles.Student => DefaultRoles.StudentRoleId,
+                _ => throw new Exception("Unknown role")
+            };
+
+            foreach (var perm in rolePerm.Value)
+            {
+                roleClaims.Add(new IdentityRoleClaim<string>
+                {
+                    Id = idCounter++,
+                    RoleId = roleId,
+                    ClaimType = Permissions.Type,
+                    ClaimValue = perm
+                });
+            }
+        }
+
         builder.HasData(roleClaims);
     }
 }
