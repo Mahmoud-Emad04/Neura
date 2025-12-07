@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Routing;
 using Neura.Core.Abstractions.Consts;
 using System.Security.Claims;
 
-namespace Neura.Services.Authentication.Filters;
+namespace Neura.Services.Filters;
 
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
@@ -32,47 +32,53 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
             return;
         }
 
-        if (!requirement.Permission.StartsWith("courses:"))
-            return;
+        if (requirement.Permission.StartsWith("Course:"))
+        {
+            var httpContext = _http.HttpContext;
 
-        var httpContext = _http.HttpContext;
-        if (httpContext == null)
-            return;
+            if (httpContext == null)
+                return;
 
-        var rawPerm = requirement.Permission.Split(':')[1];
+            var split = requirement.Permission.Split(':');
 
-        var values = httpContext.GetRouteData()?.Values;
+            var rawPerm = $"{split[1]}:{split[2]}";
 
+            var values = httpContext.GetRouteData()?.Values;
 
-        if (values is null || !values.TryGetValue("courseId", out var cid))
-            return;
+            if (values is null || !values.TryGetValue("courseId", out var cid))
+                return;
 
-        var encodedId = cid?.ToString();
-        if (encodedId is null)
-            return;
+            var encodedId = cid?.ToString();
 
-        var numbers = _hashids.Decode(encodedId);
-        if (numbers.Length == 0)
-            return;
+            if (encodedId is null)
+                return;
 
-        var courseId = numbers[0];
+            var numbers = _hashids.Decode(encodedId);
 
-        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (numbers.Length == 0)
+                return;
 
-        if (userId is null)
-            return;
+            var courseId = numbers[0];
 
-        var role = await _db.CourseUsers
-            .Where(cu => cu.CourseId == courseId && cu.UserId == userId)
-            .Select(cu => cu.Role)
-            .FirstOrDefaultAsync();
+            var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (role is null)
-            return;
+            if (userId is null)
+                return;
 
-        var perms = CoursePermissions.RolePermissions[role];
+            var permMask = await _db.CourseUsers
+                .Where(cu => cu.CourseId == courseId && cu.UserId == userId)
+                .Select(cu => cu.PermissionMask)
+                .FirstOrDefaultAsync();
 
-        if (perms.Contains(requirement.Permission))
-            context.Succeed(requirement);
+            if (permMask is 0)
+                return;
+
+            if (CoursePermissionMap.Map.TryGetValue(rawPerm, out var value) && (value & permMask) != 0)
+            {
+                context.Succeed(requirement);
+                return;
+            }
+        }
+        return;
     }
 }

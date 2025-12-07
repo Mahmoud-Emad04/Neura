@@ -8,7 +8,7 @@ using Neura.Api.OpenApiTransformers;
 using Neura.Core.Authentication;
 using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
-using Neura.Services.Authentication.Filters;
+using Neura.Services.Filters;
 using Neura.Services.Services;
 using System.Reflection;
 using System.Text;
@@ -68,7 +68,7 @@ public static class DependencyInjection
 
     private static IServiceCollection AddOpenApiServices(this IServiceCollection services)
     {
-        var serviceProvider = services.BuildServiceProvider();
+        //var serviceProvider = services.BuildServiceProvider();
 
         services.AddOpenApi(options =>
         {

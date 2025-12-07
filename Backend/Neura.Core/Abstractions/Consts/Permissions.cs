@@ -23,4 +23,7 @@ public static class Permissions
 
     public static List<string?> GetAll() =>
         typeof(Permissions).GetFields().Select(x => x.GetValue(x) as string).ToList();
+
+    public static List<string?> GetAllCoursePermissions() =>
+        [GetCourses, UpdateCourses, DeleteCourses];
 }

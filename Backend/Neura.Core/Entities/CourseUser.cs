@@ -1,5 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
-using Neura.Core.Entities;
+﻿using Neura.Core.Entities;
 
 public class CourseUser
 {
@@ -9,5 +8,5 @@ public class CourseUser
     public string UserId { get; set; } = string.Empty!;
     public ApplicationUser User { get; set; } = null!;
 
-    public string Role { get; set; } = DefaultRoles.Student;
+    public int PermissionMask { get; set; } = 0;
 }

@@ -1,7 +1,7 @@
 ﻿using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Course;
 using Neura.Core.Contracts.Files;
-using Neura.Services.Authentication.Filters;
+using Neura.Services.Filters;
 using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
@@ -15,14 +15,14 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     private readonly ILogger<CourseController> _logger = logger;
 
     [HttpGet("")]
-    [HasPermission(Permissions.GetCourses)]
+    //[HasPermission(Permissions.GetCourses)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         return Ok((await _courseService.GetAllAsync(cancellationToken)).Value);
     }
 
     [HttpGet("{courseId}")]
-    [HasPermission(Permissions.GetCourses)]
+    //[HasCoursePermission(Permissions.GetCourses)]
     public async Task<IActionResult> GetById([FromRoute] string courseId, CancellationToken cancellationToken)
     {
         var course = await _courseService.GetByIdAsync(courseId, cancellationToken);
@@ -44,7 +44,7 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     }
 
     [HttpPut("update-image/{courseId}")]
-    [HasPermission(Permissions.UpdateCourses)]
+    [HasCoursePermission(Permissions.UpdateCourses)]
     public async Task<IActionResult> UpdateImage([FromRoute] string courseId, [FromForm] UploadImageRequest UploadImage, CancellationToken cancellationToken)
     {
         var result = await _courseService.UpdateImageAsync(courseId, UploadImage, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
@@ -55,7 +55,7 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     }
 
     [HttpPut("{courseId}")]
-    [HasPermission(Permissions.UpdateCourses)]
+    [HasCoursePermission(Permissions.UpdateCourses)]
     public async Task<IActionResult> Update([FromRoute] string courseId, [FromBody] CourseUpdateRequest Request, CancellationToken cancellationToken)
     {
         var result = await _courseService.UpdateAsync(courseId, Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);

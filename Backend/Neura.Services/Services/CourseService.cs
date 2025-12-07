@@ -14,6 +14,7 @@ public class CourseService(ApplicationDbContext context,
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly ILogger<CourseService> _logger = logger;
     private readonly Hashids _hashids = new("Course", 8);
@@ -79,22 +80,42 @@ public class CourseService(ApplicationDbContext context,
         _logger.LogInformation("Image with Title {title} & Url {imageurl} Created", course.Title, course.ImageUrl);
 
         _context.Courses.Add(course);
+
         await _context.SaveChangesAsync(cancellationToken);
 
-        await CreateDynamicRoles(course);
+        var ownerUser = await _userManager.FindByIdAsync(userId);
 
-        var ownerUser = await userManager.FindByIdAsync(userId);
+        await _userManager.AddToRoleAsync(ownerUser!, DefaultRoles.CourseOwner);
 
-        var ownerRoleName = $"{DefaultRoles.CourseOwner}:{course.Id}";
+        var role = await _roleManager.FindByIdAsync(DefaultRoles.CourseOwnerRoleId);
 
-        await userManager.AddToRoleAsync(ownerUser!, ownerRoleName);
+        var claims = await _roleManager.GetClaimsAsync(role!);
 
-        _context.CourseUsers.Add(new CourseUser
+        var permissions = claims
+            .Where(c => c.Type == Permissions.Type)
+            .Select(c => c.Value)
+            .ToList();
+
+        int permissionMask = 0;
+
+        foreach (var perm in permissions)
+        {
+            _logger.LogWarning("perm in {perm}", perm);
+
+            if (CoursePermissionMap.Map.TryGetValue(perm, out var value))
+                permissionMask |= value;
+        }
+
+        CourseUser courseUser = new()
         {
             CourseId = course.Id,
-            UserId = ownerUser!.Id,
-            Role = DefaultRoles.CourseOwner
-        });
+            UserId = userId,
+            PermissionMask = permissionMask
+        };
+
+        await _context.CourseUsers.AddAsync(courseUser, cancellationToken);
+
+        _logger.LogInformation("User {username} & mask {mask} Created", ownerUser!.UserName, permissionMask);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -162,44 +183,6 @@ public class CourseService(ApplicationDbContext context,
         var response = course.Adapt<CourseResponse>() with { ImageUrl = Path.Combine(GetBaseUrl(), course.ImageUrl) };
 
         return Result.Success(response);
-    }
-
-    private async Task CreateDynamicRoles(Course course)
-    {
-        var courseRoles = new List<string>
-                {
-                    DefaultRoles.CourseOwner,
-                    DefaultRoles.CoInstructor,
-                    DefaultRoles.TeachingAssistant,
-                    DefaultRoles.Student
-                };
-
-        foreach (var role in courseRoles)
-        {
-            var roleName = $"{role}:{course.Id}";
-            if (await roleManager.FindByNameAsync(roleName) == null)
-            {
-                await roleManager.CreateAsync(new ApplicationRole { Name = roleName });
-
-                // Copy claims from template
-                var templateRole = await roleManager.FindByIdAsync(
-                    role switch
-                    {
-                        DefaultRoles.CourseOwner => DefaultRoles.CourseOwnerRoleId,
-                        DefaultRoles.CoInstructor => DefaultRoles.CoInstructorRoleId,
-                        DefaultRoles.TeachingAssistant => DefaultRoles.TeachingAssistantRoleId,
-                        DefaultRoles.Student => DefaultRoles.StudentRoleId,
-                        _ => throw new Exception("Unknown role")
-                    });
-
-                var claims = await roleManager.GetClaimsAsync(templateRole!);
-                foreach (var claim in claims)
-                {
-                    await roleManager.AddClaimAsync(await roleManager.FindByNameAsync(roleName), claim);
-                }
-            }
-        }
-
     }
 
     private string GetBaseUrl()

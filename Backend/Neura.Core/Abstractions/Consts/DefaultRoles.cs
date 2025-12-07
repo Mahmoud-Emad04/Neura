@@ -12,8 +12,8 @@ public static class DefaultRoles
     public const string MemberRoleId = "019a1c20-390e-7fd8-9b20-cde0cc78e33e";
     public const string MemberRoleConcurrencyStamp = "019a1c20-390e-7fd8-9b20-cddf89d2a037";
 
-
     // Course-Scoped Roles
+
     public const string CourseOwner = nameof(CourseOwner);
     public const string CourseOwnerRoleId = "019aeef9-ea10-7594-a042-ebc8958f1366";
     public const string CourseOwnerConcurrencyStamp = "019aeef9-ea10-7594-a042-ebc9c5b329bd";

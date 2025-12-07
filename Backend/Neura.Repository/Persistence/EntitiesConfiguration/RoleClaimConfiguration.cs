@@ -20,7 +20,7 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim
 
         int idCounter = roleClaims.Count() + 100;
 
-        foreach (var rolePerm in CoursePermissions.RolePermissions)
+        foreach (var rolePerm in CourseRolePermissionMap.RolePermissions)
         {
             var roleId = rolePerm.Key switch
             {
