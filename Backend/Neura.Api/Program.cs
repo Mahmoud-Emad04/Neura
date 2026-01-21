@@ -1,8 +1,8 @@
+using Hangfire;
 using Neura.Api;
 using Neura.Repository.Persistence;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
 using Scalar.AspNetCore;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +20,26 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
+
+app.UseHangfireDashboard("/jops", new DashboardOptions
+{
+    //Authorization = [
+    //    new HangfireCustomBasicAuthenticationFilter
+    //    {
+    //        User = app.Configuration.GetValue<string>("HangfireSettings:Username"),
+    //        Pass = app.Configuration.GetValue<string>("HangfireSettings:Password")
+    //    }
+    //],
+    DashboardTitle = "Neura"
+});
+
+
+var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
+using var scope = scopeFactory.CreateScope();
+var notificationService = scope.ServiceProvider.GetRequiredService<IUserService>();
+
+RecurringJob.AddOrUpdate("SendNewPollsNotification", () => notificationService.SendMail(), "42 19 * * *");
+
 
 #region ApplyPendingMigration
 

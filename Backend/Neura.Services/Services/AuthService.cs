@@ -223,6 +223,12 @@ public class AuthService(
         if (!user.EmailConfirmed)
             return Result.Failure(UserErrors.EmailNotConfirmed);
 
+        //{
+        //    var otp = _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
+        //    _logger.LogWarning("OTP is {otp}", otp.Result);
+        //}
+
+
         var code = await _userManager.GeneratePasswordResetTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 

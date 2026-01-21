@@ -96,26 +96,16 @@ public class CourseService(ApplicationDbContext context,
             .Select(c => c.Value)
             .ToList();
 
-        int permissionMask = 0;
-
-        foreach (var perm in permissions)
-        {
-            _logger.LogWarning("perm in {perm}", perm);
-
-            if (CoursePermissionMap.Map.TryGetValue(perm, out var value))
-                permissionMask |= value;
-        }
-
         CourseUser courseUser = new()
         {
             CourseId = course.Id,
             UserId = userId,
-            PermissionMask = permissionMask
+            RoleId = role!.Id
         };
 
         await _context.CourseUsers.AddAsync(courseUser, cancellationToken);
 
-        _logger.LogInformation("User {username} & mask {mask} Created", ownerUser!.UserName, permissionMask);
+        //_logger.LogInformation("User {username} & mask {mask} Created", ownerUser!.UserName, permissionMask);
 
         await _context.SaveChangesAsync(cancellationToken);
 

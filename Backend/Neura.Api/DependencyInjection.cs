@@ -1,4 +1,5 @@
-﻿using HashidsNet;
+﻿using Hangfire;
+using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -160,13 +161,13 @@ public static class DependencyInjection
 
     private static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration Configuration)
     {
-        // services.AddHangfire(configuration => configuration
-        //     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-        //     .UseSimpleAssemblyNameTypeSerializer()
-        //     .UseRecommendedSerializerSettings()
-        //     .UseSqlServerStorage(Configuration.GetConnectionString("HangfireConnection")));
-        //
-        // services.AddHangfireServer();
+        services.AddHangfire(configuration => configuration
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(Configuration.GetConnectionString("HangfireConnection")));
+
+        services.AddHangfireServer();
 
         return services;
     }

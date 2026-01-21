@@ -2,9 +2,11 @@
 
 namespace Neura.Services.Services;
 
-public class UserService(UserManager<ApplicationUser> userManager) : IUserService
+public class UserService(UserManager<ApplicationUser> userManager, ILogger<UserService> logger) : IUserService
 {
     private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly ILogger<UserService> _logger = logger;
+
     public async Task<Result<UserProfileResponse>> GetProfileAsync(string userId)
     {
         var user = await _userManager.Users.
@@ -38,5 +40,11 @@ public class UserService(UserManager<ApplicationUser> userManager) : IUserServic
         var error = result.Errors.First();
 
         return Result.Failure(new Error(error.Code, error.Description, StatusCodes.Status400BadRequest));
+    }
+
+    public async Task SendMail()
+    {
+        await Task.Delay(7000);
+        _logger.LogInformation("HangFire");
     }
 }

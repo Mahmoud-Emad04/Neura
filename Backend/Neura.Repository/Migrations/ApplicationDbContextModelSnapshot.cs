@@ -34,7 +34,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("CourseTag");
+                    b.ToTable("CourseTag", (string)null);
                 });
 
             modelBuilder.Entity("CourseUser", b =>
@@ -52,7 +52,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CourseUsers");
+                    b.ToTable("CourseUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -536,7 +536,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Tag", b =>
@@ -554,7 +554,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags");
+                    b.ToTable("Tags", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Topic", b =>
@@ -582,7 +582,7 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("Name", "CourseId")
                         .IsUnique();
 
-                    b.ToTable("Topics");
+                    b.ToTable("Topics", (string)null);
                 });
 
             modelBuilder.Entity("CourseTag", b =>
@@ -698,7 +698,7 @@ namespace Neura.Repository.Migrations
 
                             b1.HasKey("UserId", "Id");
 
-                            b1.ToTable("RefreshTokens");
+                            b1.ToTable("RefreshTokens", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");

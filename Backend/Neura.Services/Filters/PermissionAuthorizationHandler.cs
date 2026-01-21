@@ -8,15 +8,15 @@ namespace Neura.Services.Filters;
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
     private readonly IHttpContextAccessor _http;
-    private readonly ApplicationDbContext _db;
+    private readonly ApplicationDbContext _context;
     private readonly Hashids _hashids = new("Course", 8);
 
     public PermissionAuthorizationHandler(
         IHttpContextAccessor http,
-        ApplicationDbContext db)
+        ApplicationDbContext context)
     {
         _http = http;
-        _db = db;
+        _context = context;
     }
 
     protected override async Task HandleRequirementAsync(
@@ -62,12 +62,20 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
 
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (userId is null)
+            if (String.IsNullOrEmpty(userId))
                 return;
 
-            var permMask = await _db.CourseUsers
+            var roleId = await _context.CourseUsers
                 .Where(cu => cu.CourseId == courseId && cu.UserId == userId)
-                .Select(cu => cu.PermissionMask)
+                .Select(cu => cu.RoleId)
+                .FirstOrDefaultAsync();
+
+            if (String.IsNullOrEmpty(roleId))
+                return;
+
+            var permMask = await _context.CourseRoleMasks
+                .Where(r => r.RoleId == roleId)
+                .Select(m => m.PermissionsMask)
                 .FirstOrDefaultAsync();
 
             if (permMask is 0)

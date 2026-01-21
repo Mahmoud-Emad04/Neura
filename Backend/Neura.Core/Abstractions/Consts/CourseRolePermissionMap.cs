@@ -22,6 +22,18 @@ public static class CourseRolePermissionMap
         }
     };
 
+    public static readonly Dictionary<string, int> RolePermissionsMask = new()
+    {
+        [DefaultRoles.CourseOwner] =
+            (int)CoursePermission.DeleteCourse | (int)CoursePermission.ViewCourse | (int)CoursePermission.UpdateCourse,
+        [DefaultRoles.CoInstructor] =
+            (int)CoursePermission.ViewCourse | (int)CoursePermission.UpdateCourse,
+        [DefaultRoles.TeachingAssistant] =
+            (int)CoursePermission.ViewCourse,
+        [DefaultRoles.Student] =
+            (int)CoursePermission.ViewCourse
+    };
+
     public static readonly string[] AllPermissions =
     {
         Permissions.GetCourses,Permissions.DeleteCourses , Permissions.UpdateCourses
