@@ -17,8 +17,18 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference();
+    app.UseSwagger(options =>
+    {
+        options.RouteTemplate = "openapi/{documentName}.json";
+    });
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("Neura API")
+            .WithTheme(ScalarTheme.Default)
+            .WithClassicLayout()
+            .WithOpenApiRoutePattern("/openapi/v1.json");
+    });
 }
 
 app.UseHangfireDashboard("/jops", new DashboardOptions

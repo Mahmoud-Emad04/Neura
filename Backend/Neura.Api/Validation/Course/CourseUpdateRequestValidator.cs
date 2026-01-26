@@ -10,8 +10,6 @@ public class CourseUpdateRequestValidator : AbstractValidator<CourseUpdateReques
 
         RuleFor(c => c.Description).NotEmpty().Length(3, 1000);
 
-        RuleFor(c => c.IsCompleted).NotEmpty();
-
         RuleFor(c => c.Startin)
             .NotEmpty()
             .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow));

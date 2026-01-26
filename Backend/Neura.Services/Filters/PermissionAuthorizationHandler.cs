@@ -65,21 +65,14 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
             if (String.IsNullOrEmpty(userId))
                 return;
 
-            var roleId = await _context.CourseUsers
+            var user = await _context.CourseUsers
                 .Where(cu => cu.CourseId == courseId && cu.UserId == userId)
-                .Select(cu => cu.RoleId)
                 .FirstOrDefaultAsync();
 
-            if (String.IsNullOrEmpty(roleId))
+            if (user is null)
                 return;
 
-            var permMask = await _context.CourseRoleMasks
-                .Where(r => r.RoleId == roleId)
-                .Select(m => m.PermissionsMask)
-                .FirstOrDefaultAsync();
-
-            if (permMask is 0)
-                return;
+            int permMask = CoursePermissionMap.Map[rawPerm];
 
             if (CoursePermissionMap.Map.TryGetValue(rawPerm, out var value) && (value & permMask) != 0)
             {

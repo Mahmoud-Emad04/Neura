@@ -21,7 +21,6 @@ public class CourseService(ApplicationDbContext context,
     public async Task<Result<IEnumerable<CourseResponse>>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var courses = await _context.Courses
-            .Include(c => c.Topics)
             .Include(c => c.Tags)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
@@ -85,22 +84,22 @@ public class CourseService(ApplicationDbContext context,
 
         var ownerUser = await _userManager.FindByIdAsync(userId);
 
-        await _userManager.AddToRoleAsync(ownerUser!, DefaultRoles.CourseOwner);
+        //await _userManager.AddToRoleAsync(ownerUser!, DefaultRoles.CourseOwner);
 
-        var role = await _roleManager.FindByIdAsync(DefaultRoles.CourseOwnerRoleId);
+        //var role = await _roleManager.FindByIdAsync(DefaultRoles.CourseOwnerRoleId);
 
-        var claims = await _roleManager.GetClaimsAsync(role!);
+        //var claims = await _roleManager.GetClaimsAsync(role!);
 
-        var permissions = claims
-            .Where(c => c.Type == Permissions.Type)
-            .Select(c => c.Value)
-            .ToList();
+        //var permissions = claims
+        //    .Where(c => c.Type == Permissions.Type)
+        //    .Select(c => c.Value)
+        //    .ToList();
 
         CourseUser courseUser = new()
         {
             CourseId = course.Id,
             UserId = userId,
-            RoleId = role!.Id
+            PermissionsMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner]
         };
 
         await _context.CourseUsers.AddAsync(courseUser, cancellationToken);

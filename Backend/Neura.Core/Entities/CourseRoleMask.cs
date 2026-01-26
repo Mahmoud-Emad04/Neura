@@ -4,5 +4,4 @@
 //{
 //    public int Id { get; set; }
 //    public string RoleId { get; set; } = null!;
-//    public int PermissionsMask { get; set; }
 //}

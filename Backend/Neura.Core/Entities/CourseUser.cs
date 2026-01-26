@@ -7,4 +7,5 @@ public class CourseUser
 
     public string UserId { get; set; } = null!;
     public ApplicationUser User { get; set; } = default!;
+    public int PermissionsMask { get; set; }
 }
