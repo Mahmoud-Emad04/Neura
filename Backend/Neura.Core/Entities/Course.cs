@@ -12,10 +12,15 @@ public sealed class Course : AuditableEntity
     public string ImageUrl { get; set; } = string.Empty;
     public int Price { get; set; }
 
+    // Soft-delete
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedOn { get; set; }
+    public string? DeletedById { get; set; }
+
     //public int DifficultyId { get; set; }
     //public Difficulty Difficulty { get; set; } = default!;
 
-    public ICollection<Topic> Topics { get; set; } = [];
-    public ICollection<Tag> Tags { get; set; } = [];
-    public ICollection<CourseUser> CourseUsers { get; set; } = [];
+    public ICollection<Topic> Topics { get; set; } = new List<Topic>();
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+    public ICollection<CourseUser> CourseUsers { get; set; } = new List<CourseUser>();
 }

@@ -36,6 +36,9 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     //[HasPermission(Permissions.AddCourses)]
     public async Task<IActionResult> Create([FromBody] CourseRequest Request, CancellationToken cancellationToken)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         var result = await _courseService.CreateAsync(Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess
@@ -58,7 +61,66 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     [HasCoursePermission(Permissions.UpdateCourses)]
     public async Task<IActionResult> Update([FromRoute] string courseId, [FromBody] CourseUpdateRequest Request, CancellationToken cancellationToken)
     {
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
         var result = await _courseService.UpdateAsync(courseId, Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
+            : result.ToProblem();
+    }
+
+    [HttpDelete("{courseId}")]
+    [HasCoursePermission(Permissions.DeleteCourses)]
+    public async Task<IActionResult> Delete([FromRoute] string courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.DeleteAsync(courseId, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
+            : result.ToProblem();
+    }
+
+    [HttpGet("paged")]
+    //[HasPermission(Permissions.GetCourses)]
+    public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] int? tagId = null, CancellationToken cancellationToken = default)
+    {
+        var result = await _courseService.GetPagedAsync(page, pageSize, tagId, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
+
+    // Admin endpoints
+    [HttpGet("deleted")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetDeleted([FromQuery] int page = 1, [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        var result = await _courseService.GetDeletedAsync(page, pageSize, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
+
+    [HttpDelete("purge/{courseId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Purge([FromRoute] string courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.PurgeAsync(courseId, cancellationToken);
+
+        return result.IsSuccess
+            ? NoContent()
+            : result.ToProblem();
+    }
+
+    [HttpPut("restore/{courseId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Restore([FromRoute] string courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.RestoreAsync(courseId, cancellationToken);
 
         return result.IsSuccess
             ? NoContent()

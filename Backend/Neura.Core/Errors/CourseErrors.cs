@@ -10,5 +10,6 @@ public static class CourseErrors
         new("Course.NotFound", "The specified Course was not found.", StatusCodes.Status404NotFound);
     public static readonly Error CourseTagNotFound =
         new ("Course.TagNotFound", "One or more provided tag IDs do not exist.", StatusCodes.Status404NotFound);
-
+    public static readonly Error CourseInvalidData =
+        new ("Course.InvalidData", "One or more course fields are invalid.", StatusCodes.Status400BadRequest);
 }
