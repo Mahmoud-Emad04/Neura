@@ -1,5 +1,4 @@
 ﻿using Neura.Core.Abstractions.Consts;
-using Neura.Core.Contracts.Course;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
 using System.Security.Claims;
@@ -27,6 +26,7 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     /// 
     [ProducesResponseType(typeof(IEnumerable<CourseResponse>), StatusCodes.Status200OK)]
     [HttpGet("")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         return Ok((await _courseService.GetAllAsync(cancellationToken)).Value);
@@ -46,6 +46,7 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
 
     [HttpGet("{courseId}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetById([FromRoute] string courseId, CancellationToken cancellationToken)
     {
         var course = await _courseService.GetByIdAsync(courseId, cancellationToken);
@@ -70,9 +71,6 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     [HttpPost("")]
     public async Task<IActionResult> Create([FromBody] CourseRequest Request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var result = await _courseService.CreateAsync(Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess
@@ -118,9 +116,6 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     [HasCoursePermission(Permissions.UpdateCourses)]
     public async Task<IActionResult> Update([FromRoute] string courseId, [FromBody] CourseUpdateRequest Request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return ValidationProblem(ModelState);
-
         var result = await _courseService.UpdateAsync(courseId, Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess

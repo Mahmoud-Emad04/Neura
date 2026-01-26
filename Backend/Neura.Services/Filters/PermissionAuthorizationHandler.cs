@@ -41,7 +41,7 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
 
             var split = requirement.Permission.Split(':');
 
-            var rawPerm = $"{split[1]}:{split[2]}";
+            var rawPerm = $"{split[1]}:{split[2]}";//course:update
 
             var values = httpContext.GetRouteData()?.Values;
 
