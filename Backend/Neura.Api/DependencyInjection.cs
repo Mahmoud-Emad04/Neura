@@ -12,6 +12,7 @@ using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Services;
+using Neura.Services.Helpers;
 using System.Reflection;
 using System.Text;
 
@@ -40,7 +41,7 @@ public static class DependencyInjection
 
         services.AddFluentValidation();
 
-        services.AddMapster();
+        services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Neura.Core.Entities.Course).Assembly, typeof(Neura.Services.Services.CourseService).Assembly);
 
         services.AddProblemDetails();
 
@@ -60,6 +61,7 @@ public static class DependencyInjection
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IServiceHelpers, ServiceHelpers>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         #endregion
@@ -112,10 +114,10 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddMapster(this IServiceCollection services)
+    private static IServiceCollection AddMapster(this IServiceCollection services, params Assembly[] assembliesToScan)
     {
         var mappingConfiguration = TypeAdapterConfig.GlobalSettings;
-        mappingConfiguration.Scan(Assembly.GetExecutingAssembly());
+        mappingConfiguration.Scan(assembliesToScan);
         services.AddSingleton<IMapper>(new Mapper(mappingConfiguration));
         return services;
     }

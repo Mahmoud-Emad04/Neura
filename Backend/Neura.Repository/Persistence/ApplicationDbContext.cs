@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Neura.Core.Entities;
 using System.Reflection;
 using System.Security.Claims;
@@ -21,6 +22,9 @@ public class ApplicationDbContext(
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
+        // Global query filter to exclude soft-deleted courses
+        modelBuilder.Entity<Course>().HasQueryFilter(c => !c.IsDeleted);
 
         var cascadFks = modelBuilder.Model
             .GetEntityTypes()
