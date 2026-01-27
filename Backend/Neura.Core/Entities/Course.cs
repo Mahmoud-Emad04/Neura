@@ -13,7 +13,6 @@ public sealed class Course : AuditableEntity
     public int Price { get; set; }
 
     // Soft-delete
-    public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedOn { get; set; }
     public string? DeletedById { get; set; }
 

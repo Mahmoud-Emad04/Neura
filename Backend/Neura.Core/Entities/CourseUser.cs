@@ -6,6 +6,9 @@ public class CourseUser
     public Course Course { get; set; } = default!;
 
     public string UserId { get; set; } = null!;
+
     public ApplicationUser User { get; set; } = default!;
     public int PermissionsMask { get; set; }
+
+    public bool IsDeleted { get; set; }
 }

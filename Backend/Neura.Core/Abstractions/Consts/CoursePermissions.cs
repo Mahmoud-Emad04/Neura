@@ -3,8 +3,17 @@
 [Flags]
 public enum CoursePermission : int
 {
-    ViewCourse = 1 << 0,
-    UpdateCourse = 1 << 1,
-    DeleteCourse = 1 << 2
-}
+    None = 0,
 
+    ViewPublicDetails = 1 << 0,
+
+    AccessContent = 1 << 1,
+
+    SubmitAssignment = 1 << 2,
+
+    GradeAssignment = 1 << 3,
+
+    UpdateCourse = 1 << 4,
+
+    DeleteCourse = 1 << 5
+}

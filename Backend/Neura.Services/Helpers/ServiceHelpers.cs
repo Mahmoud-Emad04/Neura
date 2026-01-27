@@ -1,8 +1,3 @@
-using System.Security.Claims;
-using HashidsNet;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Abstractions.Consts;
-
 namespace Neura.Services.Helpers;
 
 public class ServiceHelpers(IHttpContextAccessor httpContextAccessor, IHashids hashids) : IServiceHelpers

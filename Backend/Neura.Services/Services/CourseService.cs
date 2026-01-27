@@ -1,9 +1,9 @@
-using System.Security.Claims;
 using Neura.Core.Abstractions.Consts;
+using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Core.FilesConsts;
-using Neura.Core.Contracts;
 using Neura.Services.Helpers;
+using System.Linq.Dynamic.Core;
 
 namespace Neura.Services.Services;
 
@@ -22,25 +22,47 @@ public class CourseService(ApplicationDbContext context,
     private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly ILogger<CourseService> _logger = logger;
+    private readonly Hashids _hashids = new("Course", 8);
 
     string BaseUrl() => _helpers.GetBaseUrl();
-    int[] Decode(string key) => _helpers.DecodeHash(key);
+    int[] Decode(string key) => _hashids.Decode(key);
 
-    public async Task<Result<IEnumerable<CourseResponse>>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<PaginatedList<CourseResponse>>> GetAllAsync(
+                                        RequestFilters filters,
+                                        CancellationToken cancellationToken = default)
     {
-        var courses = await _context.Courses
+        var query = _context.Courses
+            .Where(c => !c.IsDeleted)
+            .AsNoTracking();
+
+        if (!string.IsNullOrEmpty(filters.SearchValue))
+        {
+            query = query.Where(c =>
+                c.Title.Contains(filters.SearchValue) ||
+                c.Description.Contains(filters.SearchValue));
+        }
+
+        if (!string.IsNullOrEmpty(filters.SortColumn))
+        {
+            query = query.OrderBy($"{filters.SortColumn} {filters.SortDirection}");
+        }
+
+        var source = query
             .Include(c => c.Tags)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .ProjectToType<CourseResponse>();
 
-        foreach (var course in courses)
-            course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
+        var baseUrl = BaseUrl();
 
-        var response = courses.Adapt<IEnumerable<CourseResponse>>();
+        var paginatedCourses = await PaginatedList<CourseResponse>.CreateAsync(
+            source,
+            filters.PageNumber,
+            filters.PageSize,
+            transform: c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
+            cancellationToken
+        );
 
-        return Result.Success(response);
+        return Result.Success(paginatedCourses);
     }
-
     public async Task<Result<CourseResponse>> GetByIdAsync(string keyId, CancellationToken cancellationToken = default)
     {
         int[] numbers = Decode(keyId);
@@ -197,159 +219,245 @@ public class CourseService(ApplicationDbContext context,
         return Result.Success(response);
     }
 
-    public async Task<Result> DeleteAsync(string keyId, string userId, CancellationToken cancellationToken = default)
+    public async Task<Result> EnrollAsync(string keyId, string userId, CancellationToken cancellationToken = default)
     {
         int[] numbers = Decode(keyId);
-
         if (numbers.Length == 0)
             return Result.Failure(CourseErrors.CourseNotFound);
-
         int courseId = numbers[0];
 
-        var course = await _context.Courses
-            .Include(c => c.Topics)
-            .Include(c => c.Tags)
-            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+        int studentMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
 
-        if (course is null)
-            return Result.Failure(CourseErrors.CourseNotFound);
+        var courseUser = await _context.CourseUsers
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId, cancellationToken);
 
-        // Soft-delete: mark as deleted instead of removing
-        course.IsDeleted = true;
-        course.DeletedOn = DateTime.UtcNow;
-        course.DeletedById = userId;
-        course.UpdatedOn = DateTime.UtcNow;
-        course.UpdatedById = userId;
-
-        // If you want to remove stored image on delete, uncomment below. For soft-delete we keep the asset.
-        // if (course.ImageUrl != DefaultCourseImagePath())
-        //     _fileService.Delete(course.ImageUrl);
-
-        //_context.Courses.Remove(course);
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return Result.Success();
-    }
-
-    public async Task<Result<PagedResult<CourseResponse>>> GetPagedAsync(int page = 1, int pageSize = 10, int? tagId = null, CancellationToken cancellationToken = default)
-    {
-        if (page <= 0 || pageSize <= 0)
-            return Result.Failure<PagedResult<CourseResponse>>(CourseErrors.CourseInvalidData);
-
-        IQueryable<Course> query = _context.Courses
-            .Include(c => c.Tags)
-            .Include(c => c.Topics)
-            .AsNoTracking();
-
-        if (tagId.HasValue)
+        if (courseUser is null)
         {
-            query = query.Where(c => c.Tags.Any(t => t.Id == tagId.Value));
+            courseUser = new CourseUser
+            {
+                CourseId = courseId,
+                UserId = userId,
+                PermissionsMask = studentMask,
+                IsDeleted = false
+            };
+
+            await _context.CourseUsers.AddAsync(courseUser, cancellationToken);
+        }
+        else if (courseUser.IsDeleted)
+        {
+            courseUser.IsDeleted = false;
+            courseUser.PermissionsMask = studentMask;
+        }
+        else
+        {
+            // Optional: Ensure they have at least Student access
+            courseUser.PermissionsMask |= studentMask;
         }
 
-        var total = await query.CountAsync(cancellationToken);
-
-        var items = await query
-            .OrderByDescending(c => c.CreatedOn)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        foreach (var course in items)
-            course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
-
-        var responseItems = items.Adapt<IEnumerable<CourseResponse>>();
-
-        var paged = new PagedResult<CourseResponse>(responseItems, page, pageSize, total, (int)Math.Ceiling((double)total / pageSize));
-
-        return Result.Success(paged);
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
     }
 
-    public async Task<Result<PagedResult<CourseResponse>>> GetDeletedAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
-    {
-        if (page <= 0 || pageSize <= 0)
-            return Result.Failure<PagedResult<CourseResponse>>(CourseErrors.CourseInvalidData);
-
-        var query = _context.Courses
-            .IgnoreQueryFilters()
-            .Where(c => c.IsDeleted)
-            .Include(c => c.Tags)
-            .Include(c => c.Topics)
-            .AsNoTracking();
-
-        var total = await query.CountAsync(cancellationToken);
-
-        var items = await query
-            .OrderByDescending(c => c.DeletedOn)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(cancellationToken);
-
-        foreach (var course in items)
-            course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
-
-        var responseItems = items.Adapt<IEnumerable<CourseResponse>>();
-
-        var paged = new PagedResult<CourseResponse>(responseItems, page, pageSize, total, (int)Math.Ceiling((double)total / pageSize));
-
-        return Result.Success(paged);
-    }
-
-    public async Task<Result> RestoreAsync(string keyId, CancellationToken cancellationToken = default)
+    public async Task<Result> UnenrollAsync(string keyId, string userId, CancellationToken cancellationToken = default)
     {
         int[] numbers = Decode(keyId);
-
         if (numbers.Length == 0)
             return Result.Failure(CourseErrors.CourseNotFound);
 
         int courseId = numbers[0];
 
-        var course = await _context.Courses
-            .IgnoreQueryFilters()
-            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+        var enrollment = await _context.CourseUsers
+            .SingleOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId, cancellationToken);
 
-        if (course is null)
-            return Result.Failure(CourseErrors.CourseNotFound);
+        if (enrollment is null || enrollment.IsDeleted)
+            return Result.Failure(CourseErrors.UserNotEnrolled);
 
-        course.IsDeleted = false;
-        course.DeletedOn = null;
-        course.DeletedById = null;
-        course.UpdatedOn = DateTime.UtcNow;
-        course.UpdatedById = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        int ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
+
+        if ((enrollment.PermissionsMask & ownerMask) == ownerMask)
+        {
+            return Result.Failure(CourseErrors.OwnerCannotUnenroll);
+        }
+
+        enrollment.IsDeleted = true;
 
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
     }
-
-    public async Task<Result> PurgeAsync(string keyId, CancellationToken cancellationToken = default)
+    public async Task<Result<IEnumerable<CourseResponse>>> GetEnrolledCoursesAsync(string userId, CancellationToken cancellationToken = default)
     {
-        int[] numbers = Decode(keyId);
+        int ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
 
-        if (numbers.Length == 0)
-            return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
+        var courses = await _context.CourseUsers
+            .Where(cu => cu.UserId == userId && !cu.IsDeleted && (ownerMask & cu.PermissionsMask) != ownerMask)
+            .Include(cu => cu.Course)
+            .Select(cu => cu.Course)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
 
-        int courseId = numbers[0];
+        foreach (var course in courses)
+            course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
 
-        var course = await _context.Courses
-            .IgnoreQueryFilters()
-            .Include(c => c.Topics)
-            .Include(c => c.Tags)
-            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+        var response = courses.Adapt<IEnumerable<CourseResponse>>();
 
-        if (course is null)
-            return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
-
-        // delete stored image if not default
-        if (course.ImageUrl != DefaultCourseImagePath())
-            _fileService.Delete(course.ImageUrl);
-
-        _context.Courses.Remove(course);
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        return Result.Success();
+        return Result.Success(response);
     }
+
+    //public async Task<Result> DeleteAsync(string keyId, string userId, CancellationToken cancellationToken = default)
+    //{
+    //    int[] numbers = Decode(keyId);
+
+    //    if (numbers.Length == 0)
+    //        return Result.Failure(CourseErrors.CourseNotFound);
+
+    //    int courseId = numbers[0];
+
+    //var course = await _context.Courses
+    //    .Include(c => c.Topics)
+    //    .Include(c => c.Tags)
+    //    .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+    //    if (course is null)
+    //        return Result.Failure(CourseErrors.CourseNotFound);
+
+    //    // Soft-delete: mark as deleted instead of removing
+    //    course.IsDeleted = true;
+    //    course.DeletedOn = DateTime.UtcNow;
+    //    course.DeletedById = userId;
+    //    course.UpdatedOn = DateTime.UtcNow;
+    //    course.UpdatedById = userId;
+
+    //    // If you want to remove stored image on delete, uncomment below. For soft-delete we keep the asset.
+    //    // if (course.ImageUrl != DefaultCourseImagePath())
+    //    //     _fileService.Delete(course.ImageUrl);
+
+    //    //_context.Courses.Remove(course);
+
+    //    await _context.SaveChangesAsync(cancellationToken);
+
+    //    return Result.Success();
+    //}
+
+    //public async Task<Result<PagedResult<CourseResponse>>> GetPagedAsync(int page = 1, int pageSize = 10, int? tagId = null, CancellationToken cancellationToken = default)
+    //{
+    //    if (page <= 0 || pageSize <= 0)
+    //        return Result.Failure<PagedResult<CourseResponse>>(CourseErrors.CourseInvalidData);
+
+    //    IQueryable<Course> query = _context.Courses
+    //        .Include(c => c.Tags)
+    //        .Include(c => c.Topics)
+    //        .AsNoTracking();
+
+    //    if (tagId.HasValue)
+    //    {
+    //        query = query.Where(c => c.Tags.Any(t => t.Id == tagId.Value));
+    //    }
+
+    //    var total = await query.CountAsync(cancellationToken);
+
+    //    var items = await query
+    //        .OrderByDescending(c => c.CreatedOn)
+    //        .Skip((page - 1) * pageSize)
+    //        .Take(pageSize)
+    //        .ToListAsync(cancellationToken);
+
+    //    foreach (var course in items)
+    //        course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
+
+    //    var responseItems = items.Adapt<IEnumerable<CourseResponse>>();
+
+    //    var paged = new PagedResult<CourseResponse>(responseItems, page, pageSize, total, (int)Math.Ceiling((double)total / pageSize));
+
+    //    return Result.Success(paged);
+    //}
+
+    //public async Task<Result<PagedResult<CourseResponse>>> GetDeletedAsync(int page = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+    //{
+    //    if (page <= 0 || pageSize <= 0)
+    //        return Result.Failure<PagedResult<CourseResponse>>(CourseErrors.CourseInvalidData);
+
+    //    var query = _context.Courses
+    //        .IgnoreQueryFilters()
+    //        .Where(c => c.IsDeleted)
+    //        .Include(c => c.Tags)
+    //        .Include(c => c.Topics)
+    //        .AsNoTracking();
+
+    //    var total = await query.CountAsync(cancellationToken);
+
+    //    var items = await query
+    //        .OrderByDescending(c => c.DeletedOn)
+    //        .Skip((page - 1) * pageSize)
+    //        .Take(pageSize)
+    //        .ToListAsync(cancellationToken);
+
+    //    foreach (var course in items)
+    //        course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
+
+    //    var responseItems = items.Adapt<IEnumerable<CourseResponse>>();
+
+    //    var paged = new PagedResult<CourseResponse>(responseItems, page, pageSize, total, (int)Math.Ceiling((double)total / pageSize));
+
+    //    return Result.Success(paged);
+    //}
+
+    //public async Task<Result> RestoreAsync(string keyId, CancellationToken cancellationToken = default)
+    //{
+    //    int[] numbers = Decode(keyId);
+
+    //    if (numbers.Length == 0)
+    //        return Result.Failure(CourseErrors.CourseNotFound);
+
+    //    int courseId = numbers[0];
+
+    //    var course = await _context.Courses
+    //        .IgnoreQueryFilters()
+    //        .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+    //    if (course is null)
+    //        return Result.Failure(CourseErrors.CourseNotFound);
+
+    //    course.IsDeleted = false;
+    //    course.DeletedOn = null;
+    //    course.DeletedById = null;
+    //    course.UpdatedOn = DateTime.UtcNow;
+    //    course.UpdatedById = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    //    await _context.SaveChangesAsync(cancellationToken);
+
+    //    return Result.Success();
+    //}
+
+    //public async Task<Result> PurgeAsync(string keyId, CancellationToken cancellationToken = default)
+    //{
+    //    int[] numbers = Decode(keyId);
+
+    //    if (numbers.Length == 0)
+    //        return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
+
+    //    int courseId = numbers[0];
+
+    //    var course = await _context.Courses
+    //        .IgnoreQueryFilters()
+    //        .Include(c => c.Topics)
+    //        .Include(c => c.Tags)
+    //        .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+    //    if (course is null)
+    //        return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
+
+    //    // delete stored image if not default
+    //    if (course.ImageUrl != DefaultCourseImagePath())
+    //        _fileService.Delete(course.ImageUrl);
+
+    //    _context.Courses.Remove(course);
+
+    //    await _context.SaveChangesAsync(cancellationToken);
+
+    //    return Result.Success();
+    //}
 
     private string DefaultCourseImagePath()
     {

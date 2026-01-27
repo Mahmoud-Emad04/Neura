@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 using Neura.Core.Entities;
 using System.Reflection;
 using System.Security.Claims;
@@ -24,7 +23,6 @@ public class ApplicationDbContext(
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
         // Global query filter to exclude soft-deleted courses
-        modelBuilder.Entity<Course>().HasQueryFilter(c => !c.IsDeleted);
 
         var cascadFks = modelBuilder.Model
             .GetEntityTypes()
@@ -32,7 +30,11 @@ public class ApplicationDbContext(
             .Where(fk => !fk.IsOwnership && fk.DeleteBehavior == DeleteBehavior.Cascade);
 
         foreach (var fk in cascadFks)
+        {
+            if (fk.DeclaringEntityType.ClrType == typeof(CourseUser))
+                continue;
             fk.DeleteBehavior = DeleteBehavior.Restrict;
+        }
 
         //modelBuilder.Entity<Answer>().HasQueryFilter(a => a.IsActive);
 
