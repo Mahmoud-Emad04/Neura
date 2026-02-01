@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace Neura.Core.Entities;
+﻿namespace Neura.Core.Entities;
 
 public class Tag
 {

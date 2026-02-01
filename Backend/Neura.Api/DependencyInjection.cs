@@ -1,4 +1,6 @@
-﻿using Hangfire;
+﻿using System.Reflection;
+using System.Text;
+using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -13,8 +15,6 @@ using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
-using System.Reflection;
-using System.Text;
 
 namespace Neura.Api;
 
@@ -33,7 +33,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -41,7 +41,7 @@ public static class DependencyInjection
 
         services.AddFluentValidation();
 
-        services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Neura.Core.Entities.Course).Assembly, typeof(Neura.Services.Services.CourseService).Assembly);
+        services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Course).Assembly, typeof(CourseService).Assembly);
 
         services.AddProblemDetails();
 
@@ -54,7 +54,8 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         services.AddDataProtection().SetApplicationName(nameof(Neura));
-        services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", minHashLength: 11));
+        services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", 11));
+
         #region AddInjection
 
         services.AddScoped<IAuthService, AuthService>();
@@ -64,6 +65,7 @@ public static class DependencyInjection
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
+
         #endregion
 
 
@@ -74,10 +76,7 @@ public static class DependencyInjection
     {
         //var serviceProvider = services.BuildServiceProvider();
 
-        services.AddOpenApi(options =>
-        {
-            options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
-        });
+        services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
 
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
@@ -126,8 +125,8 @@ public static class DependencyInjection
     private static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddIdentity<ApplicationUser, ApplicationRole>()
-                   .AddEntityFrameworkStores<ApplicationDbContext>()
-                   .AddDefaultTokenProviders();
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
 
         services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
         services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();

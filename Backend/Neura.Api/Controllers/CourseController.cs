@@ -1,23 +1,22 @@
-﻿using Neura.Api.Extensions;
+﻿using System.Security.Claims;
+using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
-using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-
 public class CourseController(ICourseService courseService, ILogger<CourseController> logger) : ControllerBase
 {
     private readonly ICourseService _courseService = courseService;
     private readonly ILogger<CourseController> _logger = logger;
 
     /// <summary>
-    /// Retrieves a paginated list of courses based on dynamic filters.
+    ///     Retrieves a paginated list of courses based on dynamic filters.
     /// </summary>
     /// <param name="filters">The pagination, search, and sorting parameters to apply to the query.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -29,11 +28,12 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     {
         return Ok((await _courseService.GetAllAsync(filters, cancellationToken)).Value);
     }
+
     /// <summary>
-    /// Retrieves a specific course by its hashed ID.
+    ///     Retrieves a specific course by its hashed ID.
     /// </summary>
     /// <remarks>
-    /// ⚠️ **Important:** Provide the public string HashId (e.g., "Xy7zK"), not the integer database ID.
+    ///     ⚠️ **Important:** Provide the public string HashId (e.g., "Xy7zK"), not the integer database ID.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -42,7 +42,6 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     /// <response code="404">If the course HashId is invalid or does not exist</response>
     [ProducesResponseType(typeof(CourseResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-
     [HttpGet("{courseId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetById([FromRoute] string courseId, CancellationToken cancellationToken)
@@ -53,10 +52,11 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
             ? Ok(course.Value)
             : course.ToProblem();
     }
+
     /// Creates a new course and assigns the creator as the Owner.
     /// </summary>
     /// <remarks>
-    /// The user creating the course is automatically added to the `CourseUsers` table with 'Owner' permissions.
+    ///     The user creating the course is automatically added to the `CourseUsers` table with 'Owner' permissions.
     /// </remarks>
     /// <param name="Request">The course creation payload.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -65,21 +65,22 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     /// <response code="400">If validation fails (e.g. invalid tags)</response>
     [ProducesResponseType(typeof(CourseResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
-
     [HttpPost("")]
     public async Task<IActionResult> Create([FromBody] CourseRequest Request, CancellationToken cancellationToken)
     {
-        var result = await _courseService.CreateAsync(Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+        var result = await _courseService.CreateAsync(Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!,
+            cancellationToken);
 
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetById), new { courseId = result.Value.KeyId }, null)
             : result.ToProblem();
     }
+
     /// <summary>
-    /// Uploads or updates the cover image for a course.
+    ///     Uploads or updates the cover image for a course.
     /// </summary>
     /// <remarks>
-    /// Requires `multipart/form-data`. The old image is deleted if it exists.
+    ///     Requires `multipart/form-data`. The old image is deleted if it exists.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="UploadImage">The form file containing the image.</param>
@@ -88,19 +89,21 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     /// <response code="404">Course not found</response>
     [ProducesResponseType(typeof(Error), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-
     [HttpPut("update-image/{courseId}")]
     [HasCoursePermission(Permissions.UpdateCourses)]
-    public async Task<IActionResult> UpdateImage([FromRoute] string courseId, [FromForm] UploadImageRequest UploadImage, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateImage([FromRoute] string courseId, [FromForm] UploadImageRequest UploadImage,
+        CancellationToken cancellationToken)
     {
-        var result = await _courseService.UpdateImageAsync(courseId, UploadImage, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+        var result = await _courseService.UpdateImageAsync(courseId, UploadImage,
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess
             ? NoContent()
             : result.ToProblem();
     }
+
     /// <summary>
-    /// Updates the text details (Title, Description, Tags) of a course.
+    ///     Updates the text details (Title, Description, Tags) of a course.
     /// </summary>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="Request">The update payload.</param>
@@ -109,12 +112,13 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     /// <response code="404">Course or Tags not found</response>
     [ProducesResponseType(typeof(Error), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-
     [HttpPut("{courseId}")]
     [HasCoursePermission(Permissions.UpdateCourses)]
-    public async Task<IActionResult> Update([FromRoute] string courseId, [FromBody] CourseUpdateRequest Request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update([FromRoute] string courseId, [FromBody] CourseUpdateRequest Request,
+        CancellationToken cancellationToken)
     {
-        var result = await _courseService.UpdateAsync(courseId, Request, User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
+        var result = await _courseService.UpdateAsync(courseId, Request,
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!, cancellationToken);
 
         return result.IsSuccess
             ? NoContent()
@@ -122,11 +126,11 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     }
 
     /// <summary>
-    /// Enrolls the current user in a specific course.
+    ///     Enrolls the current user in a specific course.
     /// </summary>
     /// <remarks>
-    /// This is an idempotent operation. If the user was previously enrolled (and soft-deleted), 
-    /// this restores their access.
+    ///     This is an idempotent operation. If the user was previously enrolled (and soft-deleted),
+    ///     this restores their access.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -146,10 +150,10 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     }
 
     /// <summary>
-    /// Retrieves all courses the current user is currently learning.
+    ///     Retrieves all courses the current user is currently learning.
     /// </summary>
     /// <remarks>
-    /// Returns only active enrollments (excludes soft-deleted ones).
+    ///     Returns only active enrollments (excludes soft-deleted ones).
     /// </remarks>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="200">Returns the list of enrolled courses.</response>
@@ -164,11 +168,11 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     }
 
     /// <summary>
-    /// Unenrolls the current user from a course.
+    ///     Unenrolls the current user from a course.
     /// </summary>
     /// <remarks>
-    /// - **Students:** The enrollment is soft-deleted.
-    /// - **Owners:** Cannot unenroll (must delete course or transfer ownership).
+    ///     - **Students:** The enrollment is soft-deleted.
+    ///     - **Owners:** Cannot unenroll (must delete course or transfer ownership).
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken"></param>
@@ -190,6 +194,7 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     }
 
     #region TOREVIEW
+
     //// Need to review
     //[HttpDelete("{courseId}")]
     //[HasCoursePermission(Permissions.DeleteCourses)]
@@ -246,5 +251,6 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     //        ? NoContent()
     //        : result.ToProblem();
     //}
+
     #endregion
 }

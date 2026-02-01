@@ -21,7 +21,8 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
             .NotEmpty()
             .MinimumLength(8)
             .Matches(RegexPatterns.Password)
-            .WithMessage("Password must be at least 8 characters and include at least one lowercase letter, one uppercase letter, one digit, and one special character.");
+            .WithMessage(
+                "Password must be at least 8 characters and include at least one lowercase letter, one uppercase letter, one digit, and one special character.");
 
         RuleFor(r => r.FirstName)
             .NotEmpty()

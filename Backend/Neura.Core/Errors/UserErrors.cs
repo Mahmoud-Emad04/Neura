@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Neura.Core.Abstractions;
+﻿using Neura.Core.Abstractions;
 
 namespace Neura.Core.Errors;
 

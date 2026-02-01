@@ -15,10 +15,8 @@ public class BlockedSignaturesValidator : AbstractValidator<IFormFile>
                 var fileSequenceHex = BitConverter.ToString(bytes);
 
                 foreach (var signature in FileSettings.BlockedSignatures)
-                {
                     if (signature.Equals(fileSequenceHex, StringComparison.OrdinalIgnoreCase))
                         return false;
-                }
                 return true;
             })
             .WithMessage("Invalid file signature")

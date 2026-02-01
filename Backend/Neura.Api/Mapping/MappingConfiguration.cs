@@ -1,5 +1,4 @@
-﻿using Neura.Core.Contracts.Course;
-using HashidsNet;
+﻿using HashidsNet;
 
 namespace Neura.Api.Mapping;
 
@@ -12,7 +11,7 @@ public class MappingConfiguration : IRegister
         config.NewConfig<Course, CourseResponse>()
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))
             .Map(dest => dest.Topics, src => src.Topics.Adapt<List<TopicResponse>>());
-            //.Map(dest => dest.Tags, src => src.Topics.Adapt<List<TagResponse>>());
+        //.Map(dest => dest.Tags, src => src.Topics.Adapt<List<TagResponse>>());
 
         config.NewConfig<CourseRequest, Course>()
             .Ignore(src => src.Tags);

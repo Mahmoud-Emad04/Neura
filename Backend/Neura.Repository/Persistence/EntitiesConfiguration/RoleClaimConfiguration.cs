@@ -7,8 +7,7 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim
         var permissions = Permissions.GetAll();
         var roleClaims = new List<IdentityRoleClaim<string>>();
 
-        for (int i = 0; i < permissions.Count; i++)
-        {
+        for (var i = 0; i < permissions.Count; i++)
             roleClaims.Add(new IdentityRoleClaim<string>
             {
                 Id = i + 1,
@@ -16,7 +15,6 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim
                 ClaimType = Permissions.Type,
                 ClaimValue = permissions[i]
             });
-        }
 
         //int idCounter = roleClaims.Count() + 100;
 

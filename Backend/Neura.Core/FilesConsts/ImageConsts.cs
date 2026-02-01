@@ -2,6 +2,6 @@
 
 public static class ImageConsts
 {
-    public readonly static string Course = "Course";
-    public readonly static string DefaultCourseImage = "default-course-image.jpg";
+    public static readonly string Course = "Course";
+    public static readonly string DefaultCourseImage = "default-course-image.jpg";
 }

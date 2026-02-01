@@ -8,7 +8,7 @@ public class AuthRequestValidator : AbstractValidator<LoginRequest>
     {
         RuleFor(x => x.UserNameOrEmail)
             .NotEmpty().WithMessage("Username or email is required.");
-           
+
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.");
     }

@@ -4,8 +4,6 @@
 
 public static class Permissions
 {
-    public static string Type { get; } = "permissions";
-
     public const string GetCourses = "courses:read";
     public const string AddCourses = "courses:add";
     public const string UpdateCourses = "courses:update";
@@ -20,10 +18,15 @@ public static class Permissions
     public const string UpdateRoles = "roles:update";
 
     public const string Results = "results:read";
+    public static string Type { get; } = "permissions";
 
-    public static List<string?> GetAll() =>
-        typeof(Permissions).GetFields().Select(x => x.GetValue(x) as string).ToList();
+    public static List<string?> GetAll()
+    {
+        return typeof(Permissions).GetFields().Select(x => x.GetValue(x) as string).ToList();
+    }
 
-    public static List<string?> GetAllCoursePermissions() =>
-        [GetCourses, UpdateCourses, DeleteCourses];
+    public static List<string?> GetAllCoursePermissions()
+    {
+        return [GetCourses, UpdateCourses, DeleteCourses];
+    }
 }

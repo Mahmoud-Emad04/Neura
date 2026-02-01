@@ -25,27 +25,27 @@ public static class CourseRolePermissionMap
     public static readonly Dictionary<string, int> RolePermissionsMask = new()
     {
         [DefaultRoles.CourseOwner] =
-        (int)CoursePermission.AccessContent |
-        (int)CoursePermission.GradeAssignment |
-        (int)CoursePermission.UpdateCourse |
-        (int)CoursePermission.DeleteCourse,
+            (int)CoursePermission.AccessContent |
+            (int)CoursePermission.GradeAssignment |
+            (int)CoursePermission.UpdateCourse |
+            (int)CoursePermission.DeleteCourse,
 
         [DefaultRoles.CoInstructor] =
-        (int)CoursePermission.AccessContent |
-        (int)CoursePermission.GradeAssignment |
-        (int)CoursePermission.UpdateCourse,
+            (int)CoursePermission.AccessContent |
+            (int)CoursePermission.GradeAssignment |
+            (int)CoursePermission.UpdateCourse,
 
         [DefaultRoles.TeachingAssistant] =
-        (int)CoursePermission.AccessContent |
-        (int)CoursePermission.GradeAssignment,
+            (int)CoursePermission.AccessContent |
+            (int)CoursePermission.GradeAssignment,
 
         [DefaultRoles.Student] =
-        (int)CoursePermission.AccessContent |
-        (int)CoursePermission.SubmitAssignment
+            (int)CoursePermission.AccessContent |
+            (int)CoursePermission.SubmitAssignment
     };
 
     public static readonly string[] AllPermissions =
     {
-        Permissions.GetCourses,Permissions.DeleteCourses , Permissions.UpdateCourses
+        Permissions.GetCourses, Permissions.DeleteCourses, Permissions.UpdateCourses
     };
 }

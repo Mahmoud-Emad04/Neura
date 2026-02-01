@@ -1,7 +1,7 @@
 ﻿namespace Neura.Core.Abstractions.Consts;
 
 [Flags]
-public enum CoursePermission : int
+public enum CoursePermission
 {
     None = 0,
 

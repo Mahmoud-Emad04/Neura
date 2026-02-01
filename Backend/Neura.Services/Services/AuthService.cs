@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
+﻿using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.WebUtilities;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
-using System.Security.Cryptography;
-using System.Text;
+
 namespace Neura.Services.Services;
 
 public class AuthService(
@@ -13,19 +14,20 @@ public class AuthService(
     IHttpContextAccessor httpContextAccessor,
     ILogger<AuthService> logger) : IAuthService
 {
-    private readonly IJwtProvider _jwtProvider = jwtProvider;
+    private readonly ApplicationDbContext _context = context;
+
     //private readonly IEmailSender _emailSender = emailSender;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly IJwtProvider _jwtProvider = jwtProvider;
     private readonly ILogger<AuthService> _logger = logger;
     private readonly int _refreshTokenExpiryDays = 14;
-    private readonly ApplicationDbContext _context = context;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
 
     public async Task<Result<AuthResponse>> GetTokenAsync(string userNameOrEmail, string password,
         CancellationToken cancellationToken = default)
     {
-
-        var user = await _userManager.Users.SingleOrDefaultAsync(u => u.Email == userNameOrEmail || u.UserName == userNameOrEmail, cancellationToken);
+        var user = await _userManager.Users.SingleOrDefaultAsync(
+            u => u.Email == userNameOrEmail || u.UserName == userNameOrEmail, cancellationToken);
 
         if (user is null)
             return Result.Failure<AuthResponse>(UserErrors.UserNotFound);
@@ -54,14 +56,16 @@ public class AuthService(
 
         await _userManager.UpdateAsync(user);
 
-        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName, user.LastName, token, expires,
+        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName,
+            user.LastName, token, expires,
             refreshToken,
             refreshTokenExpiry);
 
         return Result.Success(response);
     }
+
     public async Task<Result<AuthResponse>> GetRefreshTokenAsync(string token, string refreshToken,
-     CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
         var userId = _jwtProvider.ValidateToken(token);
 
@@ -94,7 +98,8 @@ public class AuthService(
 
         await _userManager.UpdateAsync(user);
 
-        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName, user.LastName, newtoken, expires,
+        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName,
+            user.LastName, newtoken, expires,
             newrefreshToken,
             refreshTokenExpiry);
 
@@ -237,8 +242,8 @@ public class AuthService(
         await SendResetPasswordEmail(user, code);
 
         return Result.Success();
-
     }
+
     public async Task<Result> ResetPasswordAsync(ResetPasswordRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
@@ -304,18 +309,19 @@ public class AuthService(
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 
-    private async Task<(IEnumerable<string> roles, IEnumerable<string> permissions)> GetUserRolesAndPermissionsAsync(ApplicationUser user, CancellationToken cancellationToken)
+    private async Task<(IEnumerable<string> roles, IEnumerable<string> permissions)> GetUserRolesAndPermissionsAsync(
+        ApplicationUser user, CancellationToken cancellationToken)
     {
         var userRoles = await _userManager.GetRolesAsync(user);
 
         var userPermissions = await (
-                    from r in _context.Roles
-                    join c in _context.RoleClaims
+                from r in _context.Roles
+                join c in _context.RoleClaims
                     on r.Id equals c.RoleId
-                    where userRoles.Contains(r.Name!)
-                    select c.ClaimValue
-                ).Distinct()
-                 .ToListAsync(cancellationToken);
+                where userRoles.Contains(r.Name!)
+                select c.ClaimValue
+            ).Distinct()
+            .ToListAsync(cancellationToken);
 
         return (userRoles, userPermissions);
     }

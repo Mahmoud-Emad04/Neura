@@ -1,8 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
-using Neura.Core.Entities;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
+﻿using Neura.Core.Entities;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
@@ -24,8 +20,7 @@ public class UserConfiguration : IEntityTypeConfiguration<ApplicationUser>
         builder.Property(u => u.DiscordHandle).HasMaxLength(100);
         var passwordHasher = new PasswordHasher<ApplicationUser>();
 
-        builder.HasData([
-            new ApplicationUser
+        builder.HasData(new ApplicationUser
         {
             Id = DefaultUsers.AdminId,
             UserName = DefaultUsers.AdminUsername,
@@ -38,6 +33,6 @@ public class UserConfiguration : IEntityTypeConfiguration<ApplicationUser>
             SecurityStamp = DefaultUsers.AdminSecurityStamp,
             ConcurrencyStamp = DefaultUsers.AdminConcurrencyStamp,
             PasswordHash = DefaultUsers.AdminPasswordHash
-        }]);
+        });
     }
 }

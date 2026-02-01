@@ -1,51 +1,45 @@
+using System.Linq.Dynamic.Core;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Core.FilesConsts;
 using Neura.Services.Helpers;
-using System.Linq.Dynamic.Core;
 
 namespace Neura.Services.Services;
 
-public class CourseService(ApplicationDbContext context,
-                            IFileService fileService,
-                            IServiceHelpers helpers,
-                            IHttpContextAccessor httpContextAccessor,
-                            RoleManager<ApplicationRole> roleManager,
-                            UserManager<ApplicationUser> userManager,
-                            ILogger<CourseService> logger) : ICourseService
+public class CourseService(
+    ApplicationDbContext context,
+    IFileService fileService,
+    IServiceHelpers helpers,
+    IHttpContextAccessor httpContextAccessor,
+    RoleManager<ApplicationRole> roleManager,
+    UserManager<ApplicationUser> userManager,
+    ILogger<CourseService> logger) : ICourseService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
+    private readonly Hashids _hashids = new("Course", 8);
     private readonly IServiceHelpers _helpers = helpers;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly ILogger<CourseService> _logger = logger;
     private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
-    private readonly ILogger<CourseService> _logger = logger;
-    private readonly Hashids _hashids = new("Course", 8);
-
-    string BaseUrl() => _helpers.GetBaseUrl();
-    int[] Decode(string key) => _hashids.Decode(key);
 
     public async Task<Result<PaginatedList<CourseResponse>>> GetAllAsync(
-                                        RequestFilters filters,
-                                        CancellationToken cancellationToken = default)
+        RequestFilters filters,
+        CancellationToken cancellationToken = default)
     {
         var query = _context.Courses
             .Where(c => !c.IsDeleted)
             .AsNoTracking();
 
         if (!string.IsNullOrEmpty(filters.SearchValue))
-        {
             query = query.Where(c =>
                 c.Title.Contains(filters.SearchValue) ||
                 c.Description.Contains(filters.SearchValue));
-        }
 
         if (!string.IsNullOrEmpty(filters.SortColumn))
-        {
             query = query.OrderBy($"{filters.SortColumn} {filters.SortDirection}");
-        }
 
         var source = query
             .Include(c => c.Tags)
@@ -57,20 +51,21 @@ public class CourseService(ApplicationDbContext context,
             source,
             filters.PageNumber,
             filters.PageSize,
-            transform: c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
+            c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
             cancellationToken
         );
 
         return Result.Success(paginatedCourses);
     }
+
     public async Task<Result<CourseResponse>> GetByIdAsync(string keyId, CancellationToken cancellationToken = default)
     {
-        int[] numbers = Decode(keyId);
+        var numbers = Decode(keyId);
 
         if (numbers.Length == 0)
             return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
 
-        int courseId = numbers[0];
+        var courseId = numbers[0];
 
         var course = await _context.Courses
             .Include(c => c.Topics)
@@ -101,8 +96,8 @@ public class CourseService(ApplicationDbContext context,
             return Result.Failure<CourseResponse>(CourseErrors.CourseInvalidData);
 
         var tags = await _context.Tags
-                        .Where(t => request.Tags.Contains(t.Id))
-                        .ToListAsync(cancellationToken);
+            .Where(t => request.Tags.Contains(t.Id))
+            .ToListAsync(cancellationToken);
 
         if (tags.Count() != request.Tags.Count())
             return Result.Failure<CourseResponse>(CourseErrors.CourseTagNotFound);
@@ -148,14 +143,16 @@ public class CourseService(ApplicationDbContext context,
 
         return Result.Success(course.Adapt<CourseResponse>());
     }
-    public async Task<Result> UpdateImageAsync(string keyId, UploadImageRequest uploadImage, string userId, CancellationToken cancellationToken = default)
+
+    public async Task<Result> UpdateImageAsync(string keyId, UploadImageRequest uploadImage, string userId,
+        CancellationToken cancellationToken = default)
     {
-        int[] numbers = Decode(keyId);
+        var numbers = Decode(keyId);
 
         if (numbers.Length == 0)
             return Result.Failure(CourseErrors.CourseNotFound);
 
-        int courseId = numbers[0];
+        var courseId = numbers[0];
 
         var course = await _context.Courses
             .Include(c => c.Topics)
@@ -176,14 +173,16 @@ public class CourseService(ApplicationDbContext context,
 
         return Result.Success();
     }
-    public async Task<Result<CourseResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, string userId, CancellationToken cancellationToken = default)
+
+    public async Task<Result<CourseResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, string userId,
+        CancellationToken cancellationToken = default)
     {
-        int[] numbers = Decode(keyId);
+        var numbers = Decode(keyId);
 
         if (numbers.Length == 0)
             return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
 
-        int courseId = numbers[0];
+        var courseId = numbers[0];
 
         var course = await _context.Courses
             .Include(c => c.Tags)
@@ -221,12 +220,12 @@ public class CourseService(ApplicationDbContext context,
 
     public async Task<Result> EnrollAsync(string keyId, string userId, CancellationToken cancellationToken = default)
     {
-        int[] numbers = Decode(keyId);
+        var numbers = Decode(keyId);
         if (numbers.Length == 0)
             return Result.Failure(CourseErrors.CourseNotFound);
-        int courseId = numbers[0];
+        var courseId = numbers[0];
 
-        int studentMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+        var studentMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
 
         var courseUser = await _context.CourseUsers
             .IgnoreQueryFilters()
@@ -261,11 +260,11 @@ public class CourseService(ApplicationDbContext context,
 
     public async Task<Result> UnenrollAsync(string keyId, string userId, CancellationToken cancellationToken = default)
     {
-        int[] numbers = Decode(keyId);
+        var numbers = Decode(keyId);
         if (numbers.Length == 0)
             return Result.Failure(CourseErrors.CourseNotFound);
 
-        int courseId = numbers[0];
+        var courseId = numbers[0];
 
         var enrollment = await _context.CourseUsers
             .SingleOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId, cancellationToken);
@@ -273,12 +272,10 @@ public class CourseService(ApplicationDbContext context,
         if (enrollment is null || enrollment.IsDeleted)
             return Result.Failure(CourseErrors.UserNotEnrolled);
 
-        int ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
+        var ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
 
         if ((enrollment.PermissionsMask & ownerMask) == ownerMask)
-        {
             return Result.Failure(CourseErrors.OwnerCannotUnenroll);
-        }
 
         enrollment.IsDeleted = true;
 
@@ -286,9 +283,11 @@ public class CourseService(ApplicationDbContext context,
 
         return Result.Success();
     }
-    public async Task<Result<IEnumerable<CourseResponse>>> GetEnrolledCoursesAsync(string userId, CancellationToken cancellationToken = default)
+
+    public async Task<Result<IEnumerable<CourseResponse>>> GetEnrolledCoursesAsync(string userId,
+        CancellationToken cancellationToken = default)
     {
-        int ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
+        var ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
 
         var courses = await _context.CourseUsers
             .Where(cu => cu.UserId == userId && !cu.IsDeleted && (ownerMask & cu.PermissionsMask) != ownerMask)
@@ -303,6 +302,16 @@ public class CourseService(ApplicationDbContext context,
         var response = courses.Adapt<IEnumerable<CourseResponse>>();
 
         return Result.Success(response);
+    }
+
+    private string BaseUrl()
+    {
+        return _helpers.GetBaseUrl();
+    }
+
+    private int[] Decode(string key)
+    {
+        return _hashids.Decode(key);
     }
 
     //public async Task<Result> DeleteAsync(string keyId, string userId, CancellationToken cancellationToken = default)

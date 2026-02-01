@@ -4,11 +4,12 @@ namespace Neura.Services.Services;
 
 public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbContext context) : IFileService
 {
-    private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
-    private readonly string _imagesPath = $"{webHostEnvironment.WebRootPath}/Images";
     private readonly ApplicationDbContext _context = context;
+    private readonly string _imagesPath = $"{webHostEnvironment.WebRootPath}/Images";
+    private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 
-    public async Task<string> UploadImageAsync(IFormFile file, string folderName, CancellationToken cancellationToken = default)
+    public async Task<string> UploadImageAsync(IFormFile file, string folderName,
+        CancellationToken cancellationToken = default)
     {
         var ext = Path.GetExtension(file.FileName);
         var uniqueName = $"{Guid.NewGuid()}{ext}";
@@ -19,6 +20,7 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
 
         return Path.Combine("Images", folderName, uniqueName);
     }
+
     public void Delete(string imagePath)
     {
         var oldImagePath = $"{_webHostEnvironment.WebRootPath}{imagePath}";

@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-
-namespace Neura.Core.Services;
+﻿namespace Neura.Core.Services;
 
 public interface IFileService
 {

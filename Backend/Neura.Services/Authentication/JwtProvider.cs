@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Neura.Core.Authentication;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Neura.Core.Authentication;
 
 namespace Neura.Services.Authentication;
 
@@ -12,7 +12,8 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
 {
     private readonly JwtOptions _options = options.Value;
 
-    public (string Token, int ExpiresIn) GenerateToken(ApplicationUser applicationUser, IEnumerable<string> roles, IEnumerable<string> permissions)
+    public (string Token, int ExpiresIn) GenerateToken(ApplicationUser applicationUser, IEnumerable<string> roles,
+        IEnumerable<string> permissions)
     {
         Claim[] calims =
         [
@@ -48,13 +49,13 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
         try
         {
             tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                IssuerSigningKey = summetricSecurityKey,
-                ValidateIssuerSigningKey = true,
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ClockSkew = TimeSpan.Zero
-            },
+                {
+                    IssuerSigningKey = summetricSecurityKey,
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                },
                 out var validatedToken
             );
             var jwtToken = (JwtSecurityToken)validatedToken;

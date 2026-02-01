@@ -6,8 +6,12 @@ public static class DefaultUsers
     public const string AdminEmail = "Admin@Neura.org";
     public const string AdminUsername = "Admin";
     public const string AdminPassword = "AdminP@ssword-Neura1";
-    public const string AdminPasswordHash = "AQAAAAIAAYagAAAAEBDYTWQhmZWLhUtSPh1TISSaEknFYx24VlXXgkZFBH2u5xMwIe/y/EIxlg4wCpZQoQ==";
+
+    public const string AdminPasswordHash =
+        "AQAAAAIAAYagAAAAEBDYTWQhmZWLhUtSPh1TISSaEknFYx24VlXXgkZFBH2u5xMwIe/y/EIxlg4wCpZQoQ==";
+
     public const string AdminSecurityStamp = "019a1c20390e7fd89b20cddb68eed9f5";
+
     public const string AdminConcurrencyStamp = "019a1c20-390e-7fd8-9b20-cdde028f1737";
     /*
 019a1c20-390e-7fd8-9b20-cde1c80f546a

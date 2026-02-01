@@ -1,5 +1,3 @@
-using Neura.Core.Contracts.Course;
-
 namespace Neura.Api.Validation.Course;
 
 public class CourseRequestValidator : AbstractValidator<CourseRequest>

@@ -1,15 +1,15 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
 using Neura.Core.Abstractions.Consts;
-using System.Security.Claims;
 
 namespace Neura.Services.Filters;
 
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
-    private readonly IHttpContextAccessor _http;
     private readonly ApplicationDbContext _context;
     private readonly Hashids _hashids = new("Course", 8);
+    private readonly IHttpContextAccessor _http;
 
     public PermissionAuthorizationHandler(
         IHttpContextAccessor http,
@@ -23,8 +23,7 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
-        var hasGlobal = context.User.Claims.Any(
-            c => c.Type == Permissions.Type && c.Value == requirement.Permission);
+        var hasGlobal = context.User.Claims.Any(c => c.Type == Permissions.Type && c.Value == requirement.Permission);
 
         if (hasGlobal)
         {
@@ -41,7 +40,7 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
 
             var split = requirement.Permission.Split(':');
 
-            var rawPerm = $"{split[1]}:{split[2]}";//course:update
+            var rawPerm = $"{split[1]}:{split[2]}"; //course:update
 
             var values = httpContext.GetRouteData()?.Values;
 
@@ -62,7 +61,7 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
 
             var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (String.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId))
                 return;
 
             var user = await _context.CourseUsers
@@ -72,14 +71,10 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
             if (user is null)
                 return;
 
-            int permMask = CoursePermissionMap.Map[rawPerm];
+            var permMask = CoursePermissionMap.Map[rawPerm];
 
             if (CoursePermissionMap.Map.TryGetValue(rawPerm, out var value) && (value & permMask) != 0)
-            {
                 context.Succeed(requirement);
-                return;
-            }
         }
-        return;
     }
 }

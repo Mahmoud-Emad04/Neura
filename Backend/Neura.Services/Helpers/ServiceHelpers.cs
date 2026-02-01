@@ -2,8 +2,8 @@ namespace Neura.Services.Helpers;
 
 public class ServiceHelpers(IHttpContextAccessor httpContextAccessor, IHashids hashids) : IServiceHelpers
 {
-    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
     private readonly IHashids _hashids = hashids;
+    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
     public string GetBaseUrl()
     {

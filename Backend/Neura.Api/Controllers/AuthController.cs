@@ -12,7 +12,8 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
     [HttpPost("")]
     public async Task<IActionResult> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Logging with email or username : {emailOrUsername} and password {password}", loginRequest.UserNameOrEmail,
+        _logger.LogInformation("Logging with email or username : {emailOrUsername} and password {password}",
+            loginRequest.UserNameOrEmail,
             loginRequest.Password);
 
         var authResponse =
@@ -66,6 +67,7 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
             ? Ok()
             : result.ToProblem();
     }
+
     [HttpPost("resend-confirm-email")]
     public async Task<IActionResult> ResendConfirmationEmailAsync([FromBody] ResendConfirmationEmailRequest request)
     {
