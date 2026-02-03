@@ -9,13 +9,12 @@ public record CourseResponse
     public bool IsCompleted { get; set; }
     public bool IsEnrolled { get; set; }
     public int Price { get; set; }
+    public string ImageUrl { get; set; } = string.Empty;
+    public bool IsBookmarked { get; set; }
     public DateOnly Startin { get; set; }
     public DateOnly Endin { get; set; }
     public DateTime CreatedOn { get; set; }
     public DateTime? UpdatedOn { get; set; }
-
-    public string ImageUrl { get; set; } = string.Empty;
-
     public string? UpdatedById { get; set; }
     public string CreatedById { get; set; } = string.Empty;
 

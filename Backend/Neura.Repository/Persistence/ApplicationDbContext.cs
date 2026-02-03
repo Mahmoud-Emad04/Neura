@@ -1,8 +1,8 @@
-using System.Reflection;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Neura.Core.Entities;
+using System.Reflection;
+using System.Security.Claims;
 
 namespace Neura.Repository.Persistence;
 
@@ -17,7 +17,7 @@ public class ApplicationDbContext(
 
     public DbSet<CourseUser> CourseUsers { get; set; }
 
-    //public DbSet<CourseRoleMask> CourseRoleMasks { get; set; }
+    public DbSet<CourseBookmark> CourseBookmarks { get; set; }
     public DbSet<Topic> Topics { get; set; }
     public DbSet<Tag> Tags { get; set; }
 
