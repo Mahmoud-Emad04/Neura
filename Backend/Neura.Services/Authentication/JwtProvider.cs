@@ -1,10 +1,10 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Neura.Core.Authentication;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Neura.Core.Authentication;
 
 namespace Neura.Services.Authentication;
 
@@ -49,17 +49,56 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
         try
         {
             tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    IssuerSigningKey = summetricSecurityKey,
-                    ValidateIssuerSigningKey = true,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
-                },
+            {
+                IssuerSigningKey = summetricSecurityKey,
+                ValidateIssuerSigningKey = true,
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero
+            },
                 out var validatedToken
             );
             var jwtToken = (JwtSecurityToken)validatedToken;
             return jwtToken.Claims.First(x => x.Type == JwtRegisteredClaimNames.Sub).Value;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public string? GetUserIdFromExpiredToken(string token)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
+
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            IssuerSigningKey = symmetricSecurityKey,
+            ValidateIssuerSigningKey = true,
+            ValidateIssuer = false, // Matches your existing ValidateToken config
+            ValidateAudience = false, // Matches your existing ValidateToken config
+            ValidateLifetime = false // <--- CRITICAL: Allows reading expired tokens
+        };
+
+        try
+        {
+            // 1. Validate signature (but ignore expiry date)
+            var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+
+            // 2. Security Check: Prevent "None" algorithm attacks
+            // We ensure the token actually used HmacSha256
+            if (securityToken is not JwtSecurityToken jwtSecurityToken ||
+                !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return null;
+            }
+
+            // 3. Extract the User ID (Subject)
+            // Note: We access the raw jwtSecurityToken claims to ensure we find "sub" 
+            // even if the ClaimsPrincipal mapped it to something else.
+            return ((JwtSecurityToken)securityToken).Claims
+                .FirstOrDefault(x => x.Type == JwtRegisteredClaimNames.Sub)?.Value;
         }
         catch
         {

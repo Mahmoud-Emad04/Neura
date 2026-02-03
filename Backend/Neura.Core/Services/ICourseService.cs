@@ -7,7 +7,7 @@ namespace Neura.Core.Services;
 
 public interface ICourseService
 {
-    Task<Result<PaginatedList<CourseResponse>>> GetAllAsync(RequestFilters filters,
+    Task<Result<PaginatedList<CourseResponse>>> GetAllAsync(RequestFilters filters, string? userId,
         CancellationToken cancellationToken = default);
 
     Task<Result<CourseResponse>> GetByIdAsync(string keyId, CancellationToken cancellationToken = default);
@@ -27,6 +27,8 @@ public interface ICourseService
         CancellationToken cancellationToken = default);
 
     Task<Result> UnenrollAsync(string keyId, string userId, CancellationToken cancellationToken = default);
+
+    Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken);
 
     //Task<Result> DeleteAsync(string keyId, string userId, CancellationToken cancellationToken = default);
 

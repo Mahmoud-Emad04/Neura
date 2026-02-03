@@ -1,4 +1,5 @@
-﻿using Neura.Core.Abstractions;
+﻿using Microsoft.AspNetCore.Authentication;
+using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Authentication;
 
 namespace Neura.Core.Services;
@@ -21,4 +22,6 @@ public interface IAuthService
     Task<Result> ResendConfirmationEmailAsync(ResendConfirmationEmailRequest request);
     Task<Result> SendResetPasswordCodeAsync(string email);
     Task<Result> ResetPasswordAsync(ResetPasswordRequest request);
+    AuthenticationProperties GetExternalAuthProperties(string provider, string redirectUrl);
+    Task<ExternalAuthResult> HandleExternalLoginAsync();
 }

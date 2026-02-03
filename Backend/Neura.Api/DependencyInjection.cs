@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-using System.Text;
-using Hangfire;
+﻿using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -15,6 +13,8 @@ using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
+using System.Reflection;
+using System.Text;
 
 namespace Neura.Api;
 
@@ -33,7 +33,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -160,6 +160,22 @@ public static class DependencyInjection
                     ValidIssuer = jwtSettings?.Issuer,
                     ValidAudience = jwtSettings?.Audience
                 };
+            })
+            .AddGoogle(options =>
+            {
+                options.ClientId = configuration["Authentication:Google:ClientId"]!;
+                options.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
+                options.CallbackPath = "/signin-google";
+            }).AddGitHub(options =>
+            {
+                options.ClientId = configuration["Authentication:GitHub:ClientId"]!;
+                options.ClientSecret = configuration["Authentication:GitHub:ClientSecret"]!;
+
+                // This must match the URL you put in GitHub Developer Settings
+                options.CallbackPath = "/signin-github";
+
+                // Required to get the user's email address
+                options.Scope.Add("user:email");
             });
 
         services.Configure<IdentityOptions>(options =>

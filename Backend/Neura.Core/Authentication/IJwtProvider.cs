@@ -8,4 +8,5 @@ public interface IJwtProvider
         IEnumerable<string> permissions);
 
     public string? ValidateToken(string token);
+    string? GetUserIdFromExpiredToken(string token);
 }
