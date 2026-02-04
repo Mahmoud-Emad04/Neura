@@ -19,7 +19,7 @@ public class ApplicationDbContext(
     public DbSet<CourseBookmark> CourseBookmarks { get; set; }
 
     //public DbSet<CourseRoleMask> CourseRoleMasks { get; set; }
-    public DbSet<Topic> Topics { get; set; }
+    public DbSet<Section> Sections { get; set; }
     public DbSet<Tag> Tags { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

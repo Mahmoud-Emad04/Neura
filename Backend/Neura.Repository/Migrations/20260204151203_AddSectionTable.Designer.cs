@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Neura.Repository.Persistence;
 
@@ -11,9 +12,11 @@ using Neura.Repository.Persistence;
 namespace Neura.Repository.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260204151203_AddSectionTable")]
+    partial class AddSectionTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -511,6 +514,9 @@ namespace Neura.Repository.Migrations
                     b.Property<int>("CourseId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CourseId1")
+                        .HasColumnType("int");
+
                     b.Property<string>("CreatedById")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -550,6 +556,8 @@ namespace Neura.Repository.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CourseId");
+
+                    b.HasIndex("CourseId1");
 
                     b.HasIndex("CreatedById");
 
@@ -778,10 +786,14 @@ namespace Neura.Repository.Migrations
             modelBuilder.Entity("Neura.Core.Entities.Section", b =>
                 {
                     b.HasOne("Neura.Core.Entities.Course", "Course")
-                        .WithMany("Sections")
+                        .WithMany()
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.Course", null)
+                        .WithMany("Sections")
+                        .HasForeignKey("CourseId1");
 
                     b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
                         .WithMany()

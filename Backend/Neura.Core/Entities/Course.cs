@@ -18,7 +18,7 @@ public sealed class Course : AuditableEntity
     public string? DeletedById { get; set; }
 
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
-    public ICollection<Topic> Topics { get; set; } = new List<Topic>();
+    public ICollection<Section> Sections { get; set; } = new List<Section>();
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
     public ICollection<CourseUser> CourseUsers { get; set; } = new List<CourseUser>();
 }

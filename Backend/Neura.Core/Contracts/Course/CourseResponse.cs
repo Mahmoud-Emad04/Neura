@@ -1,3 +1,5 @@
+using Neura.Core.Contracts.Section;
+
 namespace Neura.Core.Contracts.Course;
 
 public record CourseResponse
@@ -21,6 +23,6 @@ public record CourseResponse
 
     //public (int DifficultyId, string DifficultyName) Difficulty { get; set; }
 
-    public List<TopicResponse>? Topics { get; set; }
+    public List<SectionResponse>? Sections { get; set; }
     public List<TagResponse> Tags { get; set; } = new();
 }

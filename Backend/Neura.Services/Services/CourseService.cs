@@ -71,7 +71,7 @@ public class CourseService(
         var courseId = numbers[0];
 
         var course = await _context.Courses
-            .Include(c => c.Topics)
+            .Include(c => c.Sections)
             .Include(c => c.Tags)
             .AsNoTracking()
             .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
@@ -158,7 +158,7 @@ public class CourseService(
         var courseId = numbers[0];
 
         var course = await _context.Courses
-            .Include(c => c.Topics)
+            .Include(c => c.Sections)
             .Include(c => c.Tags)
             .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
 
