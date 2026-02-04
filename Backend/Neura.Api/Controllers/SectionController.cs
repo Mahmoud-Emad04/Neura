@@ -20,7 +20,7 @@ public class SectionController(ISectionService sectionService, ILogger<SectionCo
 	}
 
 	[HttpGet("{sectionId}")]
-	public async Task<IActionResult> GetById([FromRoute] string sectionId, CancellationToken cancellationToken)
+	public async Task<IActionResult> GetById([FromRoute] int sectionId, CancellationToken cancellationToken)
 	{
 		var result = await _sectionService.GetByIdAsync(sectionId, cancellationToken);
 		return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
@@ -35,13 +35,13 @@ public class SectionController(ISectionService sectionService, ILogger<SectionCo
 
 		// This ensures the Location header returns the correct standard URL: /api/sections/{id}
 		return result.IsSuccess
-			? CreatedAtAction(nameof(GetById), new { sectionId = result.Value.KeyId }, null)
+			? CreatedAtAction(nameof(GetById), new { sectionId = result.Value.Id }, null)
 			: result.ToProblem();
 	}
 
 	[HttpPut("{sectionId}")]
 	//[HasCoursePermission(Permissions.UpdateCourses)]
-	public async Task<IActionResult> Update([FromRoute] string sectionId, [FromBody] SectionUpdateRequest request, CancellationToken cancellationToken)
+	public async Task<IActionResult> Update([FromRoute] int sectionId, [FromBody] SectionUpdateRequest request, CancellationToken cancellationToken)
 	{
 		var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 		var result = await _sectionService.UpdateAsync(sectionId, request, userId, cancellationToken);
@@ -50,7 +50,7 @@ public class SectionController(ISectionService sectionService, ILogger<SectionCo
 
 	[HttpPut("{sectionId}/status")]
 	//[HasCoursePermission(Permissions.DeleteCourses)]
-	public async Task<IActionResult> ToggleStatus([FromRoute] string sectionId, CancellationToken cancellationToken)
+	public async Task<IActionResult> ToggleStatus([FromRoute] int sectionId, CancellationToken cancellationToken)
 	{
 		var result = await _sectionService.ToggleStatusAsync(sectionId, cancellationToken);
 		return result.IsSuccess ? NoContent() : result.ToProblem();

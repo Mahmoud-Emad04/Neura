@@ -14,8 +14,7 @@ public class MappingConfiguration : IRegister
 			.Map(dest => dest.Sections, src => src.Sections.Adapt<List<SectionResponse>>());
 		//.Map(dest => dest.Tags, src => src.Topics.Adapt<List<TagResponse>>());
 
-		config.NewConfig<Section, SectionResponse>()
-			.Map(dest => dest.KeyId, src => hashids.Encode(src.Id));
+		config.NewConfig<Section, SectionResponse>();
 
 		config.NewConfig<CourseRequest, Course>()
 			.Ignore(src => src.Tags);

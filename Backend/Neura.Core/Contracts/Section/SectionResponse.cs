@@ -3,7 +3,7 @@ namespace Neura.Core.Contracts.Section;
 
 public record SectionResponse(
 	
-	string KeyId,
+	int Id,
 	string Title,
 	string? Description,
 	int Position,
