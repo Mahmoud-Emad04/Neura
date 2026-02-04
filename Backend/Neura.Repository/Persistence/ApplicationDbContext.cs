@@ -1,8 +1,8 @@
-using System.Reflection;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Neura.Core.Entities;
+using System.Reflection;
+using System.Security.Claims;
 
 namespace Neura.Repository.Persistence;
 
@@ -14,18 +14,14 @@ public class ApplicationDbContext(
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
     public DbSet<Course> Courses { get; set; }
-
     public DbSet<CourseUser> CourseUsers { get; set; }
-
-    //public DbSet<CourseRoleMask> CourseRoleMasks { get; set; }
+    public DbSet<Review> Reviews { get; set; }
     public DbSet<Topic> Topics { get; set; }
     public DbSet<Tag> Tags { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-
-        // Global query filter to exclude soft-deleted courses
 
         var cascadFks = modelBuilder.Model
             .GetEntityTypes()

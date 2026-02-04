@@ -1,9 +1,9 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using Microsoft.AspNetCore.WebUtilities;
+﻿using Microsoft.AspNetCore.WebUtilities;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Neura.Services.Services;
 

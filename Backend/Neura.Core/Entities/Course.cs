@@ -11,14 +11,13 @@ public sealed class Course : AuditableEntity
     public bool IsCompleted { get; set; } = false;
     public string ImageUrl { get; set; } = string.Empty;
     public int Price { get; set; }
+    public double Rating { get; set; }
+    public int TotalReviews { get; set; }
 
-    // Soft-delete
     public DateTime? DeletedOn { get; set; }
     public string? DeletedById { get; set; }
 
-    //public int DifficultyId { get; set; }
-    //public Difficulty Difficulty { get; set; } = default!;
-
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<Topic> Topics { get; set; } = new List<Topic>();
     public ICollection<Tag> Tags { get; set; } = new List<Tag>();
     public ICollection<CourseUser> CourseUsers { get; set; } = new List<CourseUser>();

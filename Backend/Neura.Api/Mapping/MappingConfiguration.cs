@@ -6,7 +6,7 @@ public class MappingConfiguration : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        var hashids = new Hashids("Course", 8);
+        var hashids = new Hashids("f1nd1ngn3m0", 11);
 
         config.NewConfig<Course, CourseResponse>()
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))

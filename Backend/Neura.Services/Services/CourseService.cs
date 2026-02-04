@@ -1,9 +1,12 @@
-using System.Linq.Dynamic.Core;
 using Neura.Core.Abstractions.Consts;
+using Neura.Core.Abstractions.Specification;
+using Neura.Core.Contracts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Core.FilesConsts;
+using Neura.Core.Specifications.Courses;
 using Neura.Services.Helpers;
+using System.Linq.Dynamic.Core;
 
 namespace Neura.Services.Services;
 
@@ -18,7 +21,6 @@ public class CourseService(
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
-    private readonly Hashids _hashids = new("Course", 8);
     private readonly IServiceHelpers _helpers = helpers;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
     private readonly ILogger<CourseService> _logger = logger;
@@ -29,33 +31,21 @@ public class CourseService(
         RequestFilters filters,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.Courses
-            .Where(c => !c.IsDeleted)
-            .AsNoTracking();
+        var spec = new CourseFilterSpecification(filters);
 
-        if (!string.IsNullOrEmpty(filters.SearchValue))
-            query = query.Where(c =>
-                c.Title.Contains(filters.SearchValue) ||
-                c.Description.Contains(filters.SearchValue));
+        var query = SpecificationEvaluator.GetQuery(_context.Courses.AsNoTracking(), spec);
 
-        if (!string.IsNullOrEmpty(filters.SortColumn))
-            query = query.OrderBy($"{filters.SortColumn} {filters.SortDirection}");
+        var projectedQuery = query.ProjectToType<CourseResponse>();
 
-        var source = query
-            .Include(c => c.Tags)
-            .ProjectToType<CourseResponse>();
-
-        var baseUrl = BaseUrl();
-
-        var paginatedCourses = await PaginatedList<CourseResponse>.CreateAsync(
-            source,
+        var result = await PaginatedList<CourseResponse>.CreateAsync(
+            projectedQuery,
             filters.PageNumber,
             filters.PageSize,
-            c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
+            c => c.ImageUrl = $"{BaseUrl()}/{c.ImageUrl}",
             cancellationToken
         );
 
-        return Result.Success(paginatedCourses);
+        return Result.Success(result);
     }
 
     public async Task<Result<CourseResponse>> GetByIdAsync(string keyId, CancellationToken cancellationToken = default)
@@ -304,6 +294,56 @@ public class CourseService(
         return Result.Success(response);
     }
 
+    public async Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request, CancellationToken cancellationToken)
+    {
+
+        if (request.Rating < 1 || request.Rating > 5)
+            return Result.Failure(ReviewErrors.InvalidRating);
+
+        int[]? numbers = Decode(keyId);
+
+        if (numbers.Length == 0)
+            return Result.Failure(CourseErrors.CourseNotFound);
+
+        int courseId = numbers[0];
+
+        var course = await _context.Courses
+            .Include(c => c.Reviews)
+            .FirstOrDefaultAsync(c => c.Id == courseId);
+
+        if (course is null)
+            return Result.Failure(CourseErrors.CourseNotFound);
+
+        var existingReview = course.Reviews.FirstOrDefault(r => r.UserId == userId);
+        if (existingReview != null)
+        {
+            existingReview.Rating = request.Rating;
+            existingReview.Comment = request.Comment;
+            existingReview.UpdatedOn = DateTime.UtcNow;
+        }
+        else
+        {
+            var review = new Review
+            {
+                CourseId = courseId,
+                UserId = userId,
+                Rating = request.Rating,
+                Comment = request.Comment
+            };
+            _context.Reviews.Add(review);
+            course.Reviews.Add(review);
+        }
+
+        course.TotalReviews = course.Reviews.Count;
+        course.Rating = course.Reviews.Average(r => r.Rating);
+
+        course.Rating = Math.Round(course.Rating, 1);
+
+        await _context.SaveChangesAsync();
+
+        return Result.Success();
+    }
+
     private string BaseUrl()
     {
         return _helpers.GetBaseUrl();
@@ -311,7 +351,7 @@ public class CourseService(
 
     private int[] Decode(string key)
     {
-        return _hashids.Decode(key);
+        return _helpers.DecodeHash(key);
     }
 
     //public async Task<Result> DeleteAsync(string keyId, string userId, CancellationToken cancellationToken = default)

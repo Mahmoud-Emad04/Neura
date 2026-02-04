@@ -9,6 +9,7 @@ public record CourseResponse
     public bool IsCompleted { get; set; }
     public bool IsEnrolled { get; set; }
     public int Price { get; set; }
+    public double Rating { get; set; }
     public DateOnly Startin { get; set; }
     public DateOnly Endin { get; set; }
     public DateTime CreatedOn { get; set; }

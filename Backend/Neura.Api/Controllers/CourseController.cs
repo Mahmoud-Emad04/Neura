@@ -1,9 +1,9 @@
-﻿using System.Security.Claims;
-using Neura.Api.Extensions;
+﻿using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -192,6 +192,9 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
             ? NoContent()
             : result.ToProblem();
     }
+
+
+
 
     #region TOREVIEW
 
