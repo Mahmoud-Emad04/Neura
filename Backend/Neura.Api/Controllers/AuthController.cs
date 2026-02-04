@@ -4,10 +4,11 @@ namespace Neura.Api.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class AuthController(IAuthService authService, ILogger<AuthController> logger) : ControllerBase
+public class AuthController(IAuthService authService, ILogger<AuthController> logger, IConfiguration configuration) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
     private readonly ILogger<AuthController> _logger = logger;
+    private readonly IConfiguration _configuration = configuration;
 
     [HttpPost("")]
     public async Task<IActionResult> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken)
@@ -92,5 +93,36 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         var result = await _authService.ResetPasswordAsync(request);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    [HttpGet("external-login/{provider}")]
+    public IActionResult ExternalLogin(string provider)
+    {
+        // The redirect URL points to our own API callback method below
+        var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth");
+
+        // Get properties from service
+        var properties = _authService.GetExternalAuthProperties(provider, redirectUrl);
+
+        // Trigger the Challenge (This is an MVC result, so it stays in the controller)
+        return Challenge(properties, provider);
+    }
+
+    [HttpGet("external-callback")]
+    public async Task<IActionResult> ExternalLoginCallback()
+    {
+        // Delegate all logic to the service
+        var result = await _authService.HandleExternalLoginAsync();
+
+        var frontendUrl = _configuration["FrontendUrl"];
+
+        if (!result.IsSuccess)
+        {
+            // Redirect to Frontend Login Page with Error
+            return Redirect($"{frontendUrl}/login?error={result.ErrorMessage}");
+        }
+
+        // Redirect to Frontend Callback Page with Token
+        return Redirect($"{frontendUrl}/auth/callback?token={result.Token}&refreshToken={result.RefreshToken}");
     }
 }

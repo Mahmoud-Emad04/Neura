@@ -16,6 +16,9 @@ public class ApplicationDbContext(
     public DbSet<Course> Courses { get; set; }
     public DbSet<CourseUser> CourseUsers { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<CourseBookmark> CourseBookmarks { get; set; }
+
+    //public DbSet<CourseRoleMask> CourseRoleMasks { get; set; }
     public DbSet<Topic> Topics { get; set; }
     public DbSet<Tag> Tags { get; set; }
 

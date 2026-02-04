@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.WebUtilities;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,6 +12,7 @@ namespace Neura.Services.Services;
 public class AuthService(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
     IJwtProvider jwtProvider,
     IHttpContextAccessor httpContextAccessor,
     ILogger<AuthService> logger) : IAuthService
@@ -22,6 +25,7 @@ public class AuthService(
     private readonly ILogger<AuthService> _logger = logger;
     private readonly int _refreshTokenExpiryDays = 14;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
 
     public async Task<Result<AuthResponse>> GetTokenAsync(string userNameOrEmail, string password,
         CancellationToken cancellationToken = default)
@@ -287,6 +291,117 @@ public class AuthService(
         await Task.CompletedTask;
     }
 
+    public AuthenticationProperties GetExternalAuthProperties(string provider, string redirectUrl)
+    {
+        return _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+    }
+
+    public async Task<ExternalAuthResult> HandleExternalLoginAsync()
+    {
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info == null)
+            return new ExternalAuthResult(false, null, null, "ExternalAuthFailed");
+
+        var result = await _signInManager.ExternalLoginSignInAsync(
+            info.LoginProvider,
+            info.ProviderKey,
+            isPersistent: false,
+            bypassTwoFactor: true);
+
+        ApplicationUser? user;
+
+        if (result.Succeeded)
+        {
+            // Scenario A: User Exists and is Linked
+            user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+        }
+        else
+        {
+            // Scenario B: New User or Link Existing Email
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            var name = info.Principal.FindFirstValue(ClaimTypes.Name);
+
+            if (string.IsNullOrEmpty(email))
+                return new ExternalAuthResult(false, null, null, "EmailNotFound");
+
+            user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    FirstName = name?.Split(" ").FirstOrDefault() ?? "User",
+                    LastName = name?.Split(" ").LastOrDefault() ?? "",
+                    EmailConfirmed = true
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    return new ExternalAuthResult(false, null, null, errors);
+                }
+            }
+
+            var linkResult = await _userManager.AddLoginAsync(user, info);
+            if (!linkResult.Succeeded)
+                return new ExternalAuthResult(false, null, null, "LinkFailed");
+        }
+
+        if (user == null) return new ExternalAuthResult(false, null, null, "UserCreationFailed");
+
+        // 5. Generate JWT (Using the Helper)
+        // Pass CancellationToken.None since this method doesn't take one
+        var authResult = await GenerateAuthResponseAsync(user, CancellationToken.None);
+
+        if (authResult.IsFailure)
+        {
+            return new ExternalAuthResult(false, null, null, authResult.Error.Code);
+        }
+
+        var response = authResult.Value;
+
+        return new ExternalAuthResult(
+            IsSuccess: true,
+            Token: response.Token,
+            RefreshToken: response.RefreshToken,
+            ErrorMessage: null
+        );
+    }
+    private async Task<Result<AuthResponse>> GenerateAuthResponseAsync(ApplicationUser user, CancellationToken cancellationToken)
+    {
+        var (userRoles, userPermissions) = await GetUserRolesAndPermissionsAsync(user, cancellationToken);
+
+        var (token, expires) = _jwtProvider.GenerateToken(user, userRoles, userPermissions);
+        var refreshToken = GenerateRefreshToken();
+        var refreshTokenExpiry = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays);
+
+        user.RefreshTokens.Add(new RefreshTokens
+        {
+            Token = refreshToken,
+            ExpiresOn = refreshTokenExpiry,
+            CreatedOn = DateTime.UtcNow
+        });
+
+        await _userManager.UpdateAsync(user);
+
+        var response = new AuthResponse(
+            user.Id,
+            user.UserName!,
+            user.DiscordHandle,
+            user.Email!,
+            user.FirstName,
+            user.LastName,
+            token,
+            expires,
+            refreshToken,
+            refreshTokenExpiry
+        );
+
+        return Result.Success(response);
+    }
     private async Task SendResetPasswordEmail(ApplicationUser user, string code)
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;

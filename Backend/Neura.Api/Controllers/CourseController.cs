@@ -26,7 +26,7 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
     [AllowAnonymous]
     public async Task<IActionResult> GetAll([FromQuery] RequestFilters filters, CancellationToken cancellationToken)
     {
-        return Ok((await _courseService.GetAllAsync(filters, cancellationToken)).Value);
+        return Ok((await _courseService.GetAllAsync(filters, User.GetUserId(), cancellationToken)).Value);
     }
 
     /// <summary>
@@ -193,8 +193,27 @@ public class CourseController(ICourseService courseService, ILogger<CourseContro
             : result.ToProblem();
     }
 
-
-
+    /// <summary>
+    /// Toggles the bookmark status for a specific course.
+    /// </summary>
+    /// <remarks>
+    /// If the course is currently bookmarked, it will be removed. 
+    /// If it is not bookmarked, it will be added. 
+    /// This endpoint handles soft-deleted bookmarks automatically.
+    /// </remarks>
+    /// <param name="courseId">The hashed string ID of the course.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <response code="204">Bookmark status successfully toggled.</response>
+    /// <response code="404">Course not found.</response>
+    [EndpointSummary("Toggle course bookmark")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HttpPost("/bookmark/{courseId}")]
+    public async Task<IActionResult> ToggleBookmark(string courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.ToggleBookmarkAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
 
     #region TOREVIEW
 

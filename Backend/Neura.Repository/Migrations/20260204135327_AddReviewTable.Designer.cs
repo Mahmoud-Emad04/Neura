@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Neura.Repository.Persistence;
 
@@ -11,9 +12,11 @@ using Neura.Repository.Persistence;
 namespace Neura.Repository.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260204135327_AddReviewTable")]
+    partial class AddReviewTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,7 +43,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("CourseBookmarks", (string)null);
+                    b.ToTable("CourseBookmarks");
                 });
 
             modelBuilder.Entity("CourseTag", b =>
@@ -55,7 +58,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("CourseTag", (string)null);
+                    b.ToTable("CourseTag");
                 });
 
             modelBuilder.Entity("CourseUser", b =>
@@ -76,7 +79,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CourseUsers", (string)null);
+                    b.ToTable("CourseUsers");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -497,7 +500,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Courses", (string)null);
+                    b.ToTable("Courses");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Tag", b =>
@@ -515,7 +518,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags", (string)null);
+                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Topic", b =>
@@ -543,7 +546,7 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("Name", "CourseId")
                         .IsUnique();
 
-                    b.ToTable("Topics", (string)null);
+                    b.ToTable("Topics");
                 });
 
             modelBuilder.Entity("Review", b =>
@@ -584,7 +587,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("Review");
                 });
 
             modelBuilder.Entity("CourseBookmark", b =>
@@ -719,7 +722,7 @@ namespace Neura.Repository.Migrations
 
                             b1.HasKey("UserId", "Id");
 
-                            b1.ToTable("RefreshTokens", (string)null);
+                            b1.ToTable("RefreshTokens");
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");

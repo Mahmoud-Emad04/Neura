@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Neura.Repository.Persistence;
 
@@ -11,9 +12,11 @@ using Neura.Repository.Persistence;
 namespace Neura.Repository.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260202093755_UpdateCourseBoobmarks")]
+    partial class UpdateCourseBoobmarks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,14 +36,11 @@ namespace Neura.Repository.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
                     b.HasKey("UserId", "CourseId");
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("CourseBookmarks", (string)null);
+                    b.ToTable("CourseBookmarks");
                 });
 
             modelBuilder.Entity("CourseTag", b =>
@@ -55,7 +55,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("CourseTag", (string)null);
+                    b.ToTable("CourseTag");
                 });
 
             modelBuilder.Entity("CourseUser", b =>
@@ -76,7 +76,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CourseUsers", (string)null);
+                    b.ToTable("CourseUsers");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -471,9 +471,6 @@ namespace Neura.Repository.Migrations
                     b.Property<int>("Price")
                         .HasColumnType("int");
 
-                    b.Property<double>("Rating")
-                        .HasColumnType("float");
-
                     b.Property<DateOnly>("Startin")
                         .HasColumnType("date");
 
@@ -481,9 +478,6 @@ namespace Neura.Repository.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<int>("TotalReviews")
-                        .HasColumnType("int");
 
                     b.Property<string>("UpdatedById")
                         .HasColumnType("nvarchar(450)");
@@ -497,7 +491,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Courses", (string)null);
+                    b.ToTable("Courses");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Tag", b =>
@@ -515,7 +509,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags", (string)null);
+                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Topic", b =>
@@ -543,48 +537,7 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("Name", "CourseId")
                         .IsUnique();
 
-                    b.ToTable("Topics", (string)null);
-                });
-
-            modelBuilder.Entity("Review", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Comment")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedById")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UpdatedById")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("UpdatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UserId", "CourseId");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.ToTable("Reviews", (string)null);
+                    b.ToTable("Topics");
                 });
 
             modelBuilder.Entity("CourseBookmark", b =>
@@ -719,7 +672,7 @@ namespace Neura.Repository.Migrations
 
                             b1.HasKey("UserId", "Id");
 
-                            b1.ToTable("RefreshTokens", (string)null);
+                            b1.ToTable("RefreshTokens");
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");
@@ -756,39 +709,6 @@ namespace Neura.Repository.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("Review", b =>
-                {
-                    b.HasOne("Neura.Core.Entities.Course", "Course")
-                        .WithMany("Reviews")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById");
-
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("UpdatedBy");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Neura.Core.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("CourseUsers");
@@ -797,8 +717,6 @@ namespace Neura.Repository.Migrations
             modelBuilder.Entity("Neura.Core.Entities.Course", b =>
                 {
                     b.Navigation("CourseUsers");
-
-                    b.Navigation("Reviews");
 
                     b.Navigation("Topics");
                 });

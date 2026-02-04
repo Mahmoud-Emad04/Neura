@@ -26,7 +26,7 @@ namespace Neura.Repository.Migrations
                 defaultValue: 0);
 
             migrationBuilder.CreateTable(
-                name: "Reviews",
+                name: "Review",
                 columns: table => new
                 {
                     CourseId = table.Column<int>(type: "int", nullable: false),
@@ -41,26 +41,26 @@ namespace Neura.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Reviews", x => new { x.UserId, x.CourseId });
+                    table.PrimaryKey("PK_Review", x => new { x.UserId, x.CourseId });
                     table.ForeignKey(
-                        name: "FK_Reviews_AspNetUsers_CreatedById",
+                        name: "FK_Review_AspNetUsers_CreatedById",
                         column: x => x.CreatedById,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Reviews_AspNetUsers_UpdatedById",
+                        name: "FK_Review_AspNetUsers_UpdatedById",
                         column: x => x.UpdatedById,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Reviews_AspNetUsers_UserId",
+                        name: "FK_Review_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Reviews_Courses_CourseId",
+                        name: "FK_Review_Courses_CourseId",
                         column: x => x.CourseId,
                         principalTable: "Courses",
                         principalColumn: "Id",
@@ -68,18 +68,18 @@ namespace Neura.Repository.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_CourseId",
-                table: "Reviews",
+                name: "IX_Review_CourseId",
+                table: "Review",
                 column: "CourseId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_CreatedById",
-                table: "Reviews",
+                name: "IX_Review_CreatedById",
+                table: "Review",
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reviews_UpdatedById",
-                table: "Reviews",
+                name: "IX_Review_UpdatedById",
+                table: "Review",
                 column: "UpdatedById");
         }
 
@@ -87,7 +87,7 @@ namespace Neura.Repository.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Reviews");
+                name: "Review");
 
             migrationBuilder.DropColumn(
                 name: "Rating",

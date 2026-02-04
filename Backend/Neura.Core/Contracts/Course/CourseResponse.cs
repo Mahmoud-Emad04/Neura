@@ -9,18 +9,17 @@ public record CourseResponse
     public bool IsCompleted { get; set; }
     public bool IsEnrolled { get; set; }
     public int Price { get; set; }
+    public string ImageUrl { get; set; } = string.Empty;
     public double Rating { get; set; }
+    public bool IsBookmarked { get; set; }
     public DateOnly Startin { get; set; }
     public DateOnly Endin { get; set; }
     public DateTime CreatedOn { get; set; }
     public DateTime? UpdatedOn { get; set; }
-
-    public string ImageUrl { get; set; } = string.Empty;
-
     public string? UpdatedById { get; set; }
     public string CreatedById { get; set; } = string.Empty;
 
-    public (int DifficultyId, string DifficultyName) Difficulty { get; set; }
+    //public (int DifficultyId, string DifficultyName) Difficulty { get; set; }
 
     public List<TopicResponse>? Topics { get; set; }
     public List<TagResponse> Tags { get; set; } = new();
