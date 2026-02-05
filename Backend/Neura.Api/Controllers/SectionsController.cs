@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using Neura.Core.Contracts.Section;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -29,16 +29,16 @@ public class SectionsController(ISectionService sectionService, ILogger<Sections
     }
 
     /// <summary>
-    ///     Retrieves a specific section by its hashed ID.
+    ///     Retrieves a specific section by its ID.
     ///     Route: GET /api/sections/{sectionId}
     /// </summary>
-    /// <param name="sectionId">The hashed string ID of the section.</param>
+    /// <param name="sectionId">The ID of the section.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The details of the requested section.</returns>
     [HttpGet("{sectionId}")]
     [ProducesResponseType(typeof(SectionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById([FromRoute] string sectionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById([FromRoute] int sectionId, CancellationToken cancellationToken)
     {
         var result = await _sectionService.GetByIdAsync(sectionId, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
@@ -64,7 +64,7 @@ public class SectionsController(ISectionService sectionService, ILogger<Sections
 
         // This ensures the Location header returns the correct standard URL: /api/sections/{id}
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { sectionId = result.Value.KeyId }, null)
+            ? CreatedAtAction(nameof(GetById), new { sectionId = result.Value.Id }, null)
             : result.ToProblem();
     }
 
@@ -72,7 +72,7 @@ public class SectionsController(ISectionService sectionService, ILogger<Sections
     ///     Updates a section's details (Title, Description, Order).
     ///     Route: PUT /api/sections/{sectionId}
     /// </summary>
-    /// <param name="sectionId">The hashed string ID of the section to update.</param>
+    /// <param name="sectionId">The ID of the section to update.</param>
     /// <param name="request">The update payload.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>NoContent on success.</returns>
@@ -80,7 +80,7 @@ public class SectionsController(ISectionService sectionService, ILogger<Sections
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update([FromRoute] string sectionId, [FromBody] SectionUpdateRequest request,
+    public async Task<IActionResult> Update([FromRoute] int sectionId, [FromBody] SectionUpdateRequest request,
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -92,13 +92,13 @@ public class SectionsController(ISectionService sectionService, ILogger<Sections
     ///     Toggles the active status of a section (Publish/Unpublish).
     ///     Route: PUT /api/sections/{sectionId}/status
     /// </summary>
-    /// <param name="sectionId">The hashed string ID of the section.</param>
+    /// <param name="sectionId">The ID of the section.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>NoContent on success.</returns>
     [HttpPut("{sectionId}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ToggleStatus([FromRoute] string sectionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> ToggleStatus([FromRoute] int sectionId, CancellationToken cancellationToken)
     {
         var result = await _sectionService.ToggleStatusAsync(sectionId, cancellationToken);
         return result.IsSuccess ? NoContent() : result.ToProblem();
