@@ -217,6 +217,8 @@ public class AuthService(
                 user.LastName, token, expires,
                 refreshToken,
                 refreshTokenExpiry);
+
+            return Result.Success(response);
         }
 
         var error = result.Errors.First();
