@@ -430,15 +430,15 @@ public class AuthService(
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
-        //var emailBody = EmailBodyBuilder.GenerateEmailBody("ForgetPassword",
-        //    templateModel: new Dictionary<string, string>
-        //    {
-        //        { "{{name}}", user.FirstName },
-        //        { "{{action_url}}", $"{origin}/auth/forgetPassword?email={user.Email}&code={code}" }
-        //    }
-        //);
+        var emailBody = EmailBodyBuilder.GenerateEmailBody("ForgetPassword",
+            templateModel: new Dictionary<string, string>
+            {
+                { "{{name}}", user.FirstName },
+                { "{{action_url}}", $"{origin}/auth/reset-password?email={user.Email}&code={code}" }
+            }
+        );
 
-        //BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Change Password", emailBody));
+        BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Change Password", emailBody));
 
         await Task.CompletedTask;
     }
