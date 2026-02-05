@@ -264,7 +264,7 @@ public class AuthService(
 
         _logger.LogInformation("Reset code: {code}", code);
 
-        await SendResetPasswordEmail(user, code);
+        BackgroundJob.Enqueue(() => SendResetPasswordEmail(user, code));
 
         return Result.Success();
     }
@@ -380,7 +380,8 @@ public class AuthService(
         var request = _httpContextAccessor.HttpContext?.Request;
 
         if (string.IsNullOrEmpty(origin))
-            origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
+            origin = "http://localhost:5173";
+        //origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
 
         var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
             templateModel: new Dictionary<string, string>
@@ -427,14 +428,15 @@ public class AuthService(
         return Result.Success(response);
     }
 
-    private async Task SendResetPasswordEmail(ApplicationUser user, string code)
+    public async Task SendResetPasswordEmail(ApplicationUser user, string code)
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
         var request = _httpContextAccessor.HttpContext?.Request;
 
         if (string.IsNullOrEmpty(origin))
-            origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
+            origin = "http://localhost:5173";
+        //origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
 
         var emailBody = EmailBodyBuilder.GenerateEmailBody("ForgetPassword",
             templateModel: new Dictionary<string, string>
