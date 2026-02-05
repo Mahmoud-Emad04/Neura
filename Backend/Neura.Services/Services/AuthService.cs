@@ -164,8 +164,16 @@ public class AuthService(
 
             _logger.LogInformation("User with {UserName} & code {Code} Has been created.", user.UserName, code);
 
+            var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+            var request = _httpContextAccessor.HttpContext?.Request;
+
+            if (string.IsNullOrEmpty(origin))
+                //origin = "http://localhost:5173";
+                origin = $"{request!.Scheme}://{request.Host}{request.PathBase}";
+
             //await SendConfirmationEmail(user, code);
-            BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code));
+            BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin!));
 
             return Result.Success();
         }
@@ -239,8 +247,15 @@ public class AuthService(
 
         _logger.LogInformation("Confirmation code: {code}", code);
 
-        // await SendConfirmationEmail(user, code);
-        BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code));
+        var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+        var requestContext = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin) && requestContext is not null)
+            //origin = "http://localhost:5173";
+            origin = $"{requestContext!.Scheme}://{requestContext.Host}{requestContext.PathBase}";
+
+        BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin));
 
         return Result.Success();
     }
@@ -253,6 +268,14 @@ public class AuthService(
         if (!user.EmailConfirmed)
             return Result.Failure(UserErrors.EmailNotConfirmed);
 
+        var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+        var request = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin))
+            //origin = "http://localhost:5173";
+            origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
+
         //{
         //    var otp = _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
         //    _logger.LogWarning("OTP is {otp}", otp.Result);
@@ -264,7 +287,7 @@ public class AuthService(
 
         _logger.LogInformation("Reset code: {code}", code);
 
-        BackgroundJob.Enqueue(() => SendResetPasswordEmail(user, code));
+        BackgroundJob.Enqueue(() => SendResetPasswordEmail(user, code, origin!));
 
         return Result.Success();
     }
@@ -373,16 +396,8 @@ public class AuthService(
         );
     }
 
-    public async Task SendConfirmationEmail(ApplicationUser user, string code)
+    public async Task SendConfirmationEmail(ApplicationUser user, string code, string origin)
     {
-        var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
-
-        var request = _httpContextAccessor.HttpContext?.Request;
-
-        if (string.IsNullOrEmpty(origin))
-            origin = "http://localhost:5173";
-        //origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
-
         var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
             templateModel: new Dictionary<string, string>
             {
@@ -428,16 +443,8 @@ public class AuthService(
         return Result.Success(response);
     }
 
-    public async Task SendResetPasswordEmail(ApplicationUser user, string code)
+    public async Task SendResetPasswordEmail(ApplicationUser user, string code, string origin)
     {
-        var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
-
-        var request = _httpContextAccessor.HttpContext?.Request;
-
-        if (string.IsNullOrEmpty(origin))
-            origin = "http://localhost:5173";
-        //origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
-
         var emailBody = EmailBodyBuilder.GenerateEmailBody("ForgetPassword",
             templateModel: new Dictionary<string, string>
             {
