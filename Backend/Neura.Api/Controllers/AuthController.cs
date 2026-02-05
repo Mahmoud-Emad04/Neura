@@ -77,7 +77,7 @@ public class AuthController(
     {
         var result = await _authService.ConfirmEmailAsync(request, cancellationToken);
 
-        return result.IsSuccess ? Ok(result) : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
