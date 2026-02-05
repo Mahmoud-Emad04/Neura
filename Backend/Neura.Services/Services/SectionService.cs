@@ -34,21 +34,12 @@ public class SectionService(
         return Result.Success(response);
     }
 
-    public async Task<Result<SectionResponse>> GetByIdAsync(string keyId, CancellationToken cancellationToken = default)
-    {
-        //var hashids = new Hashids("Section", 8);
-        //var sectionIds = hashids.Decode(keyId);
-        //if (sectionIds.Length == 0) return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
-        //int id = sectionIds[0];
-        var sectionIds = _helpers.DecodeHash(keyId);
-        if (sectionIds.Length == 0)
-            return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
-        var id = sectionIds[0];
-
-        var section = await _context.Sections
-            //.Include(s => s.Lessons)
-            .AsNoTracking()
-            .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+	public async Task<Result<SectionResponse>> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+	{
+		var section = await _context.Sections
+			//.Include(s => s.Lessons)
+			.AsNoTracking()
+			.SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (section is null) return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
 
@@ -96,20 +87,10 @@ public class SectionService(
         return Result.Success(response);
     }
 
-    public async Task<Result<SectionResponse>> UpdateAsync(string keyId, SectionUpdateRequest request, string userId,
-        CancellationToken cancellationToken = default)
-    {
-        //var hashids = new Hashids("Section", 8);
-        //var sectionIds = hashids.Decode(keyId);
-        //if (sectionIds.Length == 0) return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
-        //int id = sectionIds[0];
-        var sectionIds = _helpers.DecodeHash(keyId);
-        if (sectionIds.Length == 0)
-            return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
-        var id = sectionIds[0];
-
-        var section = await _context.Sections
-            .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+	public async Task<Result<SectionResponse>> UpdateAsync(int id, SectionUpdateRequest request, string userId, CancellationToken cancellationToken = default)
+	{
+		var section = await _context.Sections
+			.SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (section is null) return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
 
@@ -137,20 +118,11 @@ public class SectionService(
         return Result.Success(section.Adapt<SectionResponse>());
     }
 
-    public async Task<Result> ToggleStatusAsync(string keyId, CancellationToken cancellationToken = default)
-    {
-        //var hashids = new Hashids("Section", 8);
-        //var sectionIds = hashids.Decode(keyId);
-        //if (sectionIds.Length == 0) return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
-        //int id = sectionIds[0];
-        var sectionIds = _helpers.DecodeHash(keyId);
-        if (sectionIds.Length == 0)
-            return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
-        var id = sectionIds[0];
-
-        var section = await _context.Sections
-            .IgnoreQueryFilters()
-            .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+	public async Task<Result> ToggleStatusAsync(int id, CancellationToken cancellationToken = default)
+	{
+		var section = await _context.Sections
+			.IgnoreQueryFilters()
+			.SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
 
         if (section is null) return Result.Failure(SectionErrors.SectionNotFound);
 
