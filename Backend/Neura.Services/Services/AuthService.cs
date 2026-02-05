@@ -9,7 +9,6 @@ using Neura.Services.Helpers;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-
 namespace Neura.Services.Services;
 
 public class AuthService(
@@ -378,8 +377,10 @@ public class AuthService(
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
+        var request = _httpContextAccessor.HttpContext?.Request;
+
         if (string.IsNullOrEmpty(origin))
-            origin = "https://localhost:7228";
+            origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
 
         var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
             templateModel: new Dictionary<string, string>
@@ -429,6 +430,11 @@ public class AuthService(
     private async Task SendResetPasswordEmail(ApplicationUser user, string code)
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+        var request = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin))
+            origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
 
         var emailBody = EmailBodyBuilder.GenerateEmailBody("ForgetPassword",
             templateModel: new Dictionary<string, string>
