@@ -1,20 +1,22 @@
-﻿using System.Reflection;
-using System.Text;
-using Hangfire;
+﻿using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Neura.Api.Errors;
 using Neura.Api.OpenApiTransformers;
 using Neura.Core.Authentication;
+using Neura.Core.Settings;
 using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
+using System.Reflection;
+using System.Text;
 
 namespace Neura.Api;
 
@@ -33,7 +35,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -54,12 +56,19 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         services.AddDataProtection().SetApplicationName(nameof(Neura));
+
         services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", 11));
+
+        services.AddOptions<MailSettings>()
+                .BindConfiguration(nameof(MailSettings))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
 
         #region AddInjection
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourseService, CourseService>();
+        services.AddScoped<IEmailSender, EmailService>();
         services.AddScoped<ISectionService, SectionService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();

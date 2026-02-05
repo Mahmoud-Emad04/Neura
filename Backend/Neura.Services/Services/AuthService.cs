@@ -1,8 +1,11 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using Hangfire;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.WebUtilities;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
+using Neura.Services.Helpers;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -14,14 +17,15 @@ public class AuthService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     IJwtProvider jwtProvider,
+    IEmailSender emailSender,
     IHttpContextAccessor httpContextAccessor,
     ILogger<AuthService> logger) : IAuthService
 {
     private readonly ApplicationDbContext _context = context;
 
-    //private readonly IEmailSender _emailSender = emailSender;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
     private readonly IJwtProvider _jwtProvider = jwtProvider;
+    private readonly IEmailSender _emailSender = emailSender;
     private readonly ILogger<AuthService> _logger = logger;
     private readonly int _refreshTokenExpiryDays = 14;
     private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
@@ -159,10 +163,10 @@ public class AuthService(
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
             code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-            _logger.LogInformation("User with {UserName} & {Code} Has been created.", user.UserName, code);
+            _logger.LogInformation("User with {UserName} & code {Code} Has been created.", user.UserName, code);
 
             //await SendConfirmationEmail(user, code);
-            //BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code));
+            BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code));
 
             return Result.Success();
         }
@@ -172,13 +176,13 @@ public class AuthService(
         return Result.Failure(new Error(error!.Code, error.Description, StatusCodes.Status400BadRequest));
     }
 
-    public async Task<Result> ConfirmEmailAsync(ConfirmEmailRequest request)
+    public async Task<Result<AuthResponse>> ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
         if (await _userManager.FindByIdAsync(request.UserId) is not { } user)
-            return Result.Failure(UserErrors.InvalidCodeOrUser);
+            return Result.Failure<AuthResponse>(UserErrors.InvalidCodeOrUser);
 
         if (user.EmailConfirmed)
-            return Result.Failure(UserErrors.DuplicatedConfirmation);
+            return Result.Failure<AuthResponse>(UserErrors.DuplicatedConfirmation);
 
         string code;
 
@@ -188,7 +192,7 @@ public class AuthService(
         }
         catch (FormatException)
         {
-            return Result.Failure(UserErrors.InvalidCode);
+            return Result.Failure<AuthResponse>(UserErrors.InvalidCode);
         }
 
         var result = await _userManager.ConfirmEmailAsync(user, code);
@@ -196,12 +200,28 @@ public class AuthService(
         if (result.Succeeded)
         {
             await _userManager.AddToRoleAsync(user, DefaultRoles.Member);
-            return Result.Success();
+            var (userRoles, userPermissions) = await GetUserRolesAndPermissionsAsync(user, cancellationToken);
+            var (token, expires) = _jwtProvider.GenerateToken(user, userRoles, userPermissions);
+            var refreshToken = GenerateRefreshToken();
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(_refreshTokenExpiryDays);
+
+            user.RefreshTokens.Add(new RefreshTokens
+            {
+                Token = refreshToken,
+                ExpiresOn = refreshTokenExpiry
+            });
+
+            await _userManager.UpdateAsync(user);
+
+            var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName,
+                user.LastName, token, expires,
+                refreshToken,
+                refreshTokenExpiry);
         }
 
         var error = result.Errors.First();
 
-        return Result.Failure(new Error(error.Code, error.Description, StatusCodes.Status400BadRequest));
+        return Result.Failure<AuthResponse>(new Error(error.Code, error.Description, StatusCodes.Status400BadRequest));
     }
 
 
@@ -356,15 +376,17 @@ public class AuthService(
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
-        //var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
-        //    templateModel: new Dictionary<string, string>
-        //    {
-        //        { "{{name}}", user.FirstName },
-        //        { "{{action_url}}", $"{origin}/auth/emailConfirmation?userId={user.Id}&code={code}" }
-        //    }
-        //);
-        // await _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Email Confirmation", emailBody);
-        //BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Email Confirmation", emailBody));
+        if (string.IsNullOrEmpty(origin))
+            origin = "https://localhost:7228";
+
+        var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
+            templateModel: new Dictionary<string, string>
+            {
+                { "{{name}}", user.FirstName },
+                { "{{action_url}}", $"{origin}/auth/emailConfirmation?userId={user.Id}&code={code}" }
+            }
+        );
+        BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Neura: Email Confirmation", emailBody));
         await Task.CompletedTask;
     }
 
