@@ -239,7 +239,7 @@ public class AuthService(
         _logger.LogInformation("Confirmation code: {code}", code);
 
         // await SendConfirmationEmail(user, code);
-        //BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code));
+        BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code));
 
         return Result.Success();
     }
@@ -383,7 +383,7 @@ public class AuthService(
             templateModel: new Dictionary<string, string>
             {
                 { "{{name}}", user.FirstName },
-                { "{{action_url}}", $"{origin}/auth/emailConfirmation?userId={user.Id}&code={code}" }
+                { "{{action_url}}", $"{origin}/auth/verify-email?userId={user.Id}&code={code}" }
             }
         );
         BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Neura: Email Confirmation", emailBody));
