@@ -24,8 +24,8 @@ public class AuthService(
     private readonly IJwtProvider _jwtProvider = jwtProvider;
     private readonly ILogger<AuthService> _logger = logger;
     private readonly int _refreshTokenExpiryDays = 14;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
 
     public async Task<Result<AuthResponse>> GetTokenAsync(string userNameOrEmail, string password,
         CancellationToken cancellationToken = default)
@@ -175,7 +175,7 @@ public class AuthService(
     public async Task<Result> ConfirmEmailAsync(ConfirmEmailRequest request)
     {
         if (await _userManager.FindByIdAsync(request.UserId) is not { } user)
-            return Result.Failure(UserErrors.UserNotFound);
+            return Result.Failure(UserErrors.InvalidCodeOrUser);
 
         if (user.EmailConfirmed)
             return Result.Failure(UserErrors.DuplicatedConfirmation);
@@ -275,22 +275,6 @@ public class AuthService(
         return Result.Failure(new Error(error.Code, error.Description, StatusCodes.Status401Unauthorized));
     }
 
-    public async Task SendConfirmationEmail(ApplicationUser user, string code)
-    {
-        var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
-
-        //var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
-        //    templateModel: new Dictionary<string, string>
-        //    {
-        //        { "{{name}}", user.FirstName },
-        //        { "{{action_url}}", $"{origin}/auth/emailConfirmation?userId={user.Id}&code={code}" }
-        //    }
-        //);
-        // await _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Email Confirmation", emailBody);
-        //BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Email Confirmation", emailBody));
-        await Task.CompletedTask;
-    }
-
     public AuthenticationProperties GetExternalAuthProperties(string provider, string redirectUrl)
     {
         return _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
@@ -305,8 +289,8 @@ public class AuthService(
         var result = await _signInManager.ExternalLoginSignInAsync(
             info.LoginProvider,
             info.ProviderKey,
-            isPersistent: false,
-            bypassTwoFactor: true);
+            false,
+            true);
 
         ApplicationUser? user;
 
@@ -356,21 +340,36 @@ public class AuthService(
         // Pass CancellationToken.None since this method doesn't take one
         var authResult = await GenerateAuthResponseAsync(user, CancellationToken.None);
 
-        if (authResult.IsFailure)
-        {
-            return new ExternalAuthResult(false, null, null, authResult.Error.Code);
-        }
+        if (authResult.IsFailure) return new ExternalAuthResult(false, null, null, authResult.Error.Code);
 
         var response = authResult.Value;
 
         return new ExternalAuthResult(
-            IsSuccess: true,
-            Token: response.Token,
-            RefreshToken: response.RefreshToken,
-            ErrorMessage: null
+            true,
+            response.Token,
+            response.RefreshToken,
+            null
         );
     }
-    private async Task<Result<AuthResponse>> GenerateAuthResponseAsync(ApplicationUser user, CancellationToken cancellationToken)
+
+    public async Task SendConfirmationEmail(ApplicationUser user, string code)
+    {
+        var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+        //var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
+        //    templateModel: new Dictionary<string, string>
+        //    {
+        //        { "{{name}}", user.FirstName },
+        //        { "{{action_url}}", $"{origin}/auth/emailConfirmation?userId={user.Id}&code={code}" }
+        //    }
+        //);
+        // await _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Email Confirmation", emailBody);
+        //BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Email Confirmation", emailBody));
+        await Task.CompletedTask;
+    }
+
+    private async Task<Result<AuthResponse>> GenerateAuthResponseAsync(ApplicationUser user,
+        CancellationToken cancellationToken)
     {
         var (userRoles, userPermissions) = await GetUserRolesAndPermissionsAsync(user, cancellationToken);
 
@@ -402,6 +401,7 @@ public class AuthService(
 
         return Result.Success(response);
     }
+
     private async Task SendResetPasswordEmail(ApplicationUser user, string code)
     {
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;

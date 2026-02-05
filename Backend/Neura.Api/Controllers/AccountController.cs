@@ -10,7 +10,11 @@ public class AccountController(IUserService userService) : ControllerBase
 {
     private readonly IUserService _userService = userService;
 
-    [HttpGet("")]
+    /// <summary>
+    ///     Gets the current user's profile.
+    ///     Route: GET /me
+    /// </summary>
+    [HttpGet]
     public async Task<IActionResult> Info()
     {
         var result = await _userService.GetProfileAsync(User.GetUserId()!);
@@ -18,7 +22,11 @@ public class AccountController(IUserService userService) : ControllerBase
         return Ok(result.Value);
     }
 
-    [HttpPut("info")]
+    /// <summary>
+    ///     Updates the current user's profile details.
+    ///     Route: PUT /me
+    /// </summary>
+    [HttpPut]
     public async Task<IActionResult> Update([FromBody] UpdateProfileRequest request)
     {
         await _userService.UpdateProfileAsync(User.GetUserId()!, request);
@@ -26,6 +34,10 @@ public class AccountController(IUserService userService) : ControllerBase
         return NoContent();
     }
 
+    /// <summary>
+    ///     Changes the current user's password.
+    ///     Route: PUT /me/password
+    /// </summary>
     [HttpPut("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {

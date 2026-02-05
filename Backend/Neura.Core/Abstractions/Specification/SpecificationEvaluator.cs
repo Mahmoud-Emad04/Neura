@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Linq.Dynamic.Core; // <--- Critical for string sorting
+﻿using System.Linq.Dynamic.Core;
+using Microsoft.EntityFrameworkCore;
+
+// <--- Critical for string sorting
 
 namespace Neura.Core.Abstractions.Specification;
 
@@ -11,10 +13,7 @@ public static class SpecificationEvaluator
     {
         var query = inputQuery;
 
-        if (spec.Criteria != null)
-        {
-            query = query.Where(spec.Criteria);
-        }
+        if (spec.Criteria != null) query = query.Where(spec.Criteria);
 
         // Apply Includes
         query = spec.Includes.Aggregate(query, (current, include) => current.Include(include));
@@ -22,17 +21,10 @@ public static class SpecificationEvaluator
         // --- SORTING LOGIC ---
 
         if (!string.IsNullOrWhiteSpace(spec.OrderByString))
-        {
             query = query.OrderBy(spec.OrderByString);
-        }
         else if (spec.OrderBy != null)
-        {
             query = query.OrderBy(spec.OrderBy);
-        }
-        else if (spec.OrderByDescending != null)
-        {
-            query = query.OrderByDescending(spec.OrderByDescending);
-        }
+        else if (spec.OrderByDescending != null) query = query.OrderByDescending(spec.OrderByDescending);
 
         return query;
     }

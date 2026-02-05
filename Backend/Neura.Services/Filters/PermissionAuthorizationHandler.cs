@@ -1,22 +1,25 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
 using Neura.Core.Abstractions.Consts;
+using Neura.Services.Helpers;
+using System.Security.Claims;
 
 namespace Neura.Services.Filters;
 
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
     private readonly ApplicationDbContext _context;
-    private readonly Hashids _hashids = new("Course", 8);
+    private readonly IServiceHelpers _serviceHelper;
     private readonly IHttpContextAccessor _http;
 
     public PermissionAuthorizationHandler(
         IHttpContextAccessor http,
-        ApplicationDbContext context)
+        ApplicationDbContext context,
+        IServiceHelpers serviceHelpers)
     {
         _http = http;
         _context = context;
+        _serviceHelper = serviceHelpers;
     }
 
     protected override async Task HandleRequirementAsync(
@@ -52,7 +55,7 @@ public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionReq
             if (encodedId is null)
                 return;
 
-            var numbers = _hashids.Decode(encodedId);
+            var numbers = _serviceHelper.DecodeHash(encodedId);
 
             if (numbers.Length == 0)
                 return;

@@ -5,6 +5,9 @@ namespace Neura.Core.Errors;
 public static class UserErrors
 {
     public static readonly Error UserNotFound = new("User.InvalidCredentials", "Invalid email/password",
+        StatusCodes.Status404NotFound);
+
+    public static readonly Error InvalidCodeOrUser = new("User.InvalidCredentials", "Invalid user/code",
         StatusCodes.Status401Unauthorized);
 
     public static readonly Error InvalidJwtToken =

@@ -1,10 +1,12 @@
-﻿using Hangfire;
+﻿using System.Reflection;
+using System.Text;
+using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Neura.Api.Errors;
 using Neura.Api.OpenApiTransformers;
 using Neura.Core.Authentication;
@@ -13,8 +15,6 @@ using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
-using System.Reflection;
-using System.Text;
 
 namespace Neura.Api;
 
@@ -33,7 +33,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -61,7 +61,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<ISectionService, SectionService>();
-		services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
 
@@ -75,8 +75,6 @@ public static class DependencyInjection
 
     private static IServiceCollection AddOpenApiServices(this IServiceCollection services)
     {
-        //var serviceProvider = services.BuildServiceProvider();
-
         services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
 
         services.AddEndpointsApiExplorer();

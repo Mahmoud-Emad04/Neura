@@ -4,19 +4,24 @@ namespace Neura.Api.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class AuthController(IAuthService authService, ILogger<AuthController> logger, IConfiguration configuration) : ControllerBase
+public class AuthController(
+    IAuthService authService,
+    ILogger<AuthController> logger,
+    IConfiguration configuration) : ControllerBase
 {
     private readonly IAuthService _authService = authService;
-    private readonly ILogger<AuthController> _logger = logger;
     private readonly IConfiguration _configuration = configuration;
+    private readonly ILogger<AuthController> _logger = logger;
 
-    [HttpPost("")]
-    public async Task<IActionResult> LoginAsync(LoginRequest loginRequest, CancellationToken cancellationToken)
+    /// <summary>
+    ///     Logs in a user and returns a JWT token.
+    ///     Route: POST /auth/login
+    /// </summary>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Login(LoginRequest loginRequest, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Logging with email or username : {emailOrUsername} and password {password}",
-            loginRequest.UserNameOrEmail,
-            loginRequest.Password);
-
         var authResponse =
             await _authService.GetTokenAsync(loginRequest.UserNameOrEmail, loginRequest.Password, cancellationToken);
 
@@ -25,68 +30,84 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
             : authResponse.ToProblem();
     }
 
-    [HttpPost("refresh")]
-    public async Task<IActionResult> RefreshAsync([FromBody] RefreshTokenRequest request,
-        CancellationToken cancellationToken)
-    {
-        var authResponse =
-            await _authService.GetRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
-
-        return authResponse.IsSuccess
-            ? Ok(authResponse.Value)
-            : authResponse.ToProblem();
-    }
-
-    [HttpPost("revoke-refresh-token")]
-    public async Task<IActionResult> RevokeRefreshTokenAsync([FromBody] RefreshTokenRequest request,
-        CancellationToken cancellationToken)
-    {
-        var isRevoked =
-            await _authService.RevokeRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
-
-        return isRevoked.IsSuccess
-            ? Ok()
-            : isRevoked.ToProblem();
-    }
-
+    /// <summary>
+    ///     Registers a new user.
+    ///     Route: POST /auth/register
+    /// </summary>
     [HttpPost("register")]
-    public async Task<IActionResult> RegisterAsync(RegisterRequest registerRequest, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register(RegisterRequest registerRequest, CancellationToken cancellationToken)
     {
         var result = await _authService.RegisterAsync(registerRequest, cancellationToken);
 
-        return result.IsSuccess
-            ? Ok()
-            : result.ToProblem();
+        return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
-    [HttpPost("confirm-email")]
-    public async Task<IActionResult> ConfirmEmailAsync(ConfirmEmailRequest confirmEmailRequest)
+    /// <summary>
+    ///     Refreshes an expired JWT token.
+    ///     Route: POST /auth/refresh
+    /// </summary>
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request,
+        CancellationToken cancellationToken)
     {
-        var result = await _authService.ConfirmEmailAsync(confirmEmailRequest);
+        var result = await _authService.RevokeRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
 
-        return result.IsSuccess
-            ? Ok()
-            : result.ToProblem();
+        return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
-    [HttpPost("resend-confirm-email")]
-    public async Task<IActionResult> ResendConfirmationEmailAsync([FromBody] ResendConfirmationEmailRequest request)
+    /// <summary>
+    ///     Revokes a refresh token (Logout).
+    ///     Route: POST /auth/revoke
+    /// </summary>
+    [HttpPost("revoke")]
+    public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.RevokeRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Confirms the user's email address using a code.
+    ///     Route: POST /auth/confirm-email
+    /// </summary>
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
+    {
+        var result = await _authService.ConfirmEmailAsync(request);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Resends the email confirmation code.
+    ///     Route: POST /auth/resend-confirmation
+    /// </summary>
+    [HttpPost("resend-confirmation")]
+    public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationEmailRequest request)
     {
         var result = await _authService.ResendConfirmationEmailAsync(request);
 
-        return result.IsSuccess
-            ? Ok()
-            : result.ToProblem();
+        return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
-    [HttpPost("forget-password")]
-    public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordRequest request)
+    /// <summary>
+    ///     Sends a password reset link/code to the user's email.
+    ///     Route: POST /auth/forgot-password
+    /// </summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgetPasswordRequest request)
     {
         var result = await _authService.SendResetPasswordCodeAsync(request.Email);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
+    /// <summary>
+    ///     Resets the password using the token received in email.
+    ///     Route: POST /auth/reset-password
+    /// </summary>
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
@@ -95,34 +116,29 @@ public class AuthController(IAuthService authService, ILogger<AuthController> lo
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
+
+    // ===============================
+    // EXTERNAL AUTH (Google/GitHub)
+    // ===============================
+
     [HttpGet("external-login/{provider}")]
     public IActionResult ExternalLogin(string provider)
     {
-        // The redirect URL points to our own API callback method below
         var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth");
+        var properties = _authService.GetExternalAuthProperties(provider, redirectUrl!);
 
-        // Get properties from service
-        var properties = _authService.GetExternalAuthProperties(provider, redirectUrl);
-
-        // Trigger the Challenge (This is an MVC result, so it stays in the controller)
         return Challenge(properties, provider);
     }
 
     [HttpGet("external-callback")]
     public async Task<IActionResult> ExternalLoginCallback()
     {
-        // Delegate all logic to the service
         var result = await _authService.HandleExternalLoginAsync();
 
         var frontendUrl = _configuration["FrontendUrl"];
 
-        if (!result.IsSuccess)
-        {
-            // Redirect to Frontend Login Page with Error
-            return Redirect($"{frontendUrl}/login?error={result.ErrorMessage}");
-        }
+        if (!result.IsSuccess) return Redirect($"{frontendUrl}/login?error={result.ErrorMessage}");
 
-        // Redirect to Frontend Callback Page with Token
         return Redirect($"{frontendUrl}/auth/callback?token={result.Token}&refreshToken={result.RefreshToken}");
     }
 }

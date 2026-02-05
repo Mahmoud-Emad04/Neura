@@ -11,5 +11,6 @@ public static class SectionErrors
         new("Section.InvalidData", "One or more section fields are invalid.", StatusCodes.Status400BadRequest);
 
     public static readonly Error SectionPositionConflict =
-        new("Section.PositionConflict", "Another section in this course already uses the same position.", StatusCodes.Status409Conflict);
+        new("Section.PositionConflict", "Another section in this course already uses the same position.",
+            StatusCodes.Status409Conflict);
 }

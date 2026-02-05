@@ -28,7 +28,9 @@ public interface ICourseService
         CancellationToken cancellationToken = default);
 
     Task<Result> UnenrollAsync(string keyId, string userId, CancellationToken cancellationToken = default);
-    Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request, CancellationToken cancellationToken = default);
+
+    Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request,
+        CancellationToken cancellationToken = default);
 
     Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken);
 }

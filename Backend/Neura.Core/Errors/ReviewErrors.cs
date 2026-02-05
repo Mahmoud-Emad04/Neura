@@ -1,4 +1,6 @@
-﻿using Neura.Core.Abstractions; // Or wherever your 'Error' record lives
+﻿using Neura.Core.Abstractions;
+
+// Or wherever your 'Error' record lives
 
 namespace Neura.Core.Errors;
 

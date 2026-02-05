@@ -21,13 +21,13 @@ if (app.Environment.IsDevelopment())
     {
         options
             .WithTitle("Neura API")
-            .WithTheme(ScalarTheme.Default)
+            .WithTheme(ScalarTheme.Purple)
             .WithClassicLayout()
             .WithOpenApiRoutePattern("/openapi/v1.json");
     });
 }
 
-app.UseHangfireDashboard("/jops", new DashboardOptions
+app.UseHangfireDashboard("/jobs", new DashboardOptions
 {
     //Authorization = [
     //    new HangfireCustomBasicAuthenticationFilter

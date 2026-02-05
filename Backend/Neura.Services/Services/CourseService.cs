@@ -6,7 +6,6 @@ using Neura.Core.Contracts.Files;
 using Neura.Core.FilesConsts;
 using Neura.Core.Specifications.Courses;
 using Neura.Services.Helpers;
-using System.Linq.Dynamic.Core;
 
 namespace Neura.Services.Services;
 
@@ -51,8 +50,8 @@ public class CourseService(
         if (userId is not null)
         {
             var userBoobmarks = _context.CourseBookmarks.Where(b => b.UserId == userId && !b.IsDeleted)
-                                                                 .Select(b => b.CourseId)
-                                                                 .ToList();
+                .Select(b => b.CourseId)
+                .ToList();
 
             foreach (var course in paginatedCourses.Items)
                 course.IsBookmarked = userBoobmarks.Any(c => c == Decode(course.KeyId)[0]);
@@ -314,10 +313,12 @@ public class CourseService(
             return Result.Failure(CourseErrors.CourseNotFound);
         var courseId = numbers[0];
 
-        if (await _context.CourseBookmarks.FirstOrDefaultAsync(cb => cb.CourseId == courseId && cb.UserId == userId, cancellationToken) is not { } bookmark)
-        {
-            await _context.CourseBookmarks.AddAsync(new CourseBookmark { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow }, cancellationToken);
-        }
+        if (await _context.CourseBookmarks.FirstOrDefaultAsync(cb => cb.CourseId == courseId && cb.UserId == userId,
+                cancellationToken) is not { } bookmark)
+            await _context.CourseBookmarks.AddAsync(
+                new CourseBookmark
+                    { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
+                cancellationToken);
         else
             bookmark.IsDeleted = !bookmark.IsDeleted;
 
@@ -325,7 +326,8 @@ public class CourseService(
         return Result.Success();
     }
 
-    public async Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request, CancellationToken cancellationToken)
+    public async Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request,
+        CancellationToken cancellationToken)
     {
         if (request.Rating < 1 || request.Rating > 5)
             return Result.Failure(ReviewErrors.InvalidRating);
@@ -334,7 +336,7 @@ public class CourseService(
         if (numbers.Length == 0)
             return Result.Failure(CourseErrors.CourseNotFound);
 
-        int courseId = numbers[0];
+        var courseId = numbers[0];
 
         var course = await _context.Courses
             .Include(c => c.Reviews)
@@ -347,7 +349,6 @@ public class CourseService(
         var existingReview = course.Reviews.FirstOrDefault(r => r.UserId == userId);
         if (existingReview != null)
         {
-
             existingReview.Rating = request.Rating;
             existingReview.Comment = request.Comment;
             existingReview.UpdatedOn = DateTime.UtcNow;
@@ -375,6 +376,7 @@ public class CourseService(
 
         return Result.Success();
     }
+
     private string BaseUrl()
     {
         return _helpers.GetBaseUrl();
