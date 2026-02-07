@@ -37,7 +37,7 @@ public class AuthService(
             u => u.Email == userNameOrEmail || u.UserName == userNameOrEmail, cancellationToken);
 
         if (user is null)
-            return Result.Failure<AuthResponse>(UserErrors.UserNotFound);
+            return Result.Failure<AuthResponse>(UserErrors.InvalidCredentials);
 
         var isValidPassword = await _userManager.CheckPasswordAsync(user, password);
 

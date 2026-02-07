@@ -4,13 +4,11 @@ namespace Neura.Core.Errors;
 
 public static class UserErrors
 {
-    // 1. FOR LOGIN (Security: Don't reveal if it was the email or password that failed)
     public static readonly Error InvalidCredentials = new(
         "User.InvalidCredentials",
         "Invalid email or password. Please try again.",
         StatusCodes.Status401Unauthorized);
 
-    // 2. FOR PUBLIC LOOKUPS (e.g. "View Profile")
     public static readonly Error UserNotFound = new(
         "User.NotFound",
         "The requested user could not be found.",
