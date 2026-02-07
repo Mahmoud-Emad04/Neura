@@ -26,7 +26,7 @@ public class CourseService(
     private readonly RoleManager<ApplicationRole> _roleManager = roleManager;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
 
-    public async Task<Result<PaginatedList<CourseResponse>>> GetAllAsync(
+    public async Task<Result<PaginatedList<CourseSummaryResponse>>> GetAllAsync(
         RequestFilters filters,
         string? userId,
         CancellationToken cancellationToken = default)
@@ -35,11 +35,11 @@ public class CourseService(
 
         var query = SpecificationEvaluator.GetQuery(_context.Courses.AsNoTracking(), spec);
 
-        var projectedQuery = query.ProjectToType<CourseResponse>();
+        var projectedQuery = query.ProjectToType<CourseSummaryResponse>();
 
         var baseUrl = BaseUrl();
 
-        var paginatedCourses = await PaginatedList<CourseResponse>.CreateAsync(
+        var paginatedCourses = await PaginatedList<CourseSummaryResponse>.CreateAsync(
             projectedQuery,
             filters.PageNumber,
             filters.PageSize,

@@ -8,7 +8,7 @@ namespace Neura.Core.Services;
 
 public interface ICourseService
 {
-    Task<Result<PaginatedList<CourseResponse>>> GetAllAsync(RequestFilters filters, string? userId,
+    Task<Result<PaginatedList<CourseSummaryResponse>>> GetAllAsync(RequestFilters filters, string? userId,
         CancellationToken cancellationToken = default);
     Task<Result<CourseResponse>> GetByIdAsync(string keyId, CancellationToken cancellationToken = default);
     Task<Result<CourseResponse>> CreateAsync(CourseRequest request, string userId,
