@@ -24,4 +24,10 @@ public static class CourseErrors
         new("Course.OwnerCannotUnenroll",
             "The course owner cannot unenroll. You must transfer ownership or delete the course.",
             StatusCodes.Status400BadRequest);
+
+    public static readonly Error NotEnrolled = new(
+        "Course.NotEnrolled",
+        "You must be enrolled in this course to perform this action.",
+        StatusCodes.Status403Forbidden
+    );
 }

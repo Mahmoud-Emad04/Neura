@@ -29,4 +29,13 @@ public static class ReviewErrors
         "You must be enrolled in the course to leave a review.",
         StatusCodes.Status403Forbidden
     );
+
+    public static readonly Error NotEnrolled = new(
+        "Review.NotEnrolled", "You must be enrolled in the course to write a review.", StatusCodes.Status403Forbidden);
+
+    public static readonly Error CannotReviewOwnCourse = new(
+        "Review.ConflictOfInterest", "You cannot review your own course.", StatusCodes.Status409Conflict);
+
+    public static readonly Error AlreadyReviewed = new(
+        "Review.Duplicate", "You have already reviewed this course.", StatusCodes.Status409Conflict);
 }

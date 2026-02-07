@@ -19,7 +19,7 @@ public class AuthController(
     /// </summary>
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login(LoginRequest loginRequest, CancellationToken cancellationToken)
     {
         var authResponse =

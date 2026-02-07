@@ -80,20 +80,15 @@ public class CourseService(
 
         var response = course.Adapt<CourseResponse>() with { ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl) };
 
-        _logger.LogInformation($"{BaseUrl()}");
-        _logger.LogInformation($"{Path.Combine(BaseUrl(), course.ImageUrl)}");
-
         return Result.Success(response);
     }
 
     public async Task<Result<CourseResponse>> CreateAsync(CourseRequest request, string userId,
         CancellationToken cancellationToken = default)
     {
-        // basic validation
-        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.InstructorName))
+        if (string.IsNullOrWhiteSpace(request.Title))
             return Result.Failure<CourseResponse>(CourseErrors.CourseInvalidData);
 
-        // validate dates
         if (request.Endin < request.Startin)
             return Result.Failure<CourseResponse>(CourseErrors.CourseInvalidData);
 
@@ -104,8 +99,11 @@ public class CourseService(
         if (tags.Count() != request.Tags.Count())
             return Result.Failure<CourseResponse>(CourseErrors.CourseTagNotFound);
 
+        var ownerUser = await _userManager.FindByIdAsync(userId);
+
         var course = request.Adapt<Course>();
 
+        course.InstructorName = $"{ownerUser!.FirstName} {ownerUser.LastName}";
         course.CreatedById = userId;
         course.CreatedOn = DateTime.UtcNow;
         course.Tags = tags;
@@ -117,19 +115,6 @@ public class CourseService(
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var ownerUser = await _userManager.FindByIdAsync(userId);
-
-        //await _userManager.AddToRoleAsync(ownerUser!, DefaultRoles.CourseOwner);
-
-        //var role = await _roleManager.FindByIdAsync(DefaultRoles.CourseOwnerRoleId);
-
-        //var claims = await _roleManager.GetClaimsAsync(role!);
-
-        //var permissions = claims
-        //    .Where(c => c.Type == Permissions.Type)
-        //    .Select(c => c.Value)
-        //    .ToList();
-
         CourseUser courseUser = new()
         {
             CourseId = course.Id,
@@ -138,8 +123,6 @@ public class CourseService(
         };
 
         await _context.CourseUsers.AddAsync(courseUser, cancellationToken);
-
-        //_logger.LogInformation("User {username} & mask {mask} Created", ownerUser!.UserName, permissionMask);
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -317,7 +300,7 @@ public class CourseService(
                 cancellationToken) is not { } bookmark)
             await _context.CourseBookmarks.AddAsync(
                 new CourseBookmark
-                    { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
+                { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
                 cancellationToken);
         else
             bookmark.IsDeleted = !bookmark.IsDeleted;
@@ -333,25 +316,39 @@ public class CourseService(
             return Result.Failure(ReviewErrors.InvalidRating);
 
         var numbers = Decode(keyId);
-        if (numbers.Length == 0)
-            return Result.Failure(CourseErrors.CourseNotFound);
-
+        if (numbers.Length == 0) return Result.Failure(CourseErrors.CourseNotFound);
         var courseId = numbers[0];
 
-        var course = await _context.Courses
-            .Include(c => c.Reviews)
-            .FirstOrDefaultAsync(c => c.Id == courseId);
+        var courseMeta = await _context.Courses
+                                        .AsNoTracking()
+                                        .Where(c => c.Id == courseId)
+                                        .Select(c => new { c.CreatedById, c.IsDeleted })
+                                        .FirstOrDefaultAsync(cancellationToken);
 
-        if (course is null)
+        if (courseMeta is null || courseMeta.IsDeleted)
             return Result.Failure(CourseErrors.CourseNotFound);
 
+        if (courseMeta.CreatedById == userId)
+            return Result.Failure(ReviewErrors.CannotReviewOwnCourse);
 
-        var existingReview = course.Reviews.FirstOrDefault(r => r.UserId == userId);
-        if (existingReview != null)
+        var isEnrolled = await _context.CourseUsers
+                                        .AsNoTracking()
+                                        .AnyAsync(c => c.UserId == userId && c.CourseId == courseId && !c.IsDeleted, cancellationToken);
+
+        if (!isEnrolled)
+        {
+            return Result.Failure(ReviewErrors.NotEnrolled);
+        }
+
+        var existingReview = await _context.Reviews
+             .FirstOrDefaultAsync(r => r.UserId == userId && r.CourseId == courseId, cancellationToken);
+
+        if (existingReview is not null)
         {
             existingReview.Rating = request.Rating;
             existingReview.Comment = request.Comment;
             existingReview.UpdatedOn = DateTime.UtcNow;
+            _context.Reviews.Update(existingReview);
         }
         else
         {
@@ -363,18 +360,53 @@ public class CourseService(
                 Comment = request.Comment,
                 CreatedOn = DateTime.UtcNow
             };
-            _context.Reviews.Add(review);
-            course.Reviews.Add(review);
+            await _context.Reviews.AddAsync(review, cancellationToken);
         }
 
-        course.TotalReviews = course.Reviews.Count;
-        course.Rating = course.Reviews.Average(r => r.Rating);
+        await _context.SaveChangesAsync(cancellationToken);
 
-        course.Rating = Math.Round(course.Rating, 1);
+        var stats = await _context.Reviews
+            .Where(r => r.CourseId == courseId)
+            .GroupBy(r => r.CourseId)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                Average = g.Average(r => r.Rating)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        await _context.SaveChangesAsync();
+        if (stats is not null)
+        {
+            await _context.Courses
+                .Where(c => c.Id == courseId)
+                .ExecuteUpdateAsync(calls => calls
+                    .SetProperty(c => c.TotalReviews, stats.Count)
+                    .SetProperty(c => c.Rating, Math.Round(stats.Average, 1)),
+                    cancellationToken);
+        }
 
         return Result.Success();
+    }
+    public async Task<Result<PaginatedList<CourseSummaryResponse>>> GetBookmarkedAsync(string userId, RequestFilters filters, CancellationToken cancellationToken = default)
+    {
+
+        var spec = new BookmarkedCoursesFilterSpecification(userId, filters);
+
+        var query = SpecificationEvaluator.GetQuery(_context.CourseBookmarks.AsNoTracking(), spec);
+
+        var projectedQuery = query.ProjectToType<CourseSummaryResponse>();
+
+        var baseUrl = BaseUrl();
+
+        var paginatedCourses = await PaginatedList<CourseSummaryResponse>.CreateAsync(
+            projectedQuery,
+            filters.PageNumber,
+            filters.PageSize,
+            c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
+            cancellationToken
+        );
+
+        return Result.Success(paginatedCourses);
     }
 
     private string BaseUrl()
@@ -391,4 +423,5 @@ public class CourseService(
     {
         return Path.Combine("Images", ImageConsts.Course, ImageConsts.DefaultCourseImage);
     }
+
 }

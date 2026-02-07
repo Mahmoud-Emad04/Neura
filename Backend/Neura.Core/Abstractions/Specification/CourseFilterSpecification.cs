@@ -3,7 +3,6 @@ using Neura.Core.Contracts.common;
 using Neura.Core.Entities;
 
 namespace Neura.Core.Specifications.Courses;
-// Adjusted namespace to cleaner structure
 
 public class CourseFilterSpecification : BaseSpecification<Course>
 {

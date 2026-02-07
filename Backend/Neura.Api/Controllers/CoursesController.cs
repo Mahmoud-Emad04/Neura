@@ -1,9 +1,9 @@
-﻿using System.Security.Claims;
-using Neura.Api.Extensions;
+﻿using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -177,7 +177,6 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <response code="204">User successfully enrolled (no content returned).</response>
     /// <response code="404">Course not found.</response>
     [HttpPost("enroll/{courseId}")]
-    [EndpointSummary("Enroll in a course")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enroll([FromRoute] string courseId, CancellationToken cancellationToken)
@@ -204,7 +203,6 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <response code="400">If the user is the Owner.</response>
     /// <response code="404">If the user is not enrolled.</response>
     [HttpDelete("unenroll/{courseId}")]
-    [EndpointSummary("Unenroll from a course")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
@@ -230,7 +228,6 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="204">Bookmark status successfully toggled.</response>
     /// <response code="404">Course not found.</response>
-    [EndpointSummary("Toggle course bookmark")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HttpPost("/bookmark/{courseId}")]
@@ -238,5 +235,22 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     {
         var result = await _courseService.ToggleBookmarkAsync(courseId, User.GetUserId()!, cancellationToken);
         return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
+
+    /// <summary>
+    /// Retrieves a paginated list of courses bookmarked by the current user.
+    /// Route: GET /api/courses/bookmarked
+    /// </summary>
+    /// <param name="filters">The pagination, search, and sorting parameters to apply to the query.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>An IActionResult containing the list of bookmarked courses if the operation is successful; otherwise, an error
+    /// response describing the failure.</returns>
+    [ProducesResponseType(typeof(PaginatedList<CourseResponse>), StatusCodes.Status200OK)]
+    [HttpGet("bookmarked")]
+    public async Task<IActionResult> GetBookmarked([FromQuery] RequestFilters filters, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.GetBookmarkedAsync(User.GetUserId()!, filters, cancellationToken);
+
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 }

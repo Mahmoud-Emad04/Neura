@@ -14,7 +14,13 @@ public class MappingConfiguration : IRegister
             .Map(dest => dest.Sections, src => src.Sections.Adapt<List<SectionResponse>>());
         //.Map(dest => dest.Tags, src => src.Topics.Adapt<List<TagResponse>>());
 
-		config.NewConfig<Section, SectionResponse>();
+
+        config.NewConfig<Section, SectionResponse>();
+
+        config.NewConfig<CourseBookmark, CourseSummaryResponse>()
+            .Map(dest => dest, src => src.Course)
+            .Map(dest => dest.KeyId, src => hashids.Encode(src.CourseId))
+            .Map(dest => dest.IsBookmarked, src => true);
 
         config.NewConfig<CourseRequest, Course>()
             .Ignore(src => src.Tags);

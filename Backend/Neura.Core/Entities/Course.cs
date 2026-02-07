@@ -12,6 +12,7 @@ public sealed class Course : AuditableEntity
     public string ImageUrl { get; set; } = string.Empty;
     public int Price { get; set; }
     public double Rating { get; set; }
+    public double TotalRatingSum { get; set; }
     public int TotalReviews { get; set; }
 
     public DateTime? DeletedOn { get; set; }

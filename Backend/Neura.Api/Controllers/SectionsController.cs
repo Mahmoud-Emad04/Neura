@@ -6,7 +6,7 @@ namespace Neura.Api.Controllers;
 [Route("api/sections")]
 [ApiController]
 [Authorize]
-public class SectionsController(ISectionService sectionService, ILogger<SectionsController> logger) : ControllerBase
+public class SectionsController(ISectionService sectionService) : ControllerBase
 {
     private readonly ISectionService _sectionService = sectionService;
 

@@ -169,10 +169,8 @@ public class AuthService(
             var request = _httpContextAccessor.HttpContext?.Request;
 
             if (string.IsNullOrEmpty(origin))
-                //origin = "http://localhost:5173";
                 origin = $"{request!.Scheme}://{request.Host}{request.PathBase}";
 
-            //await SendConfirmationEmail(user, code);
             BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin!));
 
             return Result.Success();
@@ -186,7 +184,7 @@ public class AuthService(
     public async Task<Result<AuthResponse>> ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
         if (await _userManager.FindByIdAsync(request.UserId) is not { } user)
-            return Result.Failure<AuthResponse>(UserErrors.InvalidCodeOrUser);
+            return Result.Failure<AuthResponse>(UserErrors.UserNotFound);
 
         if (user.EmailConfirmed)
             return Result.Failure<AuthResponse>(UserErrors.DuplicatedConfirmation);
@@ -249,13 +247,7 @@ public class AuthService(
 
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
-        var requestContext = _httpContextAccessor.HttpContext?.Request;
-
-        if (string.IsNullOrEmpty(origin) && requestContext is not null)
-            //origin = "http://localhost:5173";
-            origin = $"{requestContext!.Scheme}://{requestContext.Host}{requestContext.PathBase}";
-
-        BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin));
+        BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin!));
 
         return Result.Success();
     }
@@ -272,15 +264,10 @@ public class AuthService(
 
         var request = _httpContextAccessor.HttpContext?.Request;
 
-        if (string.IsNullOrEmpty(origin))
-            //origin = "http://localhost:5173";
-            origin = $"{request.Scheme}://{request.Host}{request.PathBase}";
-
         //{
         //    var otp = _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
         //    _logger.LogWarning("OTP is {otp}", otp.Result);
         //}
-
 
         var code = await _userManager.GeneratePasswordResetTokenAsync(user);
         code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
