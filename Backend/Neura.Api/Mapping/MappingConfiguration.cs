@@ -22,6 +22,9 @@ public class MappingConfiguration : IRegister
             .Map(dest => dest.KeyId, src => hashids.Encode(src.CourseId))
             .Map(dest => dest.IsBookmarked, src => true);
 
+        config.NewConfig<Course, CourseSummaryResponse>()
+            .Map(dest => dest.KeyId, src => hashids.Encode(src.Id));
+
         config.NewConfig<CourseRequest, Course>()
             .Ignore(src => src.Tags);
     }
