@@ -26,7 +26,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <param name="filters">The pagination, search, and sorting parameters to apply to the query.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A paginated list of courses.</returns>
-    [ProducesResponseType(typeof(PaginatedList<CourseResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedList<CourseSummaryResponse>), StatusCodes.Status200OK)]
     [HttpGet]
     [AllowAnonymous]
     public async Task<IActionResult> GetAll([FromQuery] RequestFilters filters, CancellationToken cancellationToken)
