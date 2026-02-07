@@ -45,7 +45,7 @@ public class AuthService(
         _logger.LogInformation($"{passwordhash.HashPassword(user, password)}");
 
         if (!isValidPassword)
-            return Result.Failure<AuthResponse>(UserErrors.UserNotFound);
+            return Result.Failure<AuthResponse>(UserErrors.InvalidCredentials);
 
         if (!user.EmailConfirmed)
             return Result.Failure<AuthResponse>(UserErrors.EmailNotConfirmed);
