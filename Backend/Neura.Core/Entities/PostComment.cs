@@ -6,6 +6,7 @@ public class PostComment : AuditableEntity
     public int PostId { get; set; }
     public int? ParentCommentId { get; set; }
     public string Content { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
 
     public Post Post { get; set; } = default!;
     public PostComment? ParentComment { get; set; }

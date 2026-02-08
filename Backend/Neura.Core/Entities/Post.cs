@@ -8,6 +8,7 @@ public class Post : AuditableEntity
     public bool IsPublic { get; set; } = true;
     public int? CourseId { get; set; }
     public int? SectionId { get; set; }
+    public string? ImageUrl { get; set; }
 
     public Course? Course { get; set; }
     public Section? Section { get; set; }

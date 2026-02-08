@@ -1,4 +1,5 @@
 using Neura.Core.Contracts.Announcement;
+using Neura.Core.Contracts.Files;
 using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
@@ -27,8 +28,9 @@ public class AnnouncementController(IAnnouncementService announcementService, IL
 		return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
 	}
 
+
 	[HttpPost("posts")]
-	public async Task<IActionResult> CreatePost([FromBody] PostRequest request, CancellationToken cancellationToken = default)
+	public async Task<IActionResult> CreatePost([FromForm] PostRequest request, CancellationToken cancellationToken = default)
 	{
 		var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 		var result = await _announcementService.CreatePostAsync(request, userId, cancellationToken);
@@ -65,6 +67,15 @@ public class AnnouncementController(IAnnouncementService announcementService, IL
 		return result.IsSuccess ? NoContent() : result.ToProblem();
 	}
 
+	[HttpPut("posts/{postId}/image")]
+	public async Task<IActionResult> UpdatePostImage([FromRoute] int postId, [FromForm] UploadImageRequest uploadImage, CancellationToken cancellationToken = default)
+	{
+		var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+		var result = await _announcementService.UpdatePostImageAsync(postId, uploadImage, userId, cancellationToken);
+
+		return result.IsSuccess ? NoContent() : result.ToProblem();
+	}
+
 	[HttpPost("posts/{postId}/likes")]
 	public async Task<IActionResult> TogglePostLike([FromRoute] int postId, CancellationToken cancellationToken = default)
 	{
@@ -75,7 +86,7 @@ public class AnnouncementController(IAnnouncementService announcementService, IL
 	}
 
 	[HttpPost("posts/{postId}/comments")]
-	public async Task<IActionResult> AddPostComment([FromRoute] int postId, [FromBody] PostCommentRequest request, CancellationToken cancellationToken = default)
+	public async Task<IActionResult> AddPostComment([FromRoute] int postId, [FromForm] PostCommentRequest request, CancellationToken cancellationToken = default)
 	{
 		var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 		var result = await _announcementService.AddPostCommentAsync(postId, request, userId, cancellationToken);
@@ -92,6 +103,15 @@ public class AnnouncementController(IAnnouncementService announcementService, IL
 		var result = await _announcementService.UpdatePostCommentAsync(commentId, request, userId, cancellationToken);
 
 		return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+	}
+
+	[HttpPut("comments/{commentId}/image")]
+	public async Task<IActionResult> UpdatePostCommentImage([FromRoute] int commentId, [FromForm] UploadImageRequest uploadImage, CancellationToken cancellationToken = default)
+	{
+		var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+		var result = await _announcementService.UpdatePostCommentImageAsync(commentId, uploadImage, userId, cancellationToken);
+
+		return result.IsSuccess ? NoContent() : result.ToProblem();
 	}
 
 	[HttpDelete("comments/{commentId}")]

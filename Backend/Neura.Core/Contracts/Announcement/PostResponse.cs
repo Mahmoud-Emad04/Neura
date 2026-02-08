@@ -7,6 +7,7 @@ public record PostResponse(
     bool IsPublic,
     int? CourseId,
     int? SectionId,
+    string? ImageUrl,
     int LikesCount,
     DateTime CreatedOn,
     DateTime? UpdatedOn,

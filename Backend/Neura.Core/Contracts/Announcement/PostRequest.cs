@@ -5,5 +5,6 @@ public record PostRequest(
     string Content,
     bool IsPublic,
     int? CourseId,
-    int? SectionId
+    int? SectionId,
+    IFormFile? Image = null
 );

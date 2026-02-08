@@ -1,4 +1,6 @@
 using Neura.Core.Contracts.Announcement;
+using Neura.Core.Contracts.Files;
+using Neura.Core.FilesConsts;
 using Neura.Services.Helpers;
 
 namespace Neura.Services.Services;
@@ -6,10 +8,12 @@ namespace Neura.Services.Services;
 public class AnnouncementService(
 	ApplicationDbContext context,
 	IServiceHelpers helpers,
+	IFileService fileService,
 	ILogger<AnnouncementService> logger) : IAnnouncementService
 {
 	private readonly ApplicationDbContext _context = context;
 	private readonly IServiceHelpers _helpers = helpers;
+	private readonly IFileService _fileService = fileService;
 	private readonly ILogger<AnnouncementService> _logger = logger;
 
 	string? CurrentUserId() => _helpers.GetCurrentUserId();
@@ -98,6 +102,12 @@ public class AnnouncementService(
 			CreatedOn = DateTime.UtcNow
 		};
 
+		// Upload image if provided
+		if (request.Image is not null)
+		{
+			post.ImageUrl = await _fileService.UploadImageAsync(request.Image, ImageConsts.Post, cancellationToken);
+		}
+
 		_context.Posts.Add(post);
 		await _context.SaveChangesAsync(cancellationToken);
 
@@ -162,6 +172,31 @@ public class AnnouncementService(
 		return Result.Success(response);
 	}
 
+	public async Task<Result> UpdatePostImageAsync(int postId, UploadImageRequest request, string userId, CancellationToken cancellationToken = default)
+	{
+		var post = await _context.Posts
+			.FirstOrDefaultAsync(p => p.Id == postId && !p.IsDeleted, cancellationToken);
+
+		if (post is null)
+			return Result.Failure(AnnouncementErrors.PostNotFound);
+
+		// Check permissions: only creator or admin can update
+		if (post.CreatedById != userId && !IsAdmin())
+			return Result.Failure(AnnouncementErrors.PostAccessDenied);
+
+		// Delete old image if exists
+		if (!string.IsNullOrEmpty(post.ImageUrl))
+			_fileService.Delete(post.ImageUrl);
+
+		post.ImageUrl = await _fileService.UploadImageAsync(request.Image, ImageConsts.Post, cancellationToken);
+		post.UpdatedOn = DateTime.UtcNow;
+		post.UpdatedById = userId;
+
+		await _context.SaveChangesAsync(cancellationToken);
+
+		return Result.Success();
+	}
+
 	public async Task<Result<PostCommentResponse>> AddPostCommentAsync(int postId, PostCommentRequest request, string userId, CancellationToken cancellationToken = default)
 	{
 		// Validate post exists
@@ -193,6 +228,12 @@ public class AnnouncementService(
 			CreatedById = userId,
 			CreatedOn = DateTime.UtcNow
 		};
+
+		// Upload image if provided
+		if (request.Image is not null)
+		{
+			comment.ImageUrl = await _fileService.UploadImageAsync(request.Image, ImageConsts.PostComment, cancellationToken);
+		}
 
 		_context.PostComments.Add(comment);
 		await _context.SaveChangesAsync(cancellationToken);
@@ -249,6 +290,31 @@ public class AnnouncementService(
 		var response = MapCommentToResponse(comment, comment.Replies.ToList());
 
 		return Result.Success(response);
+	}
+
+	public async Task<Result> UpdatePostCommentImageAsync(int commentId, UploadImageRequest request, string userId, CancellationToken cancellationToken = default)
+	{
+		var comment = await _context.PostComments
+			.FirstOrDefaultAsync(c => c.Id == commentId && !c.IsDeleted, cancellationToken);
+
+		if (comment is null)
+			return Result.Failure(AnnouncementErrors.CommentNotFound);
+
+		// Check permissions: only creator or admin can update
+		if (comment.CreatedById != userId && !IsAdmin())
+			return Result.Failure(AnnouncementErrors.CommentAccessDenied);
+
+		// Delete old image if exists
+		if (!string.IsNullOrEmpty(comment.ImageUrl))
+			_fileService.Delete(comment.ImageUrl);
+
+		comment.ImageUrl = await _fileService.UploadImageAsync(request.Image, ImageConsts.PostComment, cancellationToken);
+		comment.UpdatedOn = DateTime.UtcNow;
+		comment.UpdatedById = userId;
+
+		await _context.SaveChangesAsync(cancellationToken);
+
+		return Result.Success();
 	}
 
 	public async Task<Result> TogglePostLikeAsync(int postId, string userId, CancellationToken cancellationToken = default)
@@ -322,6 +388,7 @@ public class AnnouncementService(
 			IsPublic: post.IsPublic,
 			CourseId: post.CourseId,
 			SectionId: post.SectionId,
+			ImageUrl: post.ImageUrl,
 			LikesCount: post.Likes.Count,
 			CreatedOn: post.CreatedOn,
 			UpdatedOn: post.UpdatedOn,
@@ -343,6 +410,7 @@ public class AnnouncementService(
 			PostId: comment.PostId,
 			ParentCommentId: comment.ParentCommentId,
 			Content: comment.Content,
+			ImageUrl: comment.ImageUrl,
 			CreatedOn: comment.CreatedOn,
 			UpdatedOn: comment.UpdatedOn,
 			CreatedById: comment.CreatedById,

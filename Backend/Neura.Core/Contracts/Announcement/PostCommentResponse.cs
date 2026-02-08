@@ -5,6 +5,7 @@ public record PostCommentResponse(
     int PostId,
     int? ParentCommentId,
     string Content,
+    string? ImageUrl,
     DateTime CreatedOn,
     DateTime? UpdatedOn,
     string CreatedById,

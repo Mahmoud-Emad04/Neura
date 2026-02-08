@@ -2,5 +2,6 @@ namespace Neura.Core.Contracts.Announcement;
 
 public record PostCommentRequest(
     string Content,
-    int? ParentCommentId
+    int? ParentCommentId = null,
+    IFormFile? Image = null
 );
