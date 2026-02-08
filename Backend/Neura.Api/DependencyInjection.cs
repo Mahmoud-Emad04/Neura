@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<IEmailSender, EmailService>();
         services.AddScoped<ISectionService, SectionService>();
+        services.AddScoped<IAnnouncementService, AnnouncementService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();

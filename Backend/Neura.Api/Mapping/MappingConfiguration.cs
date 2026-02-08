@@ -1,5 +1,7 @@
 ﻿using HashidsNet;
+using Neura.Core.Contracts.Announcement;
 using Neura.Core.Contracts.Section;
+using Neura.Core.Entities;
 
 namespace Neura.Api.Mapping;
 
@@ -27,5 +29,8 @@ public class MappingConfiguration : IRegister
 
         config.NewConfig<CourseRequest, Course>()
             .Ignore(src => src.Tags);
+
+        config.NewConfig<Post, PostResponse>();
+        config.NewConfig<PostComment, PostCommentResponse>();
     }
 }
