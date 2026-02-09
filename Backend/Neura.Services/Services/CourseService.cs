@@ -72,6 +72,8 @@ public class CourseService(
         var course = await _context.Courses
             .Include(c => c.Sections)
             .Include(c => c.Tags)
+            .Include(c => c.Prerequisites)
+            .Include(c => c.LearningOutcomes)
             .AsNoTracking()
             .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
 
@@ -189,6 +191,9 @@ public class CourseService(
 
         if (tags.Count != request.Tags.Count)
             return Result.Failure<CourseResponse>(CourseErrors.CourseTagNotFound);
+
+        //_context.RemoveRange(course.LearningOutcomes);
+        _context.RemoveRange(course.Prerequisites);
 
         request.Adapt(course);
 

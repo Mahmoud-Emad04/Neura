@@ -5,4 +5,6 @@ public record CourseUpdateRequest(
     string Description,
     DateOnly Startin,
     DateOnly Endin,
-    List<int> Tags);
+    List<int> Tags,
+    List<string> LearningOutcomes,
+    List<string> Prerequisites);

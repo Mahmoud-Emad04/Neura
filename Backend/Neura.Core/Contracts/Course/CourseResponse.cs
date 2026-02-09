@@ -21,8 +21,8 @@ public record CourseResponse
     public string? UpdatedById { get; set; }
     public string CreatedById { get; set; } = string.Empty;
 
-    //public (int DifficultyId, string DifficultyName) Difficulty { get; set; }
-
-    public List<SectionResponse>? Sections { get; set; }
-    public List<TagResponse> Tags { get; set; } = new();
+    public List<SectionResponse>? Sections { get; set; } = [];
+    public List<TagResponse> Tags { get; set; } = [];
+    public List<string> LearningOutcomes { get; set; } = [];
+    public List<string> Prerequisites { get; set; } = [];
 }

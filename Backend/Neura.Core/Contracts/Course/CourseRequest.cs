@@ -6,5 +6,7 @@ public record CourseRequest(
     int Price,
     DateOnly Startin,
     DateOnly Endin,
-    List<int> Tags
+    List<int> Tags,
+    List<string> LearningOutcomes,
+    List<string> Prerequisites
 );

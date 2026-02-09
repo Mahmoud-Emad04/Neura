@@ -1,7 +1,6 @@
 ﻿using HashidsNet;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Contracts.Section;
-using Neura.Core.Entities;
 
 namespace Neura.Api.Mapping;
 
@@ -13,8 +12,9 @@ public class MappingConfiguration : IRegister
 
         config.NewConfig<Course, CourseResponse>()
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))
-            .Map(dest => dest.Sections, src => src.Sections.Adapt<List<SectionResponse>>());
-        //.Map(dest => dest.Tags, src => src.Topics.Adapt<List<TagResponse>>());
+            .Map(dest => dest.Sections, src => src.Sections.Adapt<List<SectionResponse>>())
+            .Map(dest => dest.Prerequisites, src => src.Prerequisites.Select(p => p.Requirement))
+            .Map(dest => dest.LearningOutcomes, src => src.LearningOutcomes.Select(p => p.Outcome));
 
 
         config.NewConfig<Section, SectionResponse>();
@@ -28,7 +28,9 @@ public class MappingConfiguration : IRegister
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id));
 
         config.NewConfig<CourseRequest, Course>()
-            .Ignore(src => src.Tags);
+        .Map(dest => dest.Prerequisites, src => src.Prerequisites.Select(p => new CoursePrerequisite { Requirement = p }).ToList())
+        .Map(dest => dest.LearningOutcomes, src => src.LearningOutcomes.Select(p => new CourseLearningOutcome { Outcome = p }).ToList())
+        .Ignore(src => src.Tags);
 
         config.NewConfig<Post, PostResponse>();
         config.NewConfig<PostComment, PostCommentResponse>();

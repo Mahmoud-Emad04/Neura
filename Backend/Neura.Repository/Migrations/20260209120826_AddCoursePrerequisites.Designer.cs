@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Neura.Repository.Persistence;
 
@@ -11,9 +12,11 @@ using Neura.Repository.Persistence;
 namespace Neura.Repository.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209120826_AddCoursePrerequisites")]
+    partial class AddCoursePrerequisites
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -514,7 +517,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("CourseId", "Outcome");
 
-                    b.ToTable("CourseLearningOutcomes");
+                    b.ToTable("CourseLearningOutcome");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.CoursePrerequisite", b =>
@@ -528,7 +531,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("CourseId", "Requirement");
 
-                    b.ToTable("CoursePrerequisites");
+                    b.ToTable("CoursePrerequisite");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>

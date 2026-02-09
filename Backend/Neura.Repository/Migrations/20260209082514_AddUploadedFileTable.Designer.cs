@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Neura.Repository.Persistence;
 
@@ -11,9 +12,11 @@ using Neura.Repository.Persistence;
 namespace Neura.Repository.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260209082514_AddUploadedFileTable")]
+    partial class AddUploadedFileTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -501,34 +504,6 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("UpdatedById");
 
                     b.ToTable("Courses");
-                });
-
-            modelBuilder.Entity("Neura.Core.Entities.CourseLearningOutcome", b =>
-                {
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Outcome")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("CourseId", "Outcome");
-
-                    b.ToTable("CourseLearningOutcomes");
-                });
-
-            modelBuilder.Entity("Neura.Core.Entities.CoursePrerequisite", b =>
-                {
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Requirement")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("CourseId", "Requirement");
-
-                    b.ToTable("CoursePrerequisites");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>
@@ -1051,24 +1026,6 @@ namespace Neura.Repository.Migrations
                     b.Navigation("UpdatedBy");
                 });
 
-            modelBuilder.Entity("Neura.Core.Entities.CourseLearningOutcome", b =>
-                {
-                    b.HasOne("Neura.Core.Entities.Course", null)
-                        .WithMany("LearningOutcomes")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Neura.Core.Entities.CoursePrerequisite", b =>
-                {
-                    b.HasOne("Neura.Core.Entities.Course", null)
-                        .WithMany("Prerequisites")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>
                 {
                     b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
@@ -1244,10 +1201,6 @@ namespace Neura.Repository.Migrations
             modelBuilder.Entity("Neura.Core.Entities.Course", b =>
                 {
                     b.Navigation("CourseUsers");
-
-                    b.Navigation("LearningOutcomes");
-
-                    b.Navigation("Prerequisites");
 
                     b.Navigation("Reviews");
 

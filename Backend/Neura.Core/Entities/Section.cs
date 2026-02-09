@@ -12,5 +12,5 @@ public class Section : AuditableEntity
     public DateTime? DeletedOn { get; set; }
     public string? DeletedById { get; set; }
 
-    //public ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
+    public ICollection<Lesson> Lessons { get; set; } = [];
 }
