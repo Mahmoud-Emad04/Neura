@@ -6,14 +6,13 @@ namespace Neura.Core.Specifications.Courses;
 public class BookmarkedCoursesFilterSpecification : BaseSpecification<CourseBookmark>
 {
     public BookmarkedCoursesFilterSpecification(string userId, RequestFilters filters)
-        : base(
-                x => x.UserId == userId &&
-                (!x.IsDeleted && !x.Course.IsDeleted) &&
-                (string.IsNullOrEmpty(filters.SearchValue)
-                || x.Course.Title.Contains(filters.SearchValue)
-                || x.Course.Description.Contains(filters.SearchValue)
-                || x.Course.InstructorName.Contains(filters.SearchValue))
-              )
+        : base(x => x.UserId == userId &&
+                    !x.IsDeleted && !x.Course.IsDeleted &&
+                    (string.IsNullOrEmpty(filters.SearchValue)
+                     || x.Course.Title.Contains(filters.SearchValue)
+                     || x.Course.Description.Contains(filters.SearchValue)
+                     || x.Course.InstructorName.Contains(filters.SearchValue))
+        )
     {
         AddInclude(c => c.Course);
 

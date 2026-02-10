@@ -1,5 +1,5 @@
-using Neura.Core.Contracts.Section;
 using System.Security.Claims;
+using Neura.Core.Contracts.Section;
 
 namespace Neura.Api.Controllers;
 

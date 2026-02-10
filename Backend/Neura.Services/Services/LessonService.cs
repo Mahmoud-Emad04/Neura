@@ -4,24 +4,27 @@ using Neura.Core.Enums;
 
 namespace Neura.Services.Services;
 
-public class LessonService(ApplicationDbContext context, IFileService fileService, IWebHostEnvironment webHostEnvironment) : ILessonService
+public class LessonService(
+    ApplicationDbContext context,
+    IFileService fileService,
+    IWebHostEnvironment webHostEnvironment) : ILessonService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
     private readonly string _filesPath = $"{webHostEnvironment.WebRootPath}/Files";
     private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 
-    public async Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request, CancellationToken cancellationToken)
+    public async Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request,
+        CancellationToken cancellationToken)
     {
-
         var validSection = await _context.Sections.AnyAsync(s => s.Id == request.SectionId, cancellationToken);
 
         if (!validSection)
             return Result.Failure<int>(SectionErrors.SectionNotFound);
 
         var lastOrder = await _context.Lessons
-                    .Where(l => l.SectionId == request.SectionId)
-                    .MaxAsync(l => (int?)l.OrderIndex, cancellationToken) ?? 0;
+            .Where(l => l.SectionId == request.SectionId)
+            .MaxAsync(l => (int?)l.OrderIndex, cancellationToken) ?? 0;
 
         var lesson = new Lesson
         {
@@ -38,7 +41,8 @@ public class LessonService(ApplicationDbContext context, IFileService fileServic
         return Result.Success(lesson.Id);
     }
 
-    public async Task<Result> CompleteLessonAsync(int id, CompleteLessonRequest request, CancellationToken cancellationToken = default)
+    public async Task<Result> CompleteLessonAsync(int id, CompleteLessonRequest request,
+        CancellationToken cancellationToken = default)
     {
         if (await _context.Lessons.FindAsync(id, cancellationToken) is not { } lesson)
             return Result.Failure(LessonErrors.NotFound);
@@ -54,13 +58,9 @@ public class LessonService(ApplicationDbContext context, IFileService fileServic
         lesson.IsPublished = true;
 
         if (request.ScheduledDate.HasValue)
-        {
             lesson.ScheduledDate = request.ScheduledDate.Value;
-        }
         else
-        {
             lesson.ScheduledDate = DateTime.UtcNow;
-        }
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -84,11 +84,9 @@ public class LessonService(ApplicationDbContext context, IFileService fileServic
         string? streamUrl = null;
 
         if (lesson.Type == LessonType.Video && lesson.VideoSortedName is not null)
-        {
             // This points to the controller method we wrote earlier: [HttpGet("{id}/stream")]
             // We abstract the physical location. The ID is all the endpoint needs.
             streamUrl = $"/api/lessons/{lesson.Id}/stream";
-        }
 
         var response = lesson.Adapt<LessonResponse>() with { VideoUrl = streamUrl };
         return Result.Success(response);

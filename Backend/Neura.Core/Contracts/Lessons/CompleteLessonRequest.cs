@@ -3,8 +3,6 @@
 public record CompleteLessonRequest(
     string? Description,
     bool IsPreview,
-
     DateTime? ScheduledDate,
-
     IFormFile? VideoFile
 );

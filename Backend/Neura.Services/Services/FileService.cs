@@ -5,8 +5,8 @@ namespace Neura.Services.Services;
 public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbContext context) : IFileService
 {
     private readonly ApplicationDbContext _context = context;
-    private readonly string _imagesPath = $"{webHostEnvironment.WebRootPath}/Images";
     private readonly string _filesPath = $"{webHostEnvironment.WebRootPath}/Files";
+    private readonly string _imagesPath = $"{webHostEnvironment.WebRootPath}/Images";
     private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 
     public async Task<string> UploadImageAsync(IFormFile file, string folderName,
@@ -22,7 +22,8 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
         return Path.Combine("Images", folderName, uniqueName);
     }
 
-    public async Task<Guid> UploadAsync(IFormFile file, string folderName, CancellationToken cancellationToken = default)
+    public async Task<Guid> UploadAsync(IFormFile file, string folderName,
+        CancellationToken cancellationToken = default)
     {
         var uploadedFile = await StreamFile(file, folderName, cancellationToken);
 
@@ -32,7 +33,8 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
         return uploadedFile.Id;
     }
 
-    public async Task<(FileStream? stream, string contentType, string fileName)> StreamAsync(Guid Id, string folderName, CancellationToken cancellationToken = default)
+    public async Task<(FileStream? stream, string contentType, string fileName)> StreamAsync(Guid Id, string folderName,
+        CancellationToken cancellationToken = default)
     {
         var file = await _context.UploadedFiles.FindAsync(Id, cancellationToken);
 
@@ -44,7 +46,6 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
         var fileStream = File.OpenRead(path);
 
         return (fileStream, file.ContentType, file.FileName);
-
     }
 
     // Add this method to your interface and class
@@ -70,6 +71,7 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
         if (File.Exists(oldImagePath))
             File.Delete(oldImagePath);
     }
+
     private async Task<UploadedFile> StreamFile(IFormFile file, string folderName, CancellationToken cancellationToken)
     {
         var ranodmFileName = Path.GetRandomFileName();

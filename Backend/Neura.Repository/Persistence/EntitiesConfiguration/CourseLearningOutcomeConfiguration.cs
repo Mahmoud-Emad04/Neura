@@ -6,7 +6,6 @@ public class CourseLearningOutcomeConfiguration : IEntityTypeConfiguration<Cours
 {
     public void Configure(EntityTypeBuilder<CourseLearningOutcome> builder)
     {
-
         builder.HasKey(x => new { x.CourseId, x.Outcome });
 
         builder.Property(x => x.Outcome)

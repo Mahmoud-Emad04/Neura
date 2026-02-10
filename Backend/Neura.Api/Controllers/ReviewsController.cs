@@ -1,14 +1,15 @@
 ﻿using Neura.Api.Extensions;
-using Neura.Core.Contracts;
+using Neura.Core.Contracts.Review;
 
 namespace Neura.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class ReviewsController(ICourseService courseService) : ControllerBase
+public class ReviewsController(ICourseService courseService, IReviewService reviewService) : ControllerBase
 {
     private readonly ICourseService _courseService = courseService;
+    private readonly IReviewService _reviewService = reviewService;
 
     /// <summary>
     ///     Adds or updates a review for a specific course.
@@ -28,5 +29,17 @@ public class ReviewsController(ICourseService courseService) : ControllerBase
         var result = await _courseService.AddReviewAsync(courseId, User.GetUserId()!, request, cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
+
+    [HttpGet("course/{courseId}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetReviews(
+        [FromRoute] string courseId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 5)
+    {
+        var result = await _reviewService.CourseReviewsAsync(courseId, page, pageSize, CancellationToken.None);
+
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 }

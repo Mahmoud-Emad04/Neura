@@ -1,4 +1,6 @@
-﻿using Hangfire;
+﻿using System.Reflection;
+using System.Text;
+using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -16,8 +18,6 @@ using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
-using System.Reflection;
-using System.Text;
 
 namespace Neura.Api;
 
@@ -36,7 +36,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -61,9 +61,9 @@ public static class DependencyInjection
         services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", 11));
 
         services.AddOptions<MailSettings>()
-                .BindConfiguration(nameof(MailSettings))
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+            .BindConfiguration(nameof(MailSettings))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         #region AddInjection
 
@@ -75,6 +75,7 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<ILessonService, LessonService>();
+        services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();

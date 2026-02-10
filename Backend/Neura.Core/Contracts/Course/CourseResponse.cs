@@ -1,3 +1,4 @@
+using Neura.Core.Contracts.Instructor;
 using Neura.Core.Contracts.Section;
 
 namespace Neura.Core.Contracts.Course;
@@ -10,6 +11,7 @@ public record CourseResponse
     public string Description { get; set; } = string.Empty;
     public bool IsCompleted { get; set; }
     public bool IsEnrolled { get; set; }
+    public bool IsOwner { get; set; }
     public int Price { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
     public double Rating { get; set; }
@@ -21,6 +23,12 @@ public record CourseResponse
     public string? UpdatedById { get; set; }
     public string CreatedById { get; set; } = string.Empty;
 
+    public int TotalReviews { get; set; }
+    public int NumberOfStudents { get; set; }
+    public int Hours { get; set; }
+
+
+    public InstructorSummaryResponse Instructor { get; set; } = default!;
     public List<SectionResponse>? Sections { get; set; } = [];
     public List<TagResponse> Tags { get; set; } = [];
     public List<string> LearningOutcomes { get; set; } = [];

@@ -1,9 +1,9 @@
-﻿using Neura.Api.Extensions;
+﻿using System.Security.Claims;
+using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
-using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -52,7 +52,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     [AllowAnonymous]
     public async Task<IActionResult> GetById([FromRoute] string courseId, CancellationToken cancellationToken)
     {
-        var course = await _courseService.GetByIdAsync(courseId, cancellationToken);
+        var course = await _courseService.GetByIdAsync(courseId, User.GetUserId(), cancellationToken);
 
         return course.IsSuccess
             ? Ok(course.Value)
@@ -238,16 +238,19 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     }
 
     /// <summary>
-    /// Retrieves a paginated list of courses bookmarked by the current user.
-    /// Route: GET /api/courses/bookmarked
+    ///     Retrieves a paginated list of courses bookmarked by the current user.
+    ///     Route: GET /api/courses/bookmarked
     /// </summary>
     /// <param name="filters">The pagination, search, and sorting parameters to apply to the query.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>An IActionResult containing the list of bookmarked courses if the operation is successful; otherwise, an error
-    /// response describing the failure.</returns>
+    /// <returns>
+    ///     An IActionResult containing the list of bookmarked courses if the operation is successful; otherwise, an error
+    ///     response describing the failure.
+    /// </returns>
     [ProducesResponseType(typeof(PaginatedList<CourseResponse>), StatusCodes.Status200OK)]
     [HttpGet("bookmarked")]
-    public async Task<IActionResult> GetBookmarked([FromQuery] RequestFilters filters, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetBookmarked([FromQuery] RequestFilters filters,
+        CancellationToken cancellationToken)
     {
         var result = await _courseService.GetBookmarkedAsync(User.GetUserId()!, filters, cancellationToken);
 

@@ -7,16 +7,17 @@ namespace Neura.Api.Controllers;
 [ApiController]
 public class LessonsController(ILessonService lessonService, IFileService fileService) : ControllerBase
 {
-    private readonly ILessonService _lessonService = lessonService;
     private readonly IFileService _fileService = fileService;
+    private readonly ILessonService _lessonService = lessonService;
 
     /// <summary>
-    /// PAGE 1: Initialize the lesson shell with basic metadata.
+    ///     PAGE 1: Initialize the lesson shell with basic metadata.
     /// </summary>
     [HttpPost("init")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Initialize([FromBody] CreateLessonRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Initialize([FromBody] CreateLessonRequest request,
+        CancellationToken cancellationToken)
     {
         var result = await _lessonService.CreateLessonMetadataAsync(request, cancellationToken);
 
@@ -26,10 +27,10 @@ public class LessonsController(ILessonService lessonService, IFileService fileSe
     }
 
     /// <summary>
-    /// PAGE 2: Upload the video and provide final details to publish the lesson.
+    ///     PAGE 2: Upload the video and provide final details to publish the lesson.
     /// </summary>
     /// <remarks>
-    /// Uses 'FromForm' to handle the multi-part request (File + JSON fields).
+    ///     Uses 'FromForm' to handle the multi-part request (File + JSON fields).
     /// </remarks>
     [HttpPut("{id}/complete")]
     [DisableRequestSizeLimit]
@@ -58,6 +59,6 @@ public class LessonsController(ILessonService lessonService, IFileService fileSe
 
         var (physicalPath, contentType) = result.Value;
 
-        return PhysicalFile(physicalPath, contentType, enableRangeProcessing: true);
+        return PhysicalFile(physicalPath, contentType, true);
     }
 }

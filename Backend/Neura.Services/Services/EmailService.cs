@@ -1,4 +1,5 @@
-﻿using MailKit.Security;
+﻿using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Options;
 using MimeKit;
@@ -8,8 +9,8 @@ namespace Neura.Services.Services;
 
 public class EmailService(IOptions<MailSettings> mailSettings, ILogger<EmailService> logger) : IEmailSender
 {
-    private readonly MailSettings _mailSettings = mailSettings.Value;
     private readonly ILogger<EmailService> _logger = logger;
+    private readonly MailSettings _mailSettings = mailSettings.Value;
 
     public async Task SendEmailAsync(string email, string subject, string htmlMessage)
     {
@@ -28,7 +29,7 @@ public class EmailService(IOptions<MailSettings> mailSettings, ILogger<EmailServ
 
         message.Body = builder.ToMessageBody();
 
-        using var smtp = new MailKit.Net.Smtp.SmtpClient();
+        using var smtp = new SmtpClient();
 
         try
         {
