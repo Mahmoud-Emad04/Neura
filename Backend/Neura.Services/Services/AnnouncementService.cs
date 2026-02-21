@@ -1,3 +1,4 @@
+using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Contracts.Files;
 using Neura.Core.FilesConsts;
@@ -19,24 +20,25 @@ public class AnnouncementService(
 	string? CurrentUserId() => _helpers.GetCurrentUserId();
 	bool IsAdmin() => _helpers.IsUserInRole("Admin");
 
-	public async Task<Result<IEnumerable<PostResponse>>> GetAllPostsAsync(int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+	public async Task<Result<PaginatedList<PostResponse>>> GetAllPostsAsync(int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default)
 	{
 		var currentUserId = CurrentUserId();
 
-		var posts = await _context.Posts
-			.Where(p => p.IsPublic && !p.IsDeleted)
-			.Include(p => p.Likes)
-			.Include(p => p.Comments.Where(c => !c.IsDeleted && c.ParentCommentId == null))
-			.ThenInclude(c => c.Replies.Where(r => !r.IsDeleted))
-			.AsNoTracking()
-			.OrderByDescending(p => p.CreatedOn)
-			.Skip((pageNumber - 1) * pageSize)
-			.Take(pageSize)
-			.ToListAsync(cancellationToken);
+		var postsQuery = _context.Posts
+				.Where(p => p.IsPublic && !p.IsDeleted)
+				.Include(p => p.Likes)
+				.Include(p => p.Comments.Where(c => !c.IsDeleted && c.ParentCommentId == null))
+				.ThenInclude(c => c.Replies.Where(r => !r.IsDeleted))
+				.AsNoTracking()
+			.OrderByDescending(p => p.CreatedOn);
 
-		var response = posts.Select(p => MapPostToResponse(p, currentUserId));
+		var paginatedResponse = await PaginatedList<PostResponse>.CreateAsync(
+			postsQuery.Select(p => MapPostToResponse(p, currentUserId)),
+			pageNumber,
+			pageSize,
+			cancellationToken: cancellationToken);
 
-		return Result.Success(response);
+		return Result.Success(paginatedResponse);
 	}
 
 	public async Task<Result<PostResponse>> GetPostByIdAsync(int id, CancellationToken cancellationToken = default)
@@ -372,7 +374,7 @@ public class AnnouncementService(
 
 	#region Private Helpers
 
-	private PostResponse MapPostToResponse(Post post, string? currentUserId)
+	private static PostResponse MapPostToResponse(Post post, string? currentUserId)
 	{
 		var isLikedByCurrentUser = string.IsNullOrEmpty(currentUserId) ? false : post.Likes.Any(l => l.UserId == currentUserId);
 
@@ -399,7 +401,7 @@ public class AnnouncementService(
 		);
 	}
 
-	private PostCommentResponse MapCommentToResponse(PostComment comment, List<PostComment> replies)
+	private static PostCommentResponse MapCommentToResponse(PostComment comment, List<PostComment> replies)
 	{
 		var mappedReplies = replies
 			.Select(r => MapCommentToResponse(r, r.Replies.ToList()))

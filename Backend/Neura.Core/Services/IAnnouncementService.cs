@@ -6,7 +6,7 @@ namespace Neura.Core.Services;
 
 public interface IAnnouncementService
 {
-	Task<Result<IEnumerable<PostResponse>>> GetAllPostsAsync(int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default);
+	Task<Result<PaginatedList<PostResponse>>> GetAllPostsAsync(int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default);
 	Task<Result<PostResponse>> GetPostByIdAsync(int id, CancellationToken cancellationToken = default);
 	Task<Result<PostResponse>> CreatePostAsync(PostRequest request, string userId, CancellationToken cancellationToken = default);
 	Task<Result> RemovePostAsync(int postId, string userId, CancellationToken cancellationToken = default);
