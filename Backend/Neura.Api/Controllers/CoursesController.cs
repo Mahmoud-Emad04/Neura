@@ -1,9 +1,9 @@
-﻿using System.Security.Claims;
-using Neura.Api.Extensions;
+﻿using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -53,6 +53,30 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     public async Task<IActionResult> GetById([FromRoute] string courseId, CancellationToken cancellationToken)
     {
         var course = await _courseService.GetByIdAsync(courseId, User.GetUserId(), cancellationToken);
+
+        return course.IsSuccess
+            ? Ok(course.Value)
+            : course.ToProblem();
+    }
+    /// <summary>
+    ///     Retrieves a specific course by its hashed ID.
+    ///     Route: GET /api/courses/{courseId}
+    /// </summary>
+    /// <remarks>
+    ///     ⚠️ **Important:** Provide the public string HashId (e.g., "Xy7zK"), not the integer database ID.
+    /// </remarks>
+    /// <param name="courseId">The hashed string ID of the course.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The detailed information of the course.</returns>
+    /// <response code="200">Returns the requested course</response>
+    /// <response code="404">If the course HashId is invalid or does not exist</response>
+    [ProducesResponseType(typeof(CourseMetadataResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HttpGet("{courseId}/metadata")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetMetadataById([FromRoute] string courseId, CancellationToken cancellationToken)
+    {
+        var course = await _courseService.GetCourseMetadataAsync(courseId, User.GetUserId(), cancellationToken);
 
         return course.IsSuccess
             ? Ok(course.Value)

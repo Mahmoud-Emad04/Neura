@@ -1,6 +1,6 @@
-﻿using FluentValidation;
+using Neura.Core.Contracts.Users;
 
-namespace Neura.Core.Contracts.Users;
+namespace Neura.Api.Validation.User;
 
 public class UpdateProfileRequestValidator : AbstractValidator<UpdateProfileRequest>
 {

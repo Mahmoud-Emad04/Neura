@@ -2,7 +2,6 @@ using Neura.Core.Abstractions;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Course;
 using Neura.Core.Contracts.Files;
-using Neura.Core.Contracts.Review;
 
 namespace Neura.Core.Services;
 
@@ -12,6 +11,9 @@ public interface ICourseService
         CancellationToken cancellationToken = default);
 
     Task<Result<CourseResponse>> GetByIdAsync(string keyId, string? userId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<CourseMetadataResponse>> GetCourseMetadataAsync(string keyId, string? userId,
         CancellationToken cancellationToken = default);
 
     Task<Result<CourseResponse>> CreateAsync(CourseRequest request, string userId,
@@ -29,9 +31,6 @@ public interface ICourseService
         CancellationToken cancellationToken = default);
 
     Task<Result> UnenrollAsync(string keyId, string userId, CancellationToken cancellationToken = default);
-
-    Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request,
-        CancellationToken cancellationToken = default);
 
     Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken = default);
 

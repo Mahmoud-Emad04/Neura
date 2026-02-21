@@ -5,6 +5,9 @@ namespace Neura.Core.Services;
 
 public interface IReviewService
 {
+    Task<Result> AddReviewAsync(string keyId, string userId, ReviewRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<Result<PaginatedList<CourseFeedbackResponse>>> CourseReviewsAsync(string keyId, int pageNumber = 1,
         int pageSize = 5, CancellationToken cancellationToken = default);
 }
