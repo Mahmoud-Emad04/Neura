@@ -57,14 +57,12 @@ public class CourseService(
                     course.IsEnrolled = await _context.CourseUsers.AnyAsync(cu => cu.CourseId == id && cu.UserId == userId, cancellationToken);
                 }
             }
-
-
         }
 
         return Result.Success(paginatedCourses);
     }
 
-    public async Task<Result<CourseResponse>> GetByIdAsync(string keyId, string? userId,
+    public async Task<Result<CourseResponse>> GetContentByIdAsync(string keyId, string? userId,
         CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
@@ -112,19 +110,19 @@ public class CourseService(
             ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl),
 
             NumberOfStudents = await _context.CourseUsers
-                .CountAsync(cu => cu.CourseId == courseId && cu.PermissionsMask == studentRoleMask, cancellationToken),
+                .CountAsync(cu => cu.CourseId == courseId && cu.PermissionsMask == studentRoleMask && !cu.IsDeleted, cancellationToken),
             IsEnrolled = userId is not null &&
                 await _context.CourseUsers.AnyAsync(cu => cu.CourseId == courseId && cu.UserId == userId, cancellationToken),
 
             IsBookmarked = userId is not null &&
-                await _context.CourseBookmarks.AnyAsync(cb => cb.CourseId == courseId && cb.UserId == userId, cancellationToken),
+                await _context.CourseBookmarks.AnyAsync(cb => cb.CourseId == courseId && cb.UserId == userId && !cb.IsDeleted, cancellationToken),
 
             IsOwner = userId is not null && userId == course.CreatedById
         };
 
         return Result.Success(response);
     }
-    public async Task<Result<CourseResponse>> CreateAsync(CourseRequest request, string userId,
+    public async Task<Result<CourseMetadataResponse>> CreateAsync(CourseRequest request, string userId,
         CancellationToken cancellationToken = default)
     {
         var tags = await _context.Tags
@@ -132,7 +130,7 @@ public class CourseService(
             .ToListAsync(cancellationToken);
 
         if (tags.Count != request.Tags.Count)
-            return Result.Failure<CourseResponse>(CourseErrors.CourseTagNotFound);
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseTagNotFound);
 
         var ownerUser = await _userManager.FindByIdAsync(userId);
 
@@ -161,7 +159,7 @@ public class CourseService(
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(course.Adapt<CourseResponse>());
+        return Result.Success(course.Adapt<CourseMetadataResponse>());
     }
 
     public async Task<Result> UpdateImageAsync(string keyId, UploadImageRequest uploadImage, string userId,
@@ -188,37 +186,39 @@ public class CourseService(
         return Result.Success();
     }
 
-    public async Task<Result<CourseResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, string userId,
+    public async Task<Result<CourseMetadataResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, string userId,
         CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
-            return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
 
         var course = await _context.Courses
             .Include(c => c.Tags)
             .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
 
         if (course is null)
-            return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
 
         var tags = await _context.Tags
             .Where(t => request.Tags.Contains(t.Id))
             .ToListAsync(cancellationToken);
 
         if (tags.Count != request.Tags.Count)
-            return Result.Failure<CourseResponse>(CourseErrors.CourseTagNotFound);
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseTagNotFound);
 
-        _context.RemoveRange(course.Prerequisites);
+        //_context.CoursePrerequisites.Ra().Where(cp => cp.CourseId == courseId);
+        _context.CourseLearningOutcomes.RemoveRange(course.LearningOutcomes);
+        //_context.RemoveRange(course.Tags);
 
-        request.Adapt(course);
+        //request.Adapt(course);
 
-        course.Tags = tags;
-        course.UpdatedOn = DateTime.UtcNow;
-        course.UpdatedById = userId;
+        //course.Tags = tags;
+        //course.UpdatedOn = DateTime.UtcNow;
+        //course.UpdatedById = userId;
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var response = course.Adapt<CourseResponse>() with { };
+        var response = course.Adapt<CourseMetadataResponse>() with { };
 
         return Result.Success(response);
     }
@@ -284,7 +284,7 @@ public class CourseService(
         return Result.Success();
     }
 
-    public async Task<Result<IEnumerable<CourseResponse>>> GetEnrolledCoursesAsync(string userId,
+    public async Task<Result<IEnumerable<CourseMetadataResponse>>> GetEnrolledCoursesAsync(string userId,
         CancellationToken cancellationToken = default)
     {
         var ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
@@ -299,12 +299,12 @@ public class CourseService(
         foreach (var course in courses)
             course.ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl);
 
-        var response = courses.Adapt<IEnumerable<CourseResponse>>();
+        var response = courses.Adapt<IEnumerable<CourseMetadataResponse>>();
 
         return Result.Success(response);
     }
 
-    public async Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken)
+    public async Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure(CourseErrors.CourseNotFound);

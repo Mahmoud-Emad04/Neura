@@ -1,6 +1,7 @@
 ﻿namespace Neura.Core.Contracts.Course;
 
 public record CourseMetadataResponse(
+        string KeyId,
         string Title,
         string Description,
         string ImageUrl,
