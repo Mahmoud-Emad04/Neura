@@ -1,11 +1,16 @@
-﻿using Neura.Core.Contracts.Users;
+﻿using Neura.Core.Abstractions.Consts;
+using Neura.Core.Contracts.Instructor;
+using Neura.Core.Contracts.Users;
+using Neura.Services.Helpers;
 
 namespace Neura.Services.Services;
 
-public class UserService(UserManager<ApplicationUser> userManager, ILogger<UserService> logger) : IUserService
+public class UserService(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IServiceHelpers helpers, ILogger<UserService> logger) : IUserService
 {
     private readonly ILogger<UserService> _logger = logger;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly ApplicationDbContext _context = context;
+    private readonly IServiceHelpers _helpers = helpers;
 
     public async Task<Result<UserProfileResponse>> GetProfileAsync(string userId)
     {
@@ -47,5 +52,73 @@ public class UserService(UserManager<ApplicationUser> userManager, ILogger<UserS
     {
         await Task.Delay(7000);
         _logger.LogInformation("HangFire");
+    }
+
+    public async Task<Result<InstructorSummaryResponse>> GetInstructorByCourseId(string keyId, CancellationToken cancellationToken = default)
+    {
+        if (!TryDecodeCourseId(keyId, out int courseId))
+            return Result.Failure<InstructorSummaryResponse>(CourseErrors.CourseNotFound);
+
+        var course = await _context.Courses.FindAsync(courseId, cancellationToken);
+        if (course is null)
+            return Result.Failure<InstructorSummaryResponse>(CourseErrors.CourseNotFound);
+
+        var user = await _context.Users
+                    .SingleOrDefaultAsync(u => u.Id == course.CreatedById, cancellationToken);
+
+        if (user is null)
+            return Result.Failure<InstructorSummaryResponse>(UserErrors.UserNotFound);
+
+        var instructorCourseIds = await _context.Courses
+            .Where(c => c.CreatedById == course.CreatedById)
+            .Select(c => c.Id)
+            .ToListAsync(cancellationToken);
+
+        instructorCourseIds ??= [];
+
+        (int globalStudentCount, double globalRating, int globalRatingDataCount) = await GetStudentsAndRating(instructorCourseIds, cancellationToken);
+
+        return Result.Success(user.Adapt<InstructorSummaryResponse>() with
+        {
+            Name = $"{user.FirstName} {user.LastName}",
+            TotalStudents = globalStudentCount,
+            TotalReviews = globalRatingDataCount,
+            Rating = globalRating,
+            TotalCourses = instructorCourseIds.Count
+        });
+    }
+
+    private bool TryDecodeCourseId(string keyId, out int courseId)
+    {
+        var numbers = _helpers.DecodeHash(keyId);
+        if (numbers.Length == 0)
+        {
+            courseId = 0;
+            return false;
+        }
+
+        courseId = numbers[0];
+        return true;
+    }
+
+    private async Task<(int globalStudentCount, double globalRating, int globalRatingDataCount)> GetStudentsAndRating(List<int> instructorCourseIds, CancellationToken cancellationToken)
+    {
+
+        var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+
+        var globalStudentCount = await _context.CourseUsers
+            .Where(cu => instructorCourseIds.Contains(cu.CourseId) && cu.PermissionsMask == studentRoleMask)
+            .Select(cu => cu.UserId)
+            .Distinct()
+            .CountAsync(cancellationToken);
+
+        var globalRatingData = await _context.Reviews
+            .Where(r => instructorCourseIds.Contains(r.CourseId))
+            .Select(r => (double?)r.Rating)
+            .ToListAsync(cancellationToken);
+
+        var globalRating = globalRatingData.Count > 0 ? globalRatingData.Average() ?? 0 : 0;
+
+        return (globalStudentCount, globalRating, globalRatingData.Count);
     }
 }

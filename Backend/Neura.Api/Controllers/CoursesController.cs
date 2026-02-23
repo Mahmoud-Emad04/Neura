@@ -1,9 +1,9 @@
-﻿using System.Security.Claims;
-using Neura.Api.Extensions;
+﻿using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -21,11 +21,15 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
 
     /// <summary>
     ///     Retrieves a paginated list of courses based on dynamic filters.
-    ///     Route: GET /api/courses
     /// </summary>
-    /// <param name="filters">The pagination, search, and sorting parameters to apply to the query.</param>
+    /// <remarks>
+    ///     Anonymous access is allowed. If the user is authenticated, bookmark and enrollment
+    ///     status will be populated for each course.
+    /// </remarks>
+    /// <param name="filters">Pagination, search, and sorting parameters.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A paginated list of courses.</returns>
+    /// <returns>A paginated list of course summaries.</returns>
+    /// <response code="200">Returns the paginated course list.</response>
     [ProducesResponseType(typeof(PaginatedList<CourseSummaryResponse>), StatusCodes.Status200OK)]
     [HttpGet]
     [AllowAnonymous]
@@ -35,24 +39,49 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     }
 
     /// <summary>
-    ///     Retrieves a specific course by its hashed ID.
-    ///     Route: GET /api/courses/{courseId}
+    ///     Retrieves the content (sections and lessons) for a specific course.
     /// </summary>
     /// <remarks>
-    ///     ⚠️ **Important:** Provide the public string HashId (e.g., "Xy7zK"), not the integer database ID.
+    ///     Returns the course's sections and lessons hierarchy.
+    ///     Provide the public HashId (e.g., "Xy7zK"), not the integer database ID.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The detailed information of the course.</returns>
-    /// <response code="200">Returns the requested course</response>
-    /// <response code="404">If the course HashId is invalid or does not exist</response>
+    /// <returns>The course content including sections and lessons.</returns>
+    /// <response code="200">Returns the course content.</response>
+    /// <response code="404">Course not found or HashId is invalid.</response>
     [ProducesResponseType(typeof(CourseResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HttpGet("{courseId}")]
+    [HttpGet("{courseId}/content")]
     [AllowAnonymous]
     public async Task<IActionResult> GetById([FromRoute] string courseId, CancellationToken cancellationToken)
     {
-        var course = await _courseService.GetByIdAsync(courseId, User.GetUserId(), cancellationToken);
+        var course = await _courseService.GetContentByIdAsync(courseId, User.GetUserId(), cancellationToken);
+
+        return course.IsSuccess
+            ? Ok(course.Value)
+            : course.ToProblem();
+    }
+    /// <summary>
+    ///     Retrieves metadata (details, tags, stats) for a specific course.
+    /// </summary>
+    /// <remarks>
+    ///     Returns course info, tags, learning outcomes, prerequisites, enrollment count,
+    ///     and the caller's enrollment/bookmark/owner status.
+    ///     Provide the public HashId (e.g., "Xy7zK"), not the integer database ID.
+    /// </remarks>
+    /// <param name="courseId">The hashed string ID of the course.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The course metadata.</returns>
+    /// <response code="200">Returns the course metadata.</response>
+    /// <response code="404">Course not found or HashId is invalid.</response>
+    [ProducesResponseType(typeof(CourseMetadataResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HttpGet("{courseId}/metadata")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetMetadataById([FromRoute] string courseId, CancellationToken cancellationToken)
+    {
+        var course = await _courseService.GetCourseMetadataAsync(courseId, User.GetUserId(), cancellationToken);
 
         return course.IsSuccess
             ? Ok(course.Value)
@@ -60,18 +89,19 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     }
 
     /// <summary>
-    ///     Retrieves all courses the current user is currently learning.
-    ///     Route: GET /api/courses/enrolled
+    ///     Retrieves all courses the current user is enrolled in.
     /// </summary>
     /// <remarks>
     ///     Returns only active enrollments (excludes soft-deleted ones).
+    ///     Courses where the user is the owner are excluded.
     /// </remarks>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A list of enrolled course metadata.</returns>
     /// <response code="200">Returns the list of enrolled courses.</response>
     [HttpGet("my-learning")]
     [EndpointSummary("Get my enrolled courses")]
-    [ProducesResponseType(typeof(IEnumerable<CourseResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<CourseResponse>>> GetMyLearning(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(IEnumerable<CourseMetadataResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<CourseMetadataResponse>>> GetMyLearning(CancellationToken cancellationToken)
     {
         var result = await _courseService.GetEnrolledCoursesAsync(User.GetUserId()!, cancellationToken);
 
@@ -82,19 +112,20 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     // ====================================
     // WRITE OPERATIONS (Create / Update)
     // ====================================
+
     /// <summary>
-    ///     Creates a new course and assigns the creator as the Owner.
-    ///     Route: POST /api/courses
+    ///     Creates a new course and assigns the creator as the owner.
     /// </summary>
     /// <remarks>
-    ///     The user creating the course is automatically added to the `CourseUsers` table with 'Owner' permissions.
+    ///     The authenticated user is automatically added as the course owner.
+    ///     A <c>Location</c> header pointing to the content endpoint is returned on success.
     /// </remarks>
     /// <param name="request">The course creation payload.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The created course with its new HashId.</returns>
-    /// <response code="201">Returns the newly created course</response>
-    /// <response code="400">If validation fails (e.g. invalid tags)</response>
-    [ProducesResponseType(typeof(CourseResponse), StatusCodes.Status201Created)]
+    /// <returns>A 201 response with the Location header of the new course.</returns>
+    /// <response code="201">Course created successfully.</response>
+    /// <response code="400">Validation failed (e.g., invalid or duplicate tags).</response>
+    [ProducesResponseType(typeof(CourseMetadataResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [HttpPost("")]
     public async Task<IActionResult> Create([FromBody] CourseRequest request, CancellationToken cancellationToken)
@@ -108,14 +139,16 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     }
 
     /// <summary>
-    ///     Updates the text details (Title, Description, Tags) of a course.
-    ///     Route: PUT /api/courses/{courseId}
+    ///     Updates the details of a course (title, description, tags, dates, outcomes, prerequisites).
     /// </summary>
+    /// <remarks>
+    ///     Requires <see cref="Permissions.UpdateCourses"/> permission on the course.
+    /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="request">The update payload.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="204">Course updated successfully</response>
-    /// <response code="404">Course or Tags not found</response>
+    /// <response code="204">Course updated successfully.</response>
+    /// <response code="404">Course or one or more tags not found.</response>
     [ProducesResponseType(typeof(Error), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HttpPut("{courseId}")]
@@ -133,17 +166,18 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
 
 
     /// <summary>
-    ///     Uploads or updates the cover image for a course.
-    ///     Route: PUT /api/courses/{courseId}/cover-image
+    ///     Uploads or replaces the cover image for a course.
     /// </summary>
     /// <remarks>
-    ///     Requires `multipart/form-data`. The old image is deleted if it exists.
+    ///     Accepts <c>multipart/form-data</c>. The previous image is deleted automatically
+    ///     unless it is the default placeholder.
+    ///     Requires <see cref="Permissions.UpdateCourses"/> permission on the course.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
-    /// <param name="uploadImage">The form file containing the image.</param>
+    /// <param name="uploadImage">The form file containing the new image.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="204">Image updated successfully</response>
-    /// <response code="404">Course not found</response>
+    /// <response code="204">Image updated successfully.</response>
+    /// <response code="404">Course not found.</response>
     [ProducesResponseType(typeof(Error), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HttpPut("{courseId}/cover-image")]
@@ -166,17 +200,16 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
 
     /// <summary>
     ///     Enrolls the current user in a specific course.
-    ///     Route: POST /api/courses/{courseId}/enrollment
     /// </summary>
     /// <remarks>
-    ///     This is an idempotent operation. If the user was previously enrolled (and soft-deleted),
-    ///     this restores their access.
+    ///     Idempotent — if the user was previously enrolled and soft-deleted,
+    ///     the enrollment is restored.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="204">User successfully enrolled (no content returned).</response>
+    /// <response code="204">User successfully enrolled.</response>
     /// <response code="404">Course not found.</response>
-    [HttpPost("enroll/{courseId}")]
+    [HttpPost("{courseId}/enroll")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Enroll([FromRoute] string courseId, CancellationToken cancellationToken)
@@ -191,18 +224,17 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
 
     /// <summary>
     ///     Unenrolls the current user from a course.
-    ///     Route: DELETE /api/courses/{courseId}/enrollment
     /// </summary>
     /// <remarks>
-    ///     - **Students:** The enrollment is soft-deleted.
-    ///     - **Owners:** Cannot unenroll (must delete course or transfer ownership).
+    ///     The enrollment is soft-deleted.
+    ///     Course owners cannot unenroll — they must delete the course or transfer ownership.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <response code="204">Successfully unenrolled.</response>
-    /// <response code="400">If the user is the Owner.</response>
-    /// <response code="404">If the user is not enrolled.</response>
-    [HttpDelete("unenroll/{courseId}")]
+    /// <response code="400">The user is the course owner.</response>
+    /// <response code="404">The user is not enrolled in this course.</response>
+    [HttpDelete("{courseId}/enroll")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
@@ -217,21 +249,19 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
 
     /// <summary>
     ///     Toggles the bookmark status for a specific course.
-    ///     Route: POST /api/courses/{courseId}/bookmark
     /// </summary>
     /// <remarks>
-    ///     If the course is currently bookmarked, it will be removed.
-    ///     If it is not bookmarked, it will be added.
-    ///     This endpoint handles soft-deleted bookmarks automatically.
+    ///     Adds the bookmark if it does not exist; removes it if it does.
+    ///     Soft-deleted bookmarks are restored automatically.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="204">Bookmark status successfully toggled.</response>
+    /// <response code="204">Bookmark status toggled successfully.</response>
     /// <response code="404">Course not found.</response>
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HttpPost("/bookmark/{courseId}")]
-    public async Task<IActionResult> ToggleBookmark(string courseId, CancellationToken cancellationToken)
+    [HttpPost("{courseId}/bookmark")]
+    public async Task<IActionResult> ToggleBookmark([FromRoute] string courseId, CancellationToken cancellationToken)
     {
         var result = await _courseService.ToggleBookmarkAsync(courseId, User.GetUserId()!, cancellationToken);
         return result.IsSuccess ? NoContent() : result.ToProblem();
@@ -239,15 +269,12 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
 
     /// <summary>
     ///     Retrieves a paginated list of courses bookmarked by the current user.
-    ///     Route: GET /api/courses/bookmarked
     /// </summary>
-    /// <param name="filters">The pagination, search, and sorting parameters to apply to the query.</param>
+    /// <param name="filters">Pagination, search, and sorting parameters.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>
-    ///     An IActionResult containing the list of bookmarked courses if the operation is successful; otherwise, an error
-    ///     response describing the failure.
-    /// </returns>
-    [ProducesResponseType(typeof(PaginatedList<CourseResponse>), StatusCodes.Status200OK)]
+    /// <returns>A paginated list of bookmarked course summaries.</returns>
+    /// <response code="200">Returns the bookmarked courses.</response>
+    [ProducesResponseType(typeof(PaginatedList<CourseSummaryResponse>), StatusCodes.Status200OK)]
     [HttpGet("bookmarked")]
     public async Task<IActionResult> GetBookmarked([FromQuery] RequestFilters filters,
         CancellationToken cancellationToken)

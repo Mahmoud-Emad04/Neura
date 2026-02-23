@@ -20,8 +20,18 @@ public class CourseUpdateRequestValidator : AbstractValidator<CourseUpdateReques
         RuleFor(c => c.Tags).NotEmpty();
 
         RuleFor(c => c.Tags)
-            .Must((request, context) => request.Tags.Distinct().Count() == request.Tags.Count())
-            .WithMessage("Tags must be unique")
+            .Must(tags => tags.Distinct().Count() == tags.Count)
+            .WithMessage("Tags must be unique.")
             .When(c => c.Tags is not null);
+
+        RuleForEach(c => c.LearningOutcomes)
+            .NotEmpty()
+            .MaximumLength(500)
+            .When(c => c.LearningOutcomes is not null);
+
+        RuleForEach(c => c.Prerequisites)
+            .NotEmpty()
+            .MaximumLength(500)
+            .When(c => c.Prerequisites is not null);
     }
 }

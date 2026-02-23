@@ -6,9 +6,8 @@ namespace Neura.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class ReviewsController(ICourseService courseService, IReviewService reviewService) : ControllerBase
+public class ReviewsController(IReviewService reviewService) : ControllerBase
 {
-    private readonly ICourseService _courseService = courseService;
     private readonly IReviewService _reviewService = reviewService;
 
     /// <summary>
@@ -26,7 +25,7 @@ public class ReviewsController(ICourseService courseService, IReviewService revi
     public async Task<IActionResult> AddReview(string courseId, [FromBody] ReviewRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _courseService.AddReviewAsync(courseId, User.GetUserId()!, request, cancellationToken);
+        var result = await _reviewService.AddReviewAsync(courseId, User.GetUserId()!, request, cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
