@@ -1,7 +1,6 @@
 ﻿using HashidsNet;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Contracts.Section;
-using Neura.Core.Entities;
 
 namespace Neura.Api.Mapping;
 
@@ -13,11 +12,13 @@ public class MappingConfiguration : IRegister
 
         config.NewConfig<Course, CourseResponse>()
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))
-            .Map(dest => dest.Sections, src => src.Sections.Adapt<List<SectionResponse>>());
-        //.Map(dest => dest.Tags, src => src.Topics.Adapt<List<TagResponse>>());
+            .Map(dest => dest.Sections, src => src.Sections.Adapt<List<SectionResponse>>())
+            .Map(dest => dest.Prerequisites, src => src.Prerequisites.Select(p => p.Requirement))
+            .Map(dest => dest.LearningOutcomes, src => src.LearningOutcomes.Select(p => p.Outcome));
 
 
-        config.NewConfig<Section, SectionResponse>();
+        config.NewConfig<Section, SectionResponse>()
+            .Map(dest => dest.TotalMinutes, src => (int)src.Lessons.Sum(l => l.Duration.TotalMinutes));
 
         config.NewConfig<CourseBookmark, CourseSummaryResponse>()
             .Map(dest => dest, src => src.Course)
@@ -28,6 +29,10 @@ public class MappingConfiguration : IRegister
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id));
 
         config.NewConfig<CourseRequest, Course>()
+            .Map(dest => dest.Prerequisites,
+                src => src.Prerequisites.Select(p => new CoursePrerequisite { Requirement = p }).ToList())
+            .Map(dest => dest.LearningOutcomes,
+                src => src.LearningOutcomes.Select(p => new CourseLearningOutcome { Outcome = p }).ToList())
             .Ignore(src => src.Tags);
 
         config.NewConfig<Post, PostResponse>();

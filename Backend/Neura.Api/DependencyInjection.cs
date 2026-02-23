@@ -1,9 +1,12 @@
-﻿using Hangfire;
+﻿using System.Reflection;
+using System.Text;
+using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Neura.Api.Errors;
@@ -15,8 +18,6 @@ using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
-using System.Reflection;
-using System.Text;
 
 namespace Neura.Api;
 
@@ -35,7 +36,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -60,9 +61,9 @@ public static class DependencyInjection
         services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", 11));
 
         services.AddOptions<MailSettings>()
-                .BindConfiguration(nameof(MailSettings))
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+            .BindConfiguration(nameof(MailSettings))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         #region AddInjection
 
@@ -73,12 +74,23 @@ public static class DependencyInjection
         services.AddScoped<IAnnouncementService, AnnouncementService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<ILessonService, LessonService>();
+        services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
         #endregion
 
+
+        services.Configure<KestrelServerOptions>(options =>
+        {
+            // Remove limit on body size (for Uploads)
+            options.Limits.MaxRequestBodySize = long.MaxValue;
+
+            // Increase Keep-Alive timeout for slow connections watching long videos
+            options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
+        });
 
         return services;
     }

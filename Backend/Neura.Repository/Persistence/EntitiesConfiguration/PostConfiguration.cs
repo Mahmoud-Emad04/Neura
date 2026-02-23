@@ -1,5 +1,3 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Neura.Core.Entities;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;

@@ -1,4 +1,4 @@
-﻿using Neura.Core.Contracts;
+﻿using Neura.Core.Contracts.Review;
 
 namespace Neura.Api.Validation.Review;
 

@@ -73,7 +73,8 @@ public class AuthController(
     ///     Route: POST /auth/confirm-email
     /// </summary>
     [HttpPost("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request,
+        CancellationToken cancellationToken)
     {
         var result = await _authService.ConfirmEmailAsync(request, cancellationToken);
 

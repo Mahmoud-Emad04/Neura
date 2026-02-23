@@ -18,8 +18,10 @@ public sealed class Course : AuditableEntity
     public DateTime? DeletedOn { get; set; }
     public string? DeletedById { get; set; }
 
-    public ICollection<Review> Reviews { get; set; } = new List<Review>();
-    public ICollection<Section> Sections { get; set; } = new List<Section>();
-    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
-    public ICollection<CourseUser> CourseUsers { get; set; } = new List<CourseUser>();
+    public ICollection<Review> Reviews { get; set; } = [];
+    public ICollection<Section> Sections { get; set; } = [];
+    public ICollection<Tag> Tags { get; set; } = [];
+    public ICollection<CourseUser> CourseUsers { get; set; } = [];
+    public ICollection<CourseLearningOutcome> LearningOutcomes { get; set; } = [];
+    public ICollection<CoursePrerequisite> Prerequisites { get; set; } = [];
 }

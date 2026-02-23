@@ -1,16 +1,16 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Routing;
 using Neura.Core.Abstractions.Consts;
 using Neura.Services.Helpers;
-using System.Security.Claims;
 
 namespace Neura.Services.Filters;
 
 public class PermissionAuthorizationHandler : AuthorizationHandler<PermissionRequirement>
 {
     private readonly ApplicationDbContext _context;
-    private readonly IServiceHelpers _serviceHelper;
     private readonly IHttpContextAccessor _http;
+    private readonly IServiceHelpers _serviceHelper;
 
     public PermissionAuthorizationHandler(
         IHttpContextAccessor http,
