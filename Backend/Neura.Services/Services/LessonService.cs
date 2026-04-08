@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Enums;
 
@@ -7,10 +7,12 @@ namespace Neura.Services.Services;
 public class LessonService(
     ApplicationDbContext context,
     IFileService fileService,
+    ICloudinaryService cloudinaryService,
     IWebHostEnvironment webHostEnvironment) : ILessonService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IFileService _fileService = fileService;
+    private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
     private readonly string _filesPath = $"{webHostEnvironment.WebRootPath}/Files";
     private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 
@@ -47,8 +49,23 @@ public class LessonService(
         if (await _context.Lessons.FindAsync(id, cancellationToken) is not { } lesson)
             return Result.Failure(LessonErrors.NotFound);
 
+        // Handle Cloudinary video upload
         if (request.VideoFile is not null && lesson.Type == LessonType.Video)
         {
+            var uploadResult = await _cloudinaryService.UploadVideoAsync(
+                request.VideoFile,
+                id,
+                request.IsVideoPrivate,
+                cancellationToken);
+
+            if (uploadResult.IsFailure)
+                return Result.Failure(uploadResult.Error);
+
+            lesson.CloudinaryVideoUrl = uploadResult.Value;
+            lesson.IsVideoPrivate = request.IsVideoPrivate;
+            lesson.CloudinaryPublicId = ExtractPublicIdFromUrl(uploadResult.Value);
+
+            // Keep backup with local file service if needed
             var sortedName = await _fileService.UploadAsync(request.VideoFile, "Lessons", cancellationToken);
             lesson.VideoSortedName = sortedName;
         }
@@ -84,8 +101,6 @@ public class LessonService(
         string? streamUrl = null;
 
         if (lesson.Type == LessonType.Video && lesson.VideoSortedName is not null)
-            // This points to the controller method we wrote earlier: [HttpGet("{id}/stream")]
-            // We abstract the physical location. The ID is all the endpoint needs.
             streamUrl = $"/api/lessons/{lesson.Id}/stream";
 
         var response = lesson.Adapt<LessonResponse>() with { VideoUrl = streamUrl };
@@ -95,29 +110,320 @@ public class LessonService(
     public async Task<Result<(string Path, string ContentType)>> GetLessonVideoPathAsync(
         int lessonId, string userId, CancellationToken ct)
     {
-        // 1. Fetch Lesson & Security (Keep your existing logic)
-        var lesson = await context.Lessons
+        var lesson = await _context.Lessons
             .AsNoTracking()
             .Include(l => l.Section.Course)
             .FirstOrDefaultAsync(l => l.Id == lessonId, ct);
 
         if (lesson is null) return Result.Failure<(string, string)>(LessonErrors.NotFound);
 
-        // Security Check
         var isInstructor = lesson.Section.Course.CreatedById == userId;
         var canView = isInstructor || lesson.IsPreview;
-
-        //if (!canView) return Result.Failure<(string, string)>(LessonErrors.NotEnrolled);
 
         if (!lesson.VideoSortedName.HasValue)
             return Result.Failure<(string, string)>(LessonErrors.VideoNotFound);
 
-        // 2. Get PATH from FileService (New Method) 🚀
         var fileData = await _fileService.GetFilePathAsync(lesson.VideoSortedName.Value, "Lessons", ct);
 
         if (fileData.path is null)
             return Result.Failure<(string, string)>(LessonErrors.FileNotFound);
 
         return Result.Success((fileData.path, fileData.contentType));
+    }
+
+    /// <summary>
+    /// Gets the Cloudinary video URL for a lesson with appropriate access control.
+    /// For private videos, generates a signed URL valid for 1 hour.
+    /// </summary>
+    public async Task<Result<CloudinaryVideoResponse>> GetCloudinaryVideoAsync(
+        int lessonId,
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        var lesson = await _context.Lessons
+            .AsNoTracking()
+            .Include(l => l.Section.Course)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);
+
+        if (lesson is null)
+            return Result.Failure<CloudinaryVideoResponse>(LessonErrors.NotFound);
+
+        // Check if video exists in Cloudinary
+        if (string.IsNullOrEmpty(lesson.CloudinaryVideoUrl))
+            return Result.Failure<CloudinaryVideoResponse>(LessonErrors.VideoNotFound);
+
+        var isInstructor = lesson.Section.Course.CreatedById == userId;
+
+        // Public preview videos
+        if (!lesson.IsVideoPrivate && lesson.IsPreview)
+        {
+            return Result.Success(new CloudinaryVideoResponse(
+                Url: lesson.CloudinaryVideoUrl,
+                SignedUrl: null,
+                IsPrivate: false,
+                IsPreview: true,
+                Duration: (int)lesson.Duration.TotalSeconds,
+                ExpiresAt: null
+            ));
+        }
+
+        // Private videos: check enrollment
+        if (lesson.IsVideoPrivate && !isInstructor)
+        {
+            var isEnrolled = await _context.CourseUsers
+                .AnyAsync(cu =>
+                    cu.UserId == userId &&
+                    cu.CourseId == lesson.Section.CourseId &&
+                    !cu.IsDeleted,
+                    cancellationToken);
+
+            if (!isEnrolled)
+                return Result.Failure<CloudinaryVideoResponse>(
+                    new Error("Lesson.NotEnrolled", "You must be enrolled in this course to access this video", StatusCodes.Status403Forbidden));
+        }
+
+        // Generate signed URL for private videos (expires in 1 hour)
+        var signedUrl = _cloudinaryService.GenerateSignedUrl(lesson.CloudinaryVideoUrl, 3600);
+        var expiresAt = DateTime.UtcNow.AddHours(1);
+
+        return Result.Success(new CloudinaryVideoResponse(
+            Url: lesson.CloudinaryVideoUrl,
+            SignedUrl: lesson.IsVideoPrivate ? signedUrl : null,
+            IsPrivate: lesson.IsVideoPrivate,
+            IsPreview: lesson.IsPreview,
+            Duration: (int)lesson.Duration.TotalSeconds,
+            ExpiresAt: lesson.IsVideoPrivate ? expiresAt : null
+        ));
+    }
+
+    /// <summary>
+    /// Extracts the Cloudinary public ID from a Cloudinary URL.
+    /// </summary>
+    private static string ExtractPublicIdFromUrl(string url)
+    {
+        try
+        {
+            // URL format: https://res.cloudinary.com/{cloud}/video/upload/v{version}/lessons/{lessonId}/{guid}.mp4
+            var uri = new Uri(url);
+            var segments = uri.PathAndQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Find the index where 'lessons' starts
+            var lessonIndex = Array.IndexOf(segments, "lessons");
+            if (lessonIndex >= 0 && lessonIndex + 2 < segments.Length)
+            {
+                var fileName = segments[lessonIndex + 2]; // Get the filename (guid.format)
+                var lessonId = segments[lessonIndex + 1];
+                var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+                return $"lessons/{lessonId}/{fileNameWithoutExtension}";
+            }
+
+            return url;
+        }
+        catch
+        {
+            return url;
+        }
+    }
+
+    /// <summary>
+    /// Updates the position of a lesson within its section.
+    /// </summary>
+    public async Task<Result> UpdateLessonPositionAsync(int lessonId, int newPosition, string userId,
+        CancellationToken cancellationToken = default)
+    {
+        // Get the lesson with its section and course
+        var lesson = await _context.Lessons
+            .Include(l => l.Section.Course)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);
+
+        if (lesson is null)
+            return Result.Failure(LessonErrors.NotFound);
+
+        // Verify authorization (instructor only)
+        if (lesson.Section.Course.CreatedById != userId)
+            return Result.Failure(LessonErrors.UnauthorizedModification);
+
+        // Get all lessons in the section, ordered by position
+        var lessonsInSection = await _context.Lessons
+            .Where(l => l.SectionId == lesson.SectionId)
+            .OrderBy(l => l.OrderIndex)
+            .ToListAsync(cancellationToken);
+
+        // Validate new position
+        if (newPosition < 1 || newPosition > lessonsInSection.Count)
+            return Result.Failure(LessonErrors.PositionOutOfRange);
+
+        int oldPosition = lesson.OrderIndex;
+
+        // If moving to same position, no change needed
+        if (oldPosition == newPosition)
+            return Result.Success();
+
+        // Reorder lessons
+        if (oldPosition < newPosition)
+        {
+            // Moving down: shift lessons up
+            foreach (var l in lessonsInSection.Where(l => l.OrderIndex > oldPosition && l.OrderIndex <= newPosition))
+            {
+                l.OrderIndex--;
+            }
+        }
+        else
+        {
+            // Moving up: shift lessons down
+            foreach (var l in lessonsInSection.Where(l => l.OrderIndex >= newPosition && l.OrderIndex < oldPosition))
+            {
+                l.OrderIndex++;
+            }
+        }
+
+        lesson.OrderIndex = newPosition;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Updates the privacy status of a lesson's video.
+    /// </summary>
+    public async Task<Result> UpdateLessonPrivacyAsync(int lessonId, UpdateLessonPrivacyRequest request, string userId,
+        CancellationToken cancellationToken = default)
+    {
+        var lesson = await _context.Lessons
+            .Include(l => l.Section.Course)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);
+
+        if (lesson is null)
+            return Result.Failure(LessonErrors.NotFound);
+
+        // Verify authorization (instructor only)
+        if (lesson.Section.Course.CreatedById != userId)
+            return Result.Failure(LessonErrors.UnauthorizedModification);
+
+        // Update privacy settings
+        lesson.IsVideoPrivate = request.IsVideoPrivate;
+        lesson.IsPreview = request.IsPreview;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Updates basic lesson information.
+    /// </summary>
+    public async Task<Result> UpdateLessonAsync(int lessonId, UpdateLessonRequest request, string userId,
+        CancellationToken cancellationToken = default)
+    {
+        var lesson = await _context.Lessons
+            .Include(l => l.Section.Course)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);
+
+        if (lesson is null)
+            return Result.Failure(LessonErrors.NotFound);
+
+        // Verify authorization (instructor only)
+        if (lesson.Section.Course.CreatedById != userId)
+            return Result.Failure(LessonErrors.UnauthorizedModification);
+
+        // Update fields
+        if (!string.IsNullOrEmpty(request.Title))
+            lesson.Title = request.Title;
+
+        if (request.Description is not null)
+            lesson.Description = request.Description;
+
+        lesson.IsPreview = request.IsPreview;
+
+        if (request.ScheduledDate.HasValue)
+            lesson.ScheduledDate = request.ScheduledDate.Value;
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Deletes a lesson and adjusts positions of remaining lessons.
+    /// </summary>
+    public async Task<Result> DeleteLessonAsync(int lessonId, string userId,
+        CancellationToken cancellationToken = default)
+    {
+        var lesson = await _context.Lessons
+            .Include(l => l.Section.Course)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);
+
+        if (lesson is null)
+            return Result.Failure(LessonErrors.NotFound);
+
+        // Verify authorization (instructor only)
+        if (lesson.Section.Course.CreatedById != userId)
+            return Result.Failure(LessonErrors.UnauthorizedModification);
+
+        int deletedPosition = lesson.OrderIndex;
+        int sectionId = lesson.SectionId;
+
+        // Delete the lesson
+        _context.Lessons.Remove(lesson);
+
+        // Delete associated video from Cloudinary if exists
+        if (!string.IsNullOrEmpty(lesson.CloudinaryPublicId))
+        {
+            await _cloudinaryService.DeleteVideoAsync(lesson.CloudinaryPublicId, cancellationToken);
+        }
+
+        // Delete local video file if exists
+        if (lesson.VideoSortedName.HasValue)
+        {
+            var fileData = await _fileService.GetFilePathAsync(lesson.VideoSortedName.Value, "Lessons", cancellationToken);
+            if (fileData.path is not null)
+                _fileService.Delete(fileData.path);
+        }
+
+        // Reorder remaining lessons in the section
+        var lessonsAfter = await _context.Lessons
+            .Where(l => l.SectionId == sectionId && l.OrderIndex > deletedPosition)
+            .OrderBy(l => l.OrderIndex)
+            .ToListAsync(cancellationToken);
+
+        foreach (var l in lessonsAfter)
+        {
+            l.OrderIndex--;
+        }
+
+        await _context.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Gets all lessons in a section with their position information.
+    /// </summary>
+    public async Task<Result<List<LessonWithPositionResponse>>> GetSectionLessonsAsync(int sectionId, string userId,
+        CancellationToken cancellationToken = default)
+    {
+        var section = await _context.Sections
+            .Include(s => s.Lessons)
+            .FirstOrDefaultAsync(s => s.Id == sectionId, cancellationToken);
+
+        if (section is null)
+            return Result.Failure<List<LessonWithPositionResponse>>(SectionErrors.SectionNotFound);
+
+        var totalLessons = section.Lessons.Count;
+        var lessons = section.Lessons
+            .OrderBy(l => l.OrderIndex)
+            .Select(l => new LessonWithPositionResponse(
+                Id: l.Id,
+                Title: l.Title,
+                Description: l.Description,
+                Position: l.OrderIndex,
+                TotalInSection: totalLessons,
+                IsPreview: l.IsPreview,
+                IsVideoPrivate: l.IsVideoPrivate,
+                IsPublished: l.IsPublished,
+                Type: l.Type,
+                VideoUrl: l.CloudinaryVideoUrl ?? (l.VideoSortedName.HasValue ? $"/api/lessons/{l.Id}/stream" : null),
+                CreatedAt: l.UpdatedOn ?? l.CreatedOn
+            ))
+            .ToList();
+
+        return Result.Success(lessons);
     }
 }

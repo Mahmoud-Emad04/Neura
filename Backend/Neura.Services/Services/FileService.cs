@@ -74,17 +74,19 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
 
     private async Task<UploadedFile> StreamFile(IFormFile file, string folderName, CancellationToken cancellationToken)
     {
-        var ranodmFileName = Path.GetRandomFileName();
+        var fileExtension = Path.GetExtension(file.FileName);
+        var randomFileName = Path.GetRandomFileName();
+        var storedFileName = Path.ChangeExtension(randomFileName, fileExtension);
 
         var uploadedFile = new UploadedFile
         {
             FileName = file.FileName,
-            StoredFileName = ranodmFileName,
+            StoredFileName = storedFileName,
             ContentType = file.ContentType,
-            FileExtension = Path.GetExtension(file.FileName)
+            FileExtension = fileExtension
         };
 
-        var path = Path.Combine(_filesPath, folderName, ranodmFileName);
+        var path = Path.Combine(_filesPath, folderName, storedFileName);
 
         using var stream = File.Create(path);
         await file.CopyToAsync(stream, cancellationToken);

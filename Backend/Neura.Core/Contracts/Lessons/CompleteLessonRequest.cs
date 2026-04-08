@@ -4,5 +4,6 @@ public record CompleteLessonRequest(
     string? Description,
     bool IsPreview,
     DateTime? ScheduledDate,
-    IFormFile? VideoFile
+    IFormFile? VideoFile,
+    bool IsVideoPrivate = false
 );

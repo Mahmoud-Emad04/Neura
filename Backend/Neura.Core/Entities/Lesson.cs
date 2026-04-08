@@ -10,6 +10,11 @@ public class Lesson : AuditableEntity
 
     public Guid? VideoSortedName { get; set; }
 
+    // Cloudinary video storage
+    public string? CloudinaryVideoUrl { get; set; }
+    public string? CloudinaryPublicId { get; set; }
+    public bool IsVideoPrivate { get; set; } = false;
+
     public TimeSpan Duration { get; set; } = TimeSpan.Zero;
 
     public int OrderIndex { get; set; }

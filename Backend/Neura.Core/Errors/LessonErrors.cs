@@ -46,4 +46,30 @@ public static class LessonErrors
         "Lesson.PreviewNotAllowed",
         "This lesson is not available for free preview.",
         StatusCodes.Status403Forbidden);
+
+    // 4. POSITION & MANAGEMENT
+    public static readonly Error InvalidPosition = new(
+        "Lesson.InvalidPosition",
+        "The specified position is invalid for this lesson's section.",
+        StatusCodes.Status400BadRequest);
+
+    public static readonly Error PositionOutOfRange = new(
+        "Lesson.PositionOutOfRange",
+        "Position must be between 1 and the total number of lessons in the section.",
+        StatusCodes.Status400BadRequest);
+
+    public static readonly Error CannotDeleteLesson = new(
+        "Lesson.CannotDeleteLesson",
+        "This lesson cannot be deleted.",
+        StatusCodes.Status400BadRequest);
+
+    public static readonly Error UnauthorizedModification = new(
+        "Lesson.UnauthorizedModification",
+        "You do not have permission to modify this lesson.",
+        StatusCodes.Status403Forbidden);
+
+    public static readonly Error SectionNotFound = new(
+        "Lesson.SectionNotFound",
+        "The lesson's section could not be found.",
+        StatusCodes.Status404NotFound);
 }
