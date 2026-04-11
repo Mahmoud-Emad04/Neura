@@ -40,7 +40,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("CourseBookmarks");
+                    b.ToTable("CourseBookmarks", (string)null);
                 });
 
             modelBuilder.Entity("CourseTag", b =>
@@ -55,7 +55,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("CourseTag");
+                    b.ToTable("CourseTag", (string)null);
                 });
 
             modelBuilder.Entity("CourseUser", b =>
@@ -76,7 +76,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("CourseUsers");
+                    b.ToTable("CourseUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -500,7 +500,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.CourseLearningOutcome", b =>
@@ -514,7 +514,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("CourseId", "Outcome");
 
-                    b.ToTable("CourseLearningOutcomes");
+                    b.ToTable("CourseLearningOutcomes", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.CoursePrerequisite", b =>
@@ -528,7 +528,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("CourseId", "Requirement");
 
-                    b.ToTable("CoursePrerequisites");
+                    b.ToTable("CoursePrerequisites", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>
@@ -605,7 +605,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("SectionId", "OrderIndex");
 
-                    b.ToTable("Lessons");
+                    b.ToTable("Lessons", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Post", b =>
@@ -671,7 +671,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Posts");
+                    b.ToTable("Posts", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.PostComment", b =>
@@ -727,7 +727,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("PostComments");
+                    b.ToTable("PostComments", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.PostLike", b =>
@@ -755,7 +755,7 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("PostId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("PostLikes");
+                    b.ToTable("PostLikes", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Section", b =>
@@ -813,7 +813,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Sections");
+                    b.ToTable("Sections", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Tag", b =>
@@ -831,7 +831,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags");
+                    b.ToTable("Tags", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.UploadedFile", b =>
@@ -858,7 +858,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UploadedFiles");
+                    b.ToTable("UploadedFiles", (string)null);
                 });
 
             modelBuilder.Entity("Review", b =>
@@ -899,7 +899,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("UpdatedById");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("CourseBookmark", b =>
@@ -1034,7 +1034,7 @@ namespace Neura.Repository.Migrations
 
                             b1.HasKey("UserId", "Id");
 
-                            b1.ToTable("RefreshTokens");
+                            b1.ToTable("RefreshTokens", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");

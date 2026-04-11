@@ -14,9 +14,6 @@ public interface ILessonService
     Task<Result<LessonResponse>> GetLessonByIdAsync(int lessonId, string userId,
         CancellationToken cancellationToken = default);
 
-    Task<Result<(string Path, string ContentType)>> GetLessonVideoPathAsync(
-        int lessonId, string userId, CancellationToken ct);
-
     Task<Result<CloudinaryVideoResponse>> GetCloudinaryVideoAsync(int lessonId, string userId,
         CancellationToken cancellationToken = default);
 

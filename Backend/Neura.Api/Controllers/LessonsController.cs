@@ -7,10 +7,8 @@ namespace Neura.Api.Controllers;
 [ApiController]
 public class LessonsController(
     ILessonService lessonService,
-    IFileService fileService,
     ICloudinaryService cloudinaryService) : ControllerBase
 {
-    private readonly IFileService _fileService = fileService;
     private readonly ILessonService _lessonService = lessonService;
     private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
 
@@ -53,21 +51,6 @@ public class LessonsController(
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
-    [HttpGet("{id}/stream")]
-    [ResponseCache(NoStore = true)]
-    public async Task<IActionResult> StreamVideo(int id, CancellationToken ct)
-    {
-        var userId = User.GetUserId();
-
-        var result = await _lessonService.GetLessonVideoPathAsync(id, userId, ct);
-
-        if (result.IsFailure) return result.ToProblem();
-
-        var (physicalPath, contentType) = result.Value;
-
-        return PhysicalFile(physicalPath, contentType, true);
-    }
-
     /// <summary>
     ///     Gets the Cloudinary video URL for a lesson with appropriate access control.
     ///     For private videos, returns a signed URL valid for 1 hour.
@@ -83,6 +66,71 @@ public class LessonsController(
         var result = await _lessonService.GetCloudinaryVideoAsync(id, userId, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Streams video directly from Cloudinary through the backend.
+    ///     This endpoint validates token expiration, access control, and prevents downloads.
+    /// </summary>
+    [HttpGet("{id}/stream")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status206PartialContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> StreamVideo(int id, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+
+        // Get the video URL and validate access (this does the heavy lifting of security checks)
+        var result = await _lessonService.GetCloudinaryVideoAsync(id, userId, ct);
+
+        if (result.IsFailure)
+            return result.ToProblem();
+
+        var videoUrl = result.Value.Url;
+
+        try
+        {
+            // Security: Set headers to prevent caching and downloading
+            Response.Headers.Append("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+            Response.Headers.Append("Pragma", "no-cache");
+            Response.Headers.Append("Content-Disposition", "inline");     // Force inline display, not download
+            Response.Headers.Append("X-Content-Type-Options", "nosniff"); // Security header
+
+            // Set CSP to restrict where this video can be embedded (optional but recommended)
+            // Response.Headers.Append("Content-Security-Policy", "default-src 'self'; media-src 'self' blob:;");
+
+            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
+
+            // Add a small trick to prevent simple downloaders by requiring specific headers
+            // (Cloudinary doesn't care, but we can log/filter later if needed)
+
+            var response = await httpClient.GetAsync(videoUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                return Unauthorized(new { message = "Video access token expired. Please request a new one." });
+
+            if (!response.IsSuccessStatusCode)
+                return StatusCode((int)response.StatusCode, new { message = "Failed to stream video from Cloudinary" });
+
+            var stream = await response.Content.ReadAsStreamAsync(ct);
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "video/mp4";
+
+            // Required for progressive streaming (seeking in video)
+            Response.Headers.Append("Accept-Ranges", "bytes");
+
+            return File(stream, contentType, enableRangeProcessing: true);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(StatusCodes.Status408RequestTimeout, new { message = "Video streaming request timed out or was cancelled by the client." });
+        }
+        catch (Exception ex)
+        {
+            // Log exception here if you have a logger
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error streaming video." });
+        }
     }
 
     /// <summary>

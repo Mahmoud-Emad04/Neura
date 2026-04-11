@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Hosting;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Enums;
 
@@ -6,15 +5,10 @@ namespace Neura.Services.Services;
 
 public class LessonService(
     ApplicationDbContext context,
-    IFileService fileService,
-    ICloudinaryService cloudinaryService,
-    IWebHostEnvironment webHostEnvironment) : ILessonService
+    ICloudinaryService cloudinaryService) : ILessonService
 {
     private readonly ApplicationDbContext _context = context;
-    private readonly IFileService _fileService = fileService;
     private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
-    private readonly string _filesPath = $"{webHostEnvironment.WebRootPath}/Files";
-    private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
 
     public async Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request,
         CancellationToken cancellationToken)
@@ -49,25 +43,21 @@ public class LessonService(
         if (await _context.Lessons.FindAsync(id, cancellationToken) is not { } lesson)
             return Result.Failure(LessonErrors.NotFound);
 
-        // Handle Cloudinary video upload
+        // Handle Cloudinary video upload only
         if (request.VideoFile is not null && lesson.Type == LessonType.Video)
         {
             var uploadResult = await _cloudinaryService.UploadVideoAsync(
                 request.VideoFile,
                 id,
-                request.IsVideoPrivate,
+                true,  // Always upload as private
                 cancellationToken);
 
             if (uploadResult.IsFailure)
                 return Result.Failure(uploadResult.Error);
 
             lesson.CloudinaryVideoUrl = uploadResult.Value;
-            lesson.IsVideoPrivate = request.IsVideoPrivate;
+            lesson.IsVideoPrivate = true;  // Always set to private
             lesson.CloudinaryPublicId = ExtractPublicIdFromUrl(uploadResult.Value);
-
-            // Keep backup with local file service if needed
-            var sortedName = await _fileService.UploadAsync(request.VideoFile, "Lessons", cancellationToken);
-            lesson.VideoSortedName = sortedName;
         }
 
         lesson.Description = request.Description;
@@ -98,42 +88,15 @@ public class LessonService(
 
         if (!canView) return Result.Failure<LessonResponse>(LessonErrors.NotEnrolled);
 
-        string? streamUrl = null;
-
-        if (lesson.Type == LessonType.Video && lesson.VideoSortedName is not null)
-            streamUrl = $"/api/lessons/{lesson.Id}/stream";
-
-        var response = lesson.Adapt<LessonResponse>() with { VideoUrl = streamUrl };
+        var response = lesson.Adapt<LessonResponse>();
         return Result.Success(response);
     }
 
-    public async Task<Result<(string Path, string ContentType)>> GetLessonVideoPathAsync(
-        int lessonId, string userId, CancellationToken ct)
-    {
-        var lesson = await _context.Lessons
-            .AsNoTracking()
-            .Include(l => l.Section.Course)
-            .FirstOrDefaultAsync(l => l.Id == lessonId, ct);
-
-        if (lesson is null) return Result.Failure<(string, string)>(LessonErrors.NotFound);
-
-        var isInstructor = lesson.Section.Course.CreatedById == userId;
-        var canView = isInstructor || lesson.IsPreview;
-
-        if (!lesson.VideoSortedName.HasValue)
-            return Result.Failure<(string, string)>(LessonErrors.VideoNotFound);
-
-        var fileData = await _fileService.GetFilePathAsync(lesson.VideoSortedName.Value, "Lessons", ct);
-
-        if (fileData.path is null)
-            return Result.Failure<(string, string)>(LessonErrors.FileNotFound);
-
-        return Result.Success((fileData.path, fileData.contentType));
-    }
 
     /// <summary>
-    /// Gets the Cloudinary video URL for a lesson with appropriate access control.
-    /// For private videos, generates a signed URL valid for 1 hour.
+    /// Gets the Cloudinary video URL for streaming a lesson's video.
+    /// For all videos, generates a signed URL valid for 1 hour that can only be streamed, not downloaded.
+    /// The URL includes authentication tokens to prevent direct access.
     /// </summary>
     public async Task<Result<CloudinaryVideoResponse>> GetCloudinaryVideoAsync(
         int lessonId,
@@ -154,22 +117,10 @@ public class LessonService(
 
         var isInstructor = lesson.Section.Course.CreatedById == userId;
 
-        // Public preview videos
-        if (!lesson.IsVideoPrivate && lesson.IsPreview)
-        {
-            return Result.Success(new CloudinaryVideoResponse(
-                Url: lesson.CloudinaryVideoUrl,
-                SignedUrl: null,
-                IsPrivate: false,
-                IsPreview: true,
-                Duration: (int)lesson.Duration.TotalSeconds,
-                ExpiresAt: null
-            ));
-        }
-
-        // Private videos: check enrollment
+        // Check access based on video privacy settings
         if (lesson.IsVideoPrivate && !isInstructor)
         {
+            // Private videos: check enrollment
             var isEnrolled = await _context.CourseUsers
                 .AnyAsync(cu =>
                     cu.UserId == userId &&
@@ -182,17 +133,17 @@ public class LessonService(
                     new Error("Lesson.NotEnrolled", "You must be enrolled in this course to access this video", StatusCodes.Status403Forbidden));
         }
 
-        // Generate signed URL for private videos (expires in 1 hour)
+        // Generate signed URL for streaming (valid for 1 hour)
         var signedUrl = _cloudinaryService.GenerateSignedUrl(lesson.CloudinaryVideoUrl, 3600);
         var expiresAt = DateTime.UtcNow.AddHours(1);
 
         return Result.Success(new CloudinaryVideoResponse(
-            Url: lesson.CloudinaryVideoUrl,
-            SignedUrl: lesson.IsVideoPrivate ? signedUrl : null,
+            Url: signedUrl,
+            SignedUrl: signedUrl,
             IsPrivate: lesson.IsVideoPrivate,
             IsPreview: lesson.IsPreview,
             Duration: (int)lesson.Duration.TotalSeconds,
-            ExpiresAt: lesson.IsVideoPrivate ? expiresAt : null
+            ExpiresAt: expiresAt
         ));
     }
 
@@ -203,16 +154,16 @@ public class LessonService(
     {
         try
         {
-            // URL format: https://res.cloudinary.com/{cloud}/video/upload/v{version}/lessons/{lessonId}/{guid}.mp4
-            var uri = new Uri(url);
-            var segments = uri.PathAndQuery.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (string.IsNullOrWhiteSpace(url)) return string.Empty;
 
-            // Find the index where 'lessons' starts
+            var uri = new Uri(url);
+            var segments = uri.PathAndQuery.Split('/', StringSplitOptions.RemoveEmptyEntries);
+
             var lessonIndex = Array.IndexOf(segments, "lessons");
             if (lessonIndex >= 0 && lessonIndex + 2 < segments.Length)
             {
-                var fileName = segments[lessonIndex + 2]; // Get the filename (guid.format)
                 var lessonId = segments[lessonIndex + 1];
+                var fileName = segments[lessonIndex + 2];
                 var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
                 return $"lessons/{lessonId}/{fileNameWithoutExtension}";
             }
@@ -284,7 +235,8 @@ public class LessonService(
     }
 
     /// <summary>
-    /// Updates the privacy status of a lesson's video.
+    /// Updates the privacy status of a lesson.
+    /// Note: Videos are ALWAYS private for security. Only IsPreview can be changed.
     /// </summary>
     public async Task<Result> UpdateLessonPrivacyAsync(int lessonId, UpdateLessonPrivacyRequest request, string userId,
         CancellationToken cancellationToken = default)
@@ -300,9 +252,11 @@ public class LessonService(
         if (lesson.Section.Course.CreatedById != userId)
             return Result.Failure(LessonErrors.UnauthorizedModification);
 
-        // Update privacy settings
-        lesson.IsVideoPrivate = request.IsVideoPrivate;
+        // Update lesson preview setting only
         lesson.IsPreview = request.IsPreview;
+
+        // IsVideoPrivate is ALWAYS true (videos always private for security)
+        lesson.IsVideoPrivate = true;
 
         await _context.SaveChangesAsync(cancellationToken);
         return Result.Success();
@@ -370,14 +324,6 @@ public class LessonService(
             await _cloudinaryService.DeleteVideoAsync(lesson.CloudinaryPublicId, cancellationToken);
         }
 
-        // Delete local video file if exists
-        if (lesson.VideoSortedName.HasValue)
-        {
-            var fileData = await _fileService.GetFilePathAsync(lesson.VideoSortedName.Value, "Lessons", cancellationToken);
-            if (fileData.path is not null)
-                _fileService.Delete(fileData.path);
-        }
-
         // Reorder remaining lessons in the section
         var lessonsAfter = await _context.Lessons
             .Where(l => l.SectionId == sectionId && l.OrderIndex > deletedPosition)
@@ -419,7 +365,7 @@ public class LessonService(
                 IsVideoPrivate: l.IsVideoPrivate,
                 IsPublished: l.IsPublished,
                 Type: l.Type,
-                VideoUrl: l.CloudinaryVideoUrl ?? (l.VideoSortedName.HasValue ? $"/api/lessons/{l.Id}/stream" : null),
+                VideoUrl: l.CloudinaryVideoUrl,
                 CreatedAt: l.UpdatedOn ?? l.CreatedOn
             ))
             .ToList();
