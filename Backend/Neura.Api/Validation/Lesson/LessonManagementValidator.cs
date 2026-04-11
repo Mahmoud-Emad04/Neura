@@ -14,10 +14,6 @@ public class UpdateLessonPositionRequestValidator : AbstractValidator<UpdateLess
 
 public class UpdateLessonPrivacyRequestValidator : AbstractValidator<UpdateLessonPrivacyRequest>
 {
-    public UpdateLessonPrivacyRequestValidator()
-    {
-        // No specific validation needed, boolean properties are always valid
-    }
 }
 
 public class UpdateLessonRequestValidator : AbstractValidator<UpdateLessonRequest>

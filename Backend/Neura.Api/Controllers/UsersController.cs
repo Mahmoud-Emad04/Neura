@@ -9,7 +9,7 @@ public class UsersController(IUserService userService) : ControllerBase
     private readonly IUserService _userService = userService;
 
     /// <summary>
-    /// Get Instructor By CourseId
+    ///     Get Instructor By CourseId
     /// </summary>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -21,8 +21,6 @@ public class UsersController(IUserService userService) : ControllerBase
     public async Task<IActionResult> GetInstructorByCourseId(string courseId, CancellationToken cancellationToken)
     {
         var response = await _userService.GetInstructorByCourseId(courseId, cancellationToken);
-        return response.IsSuccess ?
-            Ok(response.Value) :
-            response.ToProblem();
+        return response.IsSuccess ? Ok(response.Value) : response.ToProblem();
     }
 }

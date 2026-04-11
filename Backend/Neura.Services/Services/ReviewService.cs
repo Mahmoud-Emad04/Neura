@@ -1,5 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
-using Neura.Core.Contracts.Review;
+﻿using Neura.Core.Contracts.Review;
 using Neura.Services.Helpers;
 
 namespace Neura.Services.Services;

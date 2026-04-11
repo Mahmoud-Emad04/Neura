@@ -50,13 +50,13 @@ public class CourseService(
                 .ToListAsync(cancellationToken);
 
             foreach (var course in paginatedCourses.Items)
-            {
                 if (TryDecodeCourseId(course.KeyId, out var id))
                 {
                     course.IsBookmarked = bookmarkedCourseIds.Contains(id);
-                    course.IsEnrolled = await _context.CourseUsers.AnyAsync(cu => cu.CourseId == id && cu.UserId == userId, cancellationToken);
+                    course.IsEnrolled =
+                        await _context.CourseUsers.AnyAsync(cu => cu.CourseId == id && cu.UserId == userId,
+                            cancellationToken);
                 }
-            }
         }
 
         return Result.Success(paginatedCourses);
@@ -78,7 +78,7 @@ public class CourseService(
             return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
 
         var totalCourseMinutes = course.Sections.SelectMany(s => s.Lessons)
-                                                      .Sum(l => l.Duration.TotalMinutes);
+            .Sum(l => l.Duration.TotalMinutes);
 
         var response = course.Adapt<CourseResponse>() with
         {
@@ -88,7 +88,8 @@ public class CourseService(
         return Result.Success(response);
     }
 
-    public async Task<Result<CourseMetadataResponse>> GetCourseMetadataAsync(string keyId, string? userId, CancellationToken cancellationToken = default)
+    public async Task<Result<CourseMetadataResponse>> GetCourseMetadataAsync(string keyId, string? userId,
+        CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
@@ -110,18 +111,23 @@ public class CourseService(
             ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl),
 
             NumberOfStudents = await _context.CourseUsers
-                .CountAsync(cu => cu.CourseId == courseId && cu.PermissionsMask == studentRoleMask && !cu.IsDeleted, cancellationToken),
+                .CountAsync(cu => cu.CourseId == courseId && cu.PermissionsMask == studentRoleMask && !cu.IsDeleted,
+                    cancellationToken),
             IsEnrolled = userId is not null &&
-                await _context.CourseUsers.AnyAsync(cu => cu.CourseId == courseId && cu.UserId == userId, cancellationToken),
+                         await _context.CourseUsers.AnyAsync(cu => cu.CourseId == courseId && cu.UserId == userId,
+                             cancellationToken),
 
             IsBookmarked = userId is not null &&
-                await _context.CourseBookmarks.AnyAsync(cb => cb.CourseId == courseId && cb.UserId == userId && !cb.IsDeleted, cancellationToken),
+                           await _context.CourseBookmarks.AnyAsync(
+                               cb => cb.CourseId == courseId && cb.UserId == userId && !cb.IsDeleted,
+                               cancellationToken),
 
             IsOwner = userId is not null && userId == course.CreatedById
         };
 
         return Result.Success(response);
     }
+
     public async Task<Result<CourseMetadataResponse>> CreateAsync(CourseRequest request, string userId,
         CancellationToken cancellationToken = default)
     {
@@ -186,7 +192,8 @@ public class CourseService(
         return Result.Success();
     }
 
-    public async Task<Result<CourseMetadataResponse>> UpdateAsync(string keyId, CourseUpdateRequest request, string userId,
+    public async Task<Result<CourseMetadataResponse>> UpdateAsync(string keyId, CourseUpdateRequest request,
+        string userId,
         CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
@@ -304,7 +311,8 @@ public class CourseService(
         return Result.Success(response);
     }
 
-    public async Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken = default)
+    public async Task<Result> ToggleBookmarkAsync(string keyId, string userId,
+        CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure(CourseErrors.CourseNotFound);
@@ -313,7 +321,7 @@ public class CourseService(
                 cancellationToken) is not { } bookmark)
             await _context.CourseBookmarks.AddAsync(
                 new CourseBookmark
-                { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
+                    { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
                 cancellationToken);
         else
             bookmark.IsDeleted = !bookmark.IsDeleted;
@@ -357,8 +365,13 @@ public class CourseService(
         return true;
     }
 
-    private string BaseUrl() => _helpers.GetBaseUrl();
+    private string BaseUrl()
+    {
+        return _helpers.GetBaseUrl();
+    }
 
-    private static string DefaultCourseImagePath() =>
-        Path.Combine("Images", ImageConsts.Course, ImageConsts.DefaultCourseImage);
+    private static string DefaultCourseImagePath()
+    {
+        return Path.Combine("Images", ImageConsts.Course, ImageConsts.DefaultCourseImage);
+    }
 }

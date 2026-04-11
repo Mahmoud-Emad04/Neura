@@ -5,12 +5,16 @@ using Neura.Services.Helpers;
 
 namespace Neura.Services.Services;
 
-public class UserService(UserManager<ApplicationUser> userManager, ApplicationDbContext context, IServiceHelpers helpers, ILogger<UserService> logger) : IUserService
+public class UserService(
+    UserManager<ApplicationUser> userManager,
+    ApplicationDbContext context,
+    IServiceHelpers helpers,
+    ILogger<UserService> logger) : IUserService
 {
-    private readonly ILogger<UserService> _logger = logger;
-    private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly ApplicationDbContext _context = context;
     private readonly IServiceHelpers _helpers = helpers;
+    private readonly ILogger<UserService> _logger = logger;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
 
     public async Task<Result<UserProfileResponse>> GetProfileAsync(string userId)
     {
@@ -54,9 +58,10 @@ public class UserService(UserManager<ApplicationUser> userManager, ApplicationDb
         _logger.LogInformation("HangFire");
     }
 
-    public async Task<Result<InstructorSummaryResponse>> GetInstructorByCourseId(string keyId, CancellationToken cancellationToken = default)
+    public async Task<Result<InstructorSummaryResponse>> GetInstructorByCourseId(string keyId,
+        CancellationToken cancellationToken = default)
     {
-        if (!TryDecodeCourseId(keyId, out int courseId))
+        if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure<InstructorSummaryResponse>(CourseErrors.CourseNotFound);
 
         var course = await _context.Courses.FindAsync(courseId, cancellationToken);
@@ -64,7 +69,7 @@ public class UserService(UserManager<ApplicationUser> userManager, ApplicationDb
             return Result.Failure<InstructorSummaryResponse>(CourseErrors.CourseNotFound);
 
         var user = await _context.Users
-                    .SingleOrDefaultAsync(u => u.Id == course.CreatedById, cancellationToken);
+            .SingleOrDefaultAsync(u => u.Id == course.CreatedById, cancellationToken);
 
         if (user is null)
             return Result.Failure<InstructorSummaryResponse>(UserErrors.UserNotFound);
@@ -76,7 +81,8 @@ public class UserService(UserManager<ApplicationUser> userManager, ApplicationDb
 
         instructorCourseIds ??= [];
 
-        (int globalStudentCount, double globalRating, int globalRatingDataCount) = await GetStudentsAndRating(instructorCourseIds, cancellationToken);
+        var (globalStudentCount, globalRating, globalRatingDataCount) =
+            await GetStudentsAndRating(instructorCourseIds, cancellationToken);
 
         return Result.Success(user.Adapt<InstructorSummaryResponse>() with
         {
@@ -101,9 +107,9 @@ public class UserService(UserManager<ApplicationUser> userManager, ApplicationDb
         return true;
     }
 
-    private async Task<(int globalStudentCount, double globalRating, int globalRatingDataCount)> GetStudentsAndRating(List<int> instructorCourseIds, CancellationToken cancellationToken)
+    private async Task<(int globalStudentCount, double globalRating, int globalRatingDataCount)> GetStudentsAndRating(
+        List<int> instructorCourseIds, CancellationToken cancellationToken)
     {
-
         var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
 
         var globalStudentCount = await _context.CourseUsers

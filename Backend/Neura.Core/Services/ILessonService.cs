@@ -5,7 +5,7 @@ namespace Neura.Core.Services;
 
 public interface ILessonService
 {
-    Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request,
+    Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request,string userId,
         CancellationToken cancellationToken = default);
 
     Task<Result> CompleteLessonAsync(int id, CompleteLessonRequest request,
@@ -18,31 +18,31 @@ public interface ILessonService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates the position of a lesson within its section.
+    ///     Updates the position of a lesson within its section.
     /// </summary>
     Task<Result> UpdateLessonPositionAsync(int lessonId, int newPosition, string userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates the privacy status of a lesson's video.
+    ///     Updates the privacy status of a lesson's video.
     /// </summary>
     Task<Result> UpdateLessonPrivacyAsync(int lessonId, UpdateLessonPrivacyRequest request, string userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates basic lesson information.
+    ///     Updates basic lesson information.
     /// </summary>
     Task<Result> UpdateLessonAsync(int lessonId, UpdateLessonRequest request, string userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a lesson and adjusts positions of remaining lessons.
+    ///     Deletes a lesson and adjusts positions of remaining lessons.
     /// </summary>
     Task<Result> DeleteLessonAsync(int lessonId, string userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all lessons in a section with their position information.
+    ///     Gets all lessons in a section with their position information.
     /// </summary>
     Task<Result<List<LessonWithPositionResponse>>> GetSectionLessonsAsync(int sectionId, string userId,
         CancellationToken cancellationToken = default);

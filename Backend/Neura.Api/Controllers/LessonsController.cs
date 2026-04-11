@@ -1,28 +1,30 @@
-﻿using Neura.Api.Extensions;
+﻿using System.Net;
+using Neura.Api.Extensions;
 using Neura.Core.Contracts.Lessons;
 
 namespace Neura.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
+
 public class LessonsController(
     ILessonService lessonService,
     ICloudinaryService cloudinaryService) : ControllerBase
 {
-    private readonly ILessonService _lessonService = lessonService;
     private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
+    private readonly ILessonService _lessonService = lessonService;
 
     /// <summary>
     ///     PAGE 1: Initialize the lesson shell with basic metadata.
     /// </summary>
     [HttpPost("init")]
-    [Authorize]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Initialize([FromBody] CreateLessonRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _lessonService.CreateLessonMetadataAsync(request, cancellationToken);
+        var result = await _lessonService.CreateLessonMetadataAsync(request,User.GetUserId()!, cancellationToken);
 
         return result.IsSuccess
             ? Ok(new { LessonId = result.Value })
@@ -36,7 +38,6 @@ public class LessonsController(
     ///     Uses 'FromForm' to handle the multi-part request (File + JSON fields).
     /// </remarks>
     [HttpPut("{id}/complete")]
-    [Authorize]
     [DisableRequestSizeLimit]
     [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -56,7 +57,6 @@ public class LessonsController(
     ///     For private videos, returns a signed URL valid for 1 hour.
     /// </summary>
     [HttpGet("{id}/video")]
-    [Authorize]
     [ProducesResponseType(typeof(CloudinaryVideoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -73,7 +73,6 @@ public class LessonsController(
     ///     This endpoint validates token expiration, access control, and prevents downloads.
     /// </summary>
     [HttpGet("{id}/stream")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status206PartialContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -95,7 +94,7 @@ public class LessonsController(
             // Security: Set headers to prevent caching and downloading
             Response.Headers.Append("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
             Response.Headers.Append("Pragma", "no-cache");
-            Response.Headers.Append("Content-Disposition", "inline");     // Force inline display, not download
+            Response.Headers.Append("Content-Disposition", "inline"); // Force inline display, not download
             Response.Headers.Append("X-Content-Type-Options", "nosniff"); // Security header
 
             // Set CSP to restrict where this video can be embedded (optional but recommended)
@@ -108,7 +107,7 @@ public class LessonsController(
 
             var response = await httpClient.GetAsync(videoUrl, HttpCompletionOption.ResponseHeadersRead, ct);
 
-            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
                 return Unauthorized(new { message = "Video access token expired. Please request a new one." });
 
             if (!response.IsSuccessStatusCode)
@@ -120,11 +119,12 @@ public class LessonsController(
             // Required for progressive streaming (seeking in video)
             Response.Headers.Append("Accept-Ranges", "bytes");
 
-            return File(stream, contentType, enableRangeProcessing: true);
+            return File(stream, contentType, true);
         }
         catch (OperationCanceledException)
         {
-            return StatusCode(StatusCodes.Status408RequestTimeout, new { message = "Video streaming request timed out or was cancelled by the client." });
+            return StatusCode(StatusCodes.Status408RequestTimeout,
+                new { message = "Video streaming request timed out or was cancelled by the client." });
         }
         catch (Exception ex)
         {
@@ -138,7 +138,6 @@ public class LessonsController(
     ///     Route: PUT /api/lessons/{id}/position
     /// </summary>
     [HttpPut("{id}/position")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -157,7 +156,6 @@ public class LessonsController(
     ///     Route: PUT /api/lessons/{id}/privacy
     /// </summary>
     [HttpPut("{id}/privacy")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -176,7 +174,6 @@ public class LessonsController(
     ///     Route: PUT /api/lessons/{id}
     /// </summary>
     [HttpPut("{id}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -195,7 +192,6 @@ public class LessonsController(
     ///     Route: DELETE /api/lessons/{id}
     /// </summary>
     [HttpDelete("{id}")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

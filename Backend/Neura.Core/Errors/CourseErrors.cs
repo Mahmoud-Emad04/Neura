@@ -9,7 +9,11 @@ public static class CourseErrors
 
     public static readonly Error CourseTagNotFound =
         new("Course.TagNotFound", "One or more provided tag IDs do not exist.", StatusCodes.Status404NotFound);
-
+    public static readonly Error UnauthorizedAction = new(
+        "Course.UnauthorizedAction",
+        "You do not have the required permissions to perform this action on this course.",
+        StatusCodes.Status401Unauthorized
+    );
     public static readonly Error CourseInvalidData =
         new("Course.InvalidData", "One or more course fields are invalid.", StatusCodes.Status400BadRequest);
 

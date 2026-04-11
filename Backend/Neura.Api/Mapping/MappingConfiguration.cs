@@ -21,7 +21,6 @@ public class MappingConfiguration : IRegister
             .Map(dest => dest.LearningOutcomes, src => src.LearningOutcomes.Select(p => p.Outcome));
 
 
-
         config.NewConfig<Section, SectionResponse>()
             .Map(dest => dest.TotalMinutes, src => (int)src.Lessons.Sum(l => l.Duration.TotalMinutes));
 
@@ -41,6 +40,12 @@ public class MappingConfiguration : IRegister
         //    .Ignore(src => src.Tags);
 
         config.NewConfig<CourseUpdateRequest, Course>()
+            .Map(dest => dest.Prerequisites,
+                src => src.Prerequisites.Select(p => new CoursePrerequisite { Requirement = p }).ToList())
+            .Map(dest => dest.LearningOutcomes,
+                src => src.LearningOutcomes.Select(p => new CourseLearningOutcome { Outcome = p }).ToList())
+            .Ignore(src => src.Tags);
+        config.NewConfig<CourseRequest, Course>()
             .Map(dest => dest.Prerequisites,
                 src => src.Prerequisites.Select(p => new CoursePrerequisite { Requirement = p }).ToList())
             .Map(dest => dest.LearningOutcomes,

@@ -8,8 +8,6 @@ public class Lesson : AuditableEntity
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
 
-    public Guid? VideoSortedName { get; set; }
-
     // Cloudinary video storage
     public string? CloudinaryVideoUrl { get; set; }
     public string? CloudinaryPublicId { get; set; }

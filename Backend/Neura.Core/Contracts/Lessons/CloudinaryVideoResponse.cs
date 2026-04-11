@@ -1,7 +1,7 @@
 namespace Neura.Core.Contracts.Lessons;
 
 /// <summary>
-/// Response containing Cloudinary video information with access control details.
+///     Response containing Cloudinary video information with access control details.
 /// </summary>
 public record CloudinaryVideoResponse(
     string Url,

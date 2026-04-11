@@ -1,9 +1,9 @@
-﻿using Neura.Api.Extensions;
+﻿using System.Security.Claims;
+using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
-using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -62,6 +62,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
             ? Ok(course.Value)
             : course.ToProblem();
     }
+
     /// <summary>
     ///     Retrieves metadata (details, tags, stats) for a specific course.
     /// </summary>
@@ -101,7 +102,8 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     [HttpGet("my-learning")]
     [EndpointSummary("Get my enrolled courses")]
     [ProducesResponseType(typeof(IEnumerable<CourseMetadataResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<CourseMetadataResponse>>> GetMyLearning(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<CourseMetadataResponse>>> GetMyLearning(
+        CancellationToken cancellationToken)
     {
         var result = await _courseService.GetEnrolledCoursesAsync(User.GetUserId()!, cancellationToken);
 
@@ -142,7 +144,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     ///     Updates the details of a course (title, description, tags, dates, outcomes, prerequisites).
     /// </summary>
     /// <remarks>
-    ///     Requires <see cref="Permissions.UpdateCourses"/> permission on the course.
+    ///     Requires <see cref="Permissions.UpdateCourses" /> permission on the course.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="request">The update payload.</param>
@@ -171,7 +173,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <remarks>
     ///     Accepts <c>multipart/form-data</c>. The previous image is deleted automatically
     ///     unless it is the default placeholder.
-    ///     Requires <see cref="Permissions.UpdateCourses"/> permission on the course.
+    ///     Requires <see cref="Permissions.UpdateCourses" /> permission on the course.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="uploadImage">The form file containing the new image.</param>

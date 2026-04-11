@@ -16,6 +16,16 @@ public static class LessonErrors
         "This lesson is marked as a video, but no video file is associated with it.",
         StatusCodes.Status404NotFound);
 
+    public static readonly Error VideoTooLarge = new Error("Lesson.VideoTooLarge",
+        "Video file size exceeds maximum allowed limit of 500MB.", StatusCodes.Status400BadRequest);
+
+    public static readonly Error VideoTooLong = new Error("Lesson.VideoTooLong",
+        "Video duration exceeds maximum allowed limit of 20 minutes.",
+        StatusCodes.Status400BadRequest);
+
+    public static readonly Error InvalidVideo = new Error("Lesson.InvalidVideo",
+        "Unable to validate video duration or file is invalid.", StatusCodes.Status400BadRequest);
+
     public static readonly Error FileNotFound = new(
         "Lesson.FileNotFound",
         "The physical video file could not be found on the server.",
