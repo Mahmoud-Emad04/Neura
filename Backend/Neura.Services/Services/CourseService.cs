@@ -256,8 +256,14 @@ public class CourseService(
 
         var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
 
+        var ownerUser = await _userManager.FindByIdAsync(course.CreatedById);
+
+        if (ownerUser is null)
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
+
         var response = course.Adapt<CourseMetadataResponse>() with
         {
+            InstructorName = course.DisplayInstructorName ?? $"{ownerUser.FirstName} {ownerUser.LastName}",
             ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl),
 
             Tags = course.Tags.Select(c => c.Name).ToList(),
@@ -297,7 +303,7 @@ public class CourseService(
 
         var course = request.Adapt<Course>();
 
-        course.DisplayInstructorName = $"{ownerUser.FirstName} {ownerUser.LastName}";
+        course.DisplayInstructorName = request.InstructorName;
         course.CreatedById = userId;
         course.CreatedOn = DateTime.UtcNow;
         course.Tags = tags;
