@@ -1,5 +1,4 @@
-﻿using System.Net;
-using Neura.Api.Extensions;
+﻿using Neura.Api.Extensions;
 using Neura.Core.Contracts.Lessons;
 
 namespace Neura.Api.Controllers;
@@ -7,12 +6,9 @@ namespace Neura.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-
 public class LessonsController(
-    ILessonService lessonService,
-    ICloudinaryService cloudinaryService) : ControllerBase
+    ILessonService lessonService) : ControllerBase
 {
-    private readonly ICloudinaryService _cloudinaryService = cloudinaryService;
     private readonly ILessonService _lessonService = lessonService;
 
     /// <summary>
@@ -24,113 +20,11 @@ public class LessonsController(
     public async Task<IActionResult> Initialize([FromBody] CreateLessonRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _lessonService.CreateLessonMetadataAsync(request,User.GetUserId()!, cancellationToken);
+        var result = await _lessonService.CreateLessonMetadataAsync(request, User.GetUserId()!, cancellationToken);
 
         return result.IsSuccess
             ? Ok(new { LessonId = result.Value })
             : result.ToProblem();
-    }
-
-    /// <summary>
-    ///     PAGE 2: Upload the video and provide final details to publish the lesson.
-    /// </summary>
-    /// <remarks>
-    ///     Uses 'FromForm' to handle the multi-part request (File + JSON fields).
-    /// </remarks>
-    [HttpPut("{id}/complete")]
-    [DisableRequestSizeLimit]
-    [RequestFormLimits(MultipartBodyLengthLimit = 1_073_741_824)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Complete(
-        int id,
-        [FromForm] CompleteLessonRequest request,
-        CancellationToken cancellationToken)
-    {
-        var result = await _lessonService.CompleteLessonAsync(id, request, cancellationToken);
-
-        return result.IsSuccess ? NoContent() : result.ToProblem();
-    }
-
-    /// <summary>
-    ///     Gets the Cloudinary video URL for a lesson with appropriate access control.
-    ///     For private videos, returns a signed URL valid for 1 hour.
-    /// </summary>
-    [HttpGet("{id}/video")]
-    [ProducesResponseType(typeof(CloudinaryVideoResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetVideoUrl(int id, CancellationToken ct)
-    {
-        var userId = User.GetUserId();
-        var result = await _lessonService.GetCloudinaryVideoAsync(id, userId, ct);
-
-        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
-    }
-
-    /// <summary>
-    ///     Streams video directly from Cloudinary through the backend.
-    ///     This endpoint validates token expiration, access control, and prevents downloads.
-    /// </summary>
-    [HttpGet("{id}/stream")]
-    [ProducesResponseType(StatusCodes.Status206PartialContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> StreamVideo(int id, CancellationToken ct)
-    {
-        var userId = User.GetUserId();
-
-        // Get the video URL and validate access (this does the heavy lifting of security checks)
-        var result = await _lessonService.GetCloudinaryVideoAsync(id, userId, ct);
-
-        if (result.IsFailure)
-            return result.ToProblem();
-
-        var videoUrl = result.Value.Url;
-
-        try
-        {
-            // Security: Set headers to prevent caching and downloading
-            Response.Headers.Append("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-            Response.Headers.Append("Pragma", "no-cache");
-            Response.Headers.Append("Content-Disposition", "inline"); // Force inline display, not download
-            Response.Headers.Append("X-Content-Type-Options", "nosniff"); // Security header
-
-            // Set CSP to restrict where this video can be embedded (optional but recommended)
-            // Response.Headers.Append("Content-Security-Policy", "default-src 'self'; media-src 'self' blob:;");
-
-            using var httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(30) };
-
-            // Add a small trick to prevent simple downloaders by requiring specific headers
-            // (Cloudinary doesn't care, but we can log/filter later if needed)
-
-            var response = await httpClient.GetAsync(videoUrl, HttpCompletionOption.ResponseHeadersRead, ct);
-
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
-                return Unauthorized(new { message = "Video access token expired. Please request a new one." });
-
-            if (!response.IsSuccessStatusCode)
-                return StatusCode((int)response.StatusCode, new { message = "Failed to stream video from Cloudinary" });
-
-            var stream = await response.Content.ReadAsStreamAsync(ct);
-            var contentType = response.Content.Headers.ContentType?.MediaType ?? "video/mp4";
-
-            // Required for progressive streaming (seeking in video)
-            Response.Headers.Append("Accept-Ranges", "bytes");
-
-            return File(stream, contentType, true);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(StatusCodes.Status408RequestTimeout,
-                new { message = "Video streaming request timed out or was cancelled by the client." });
-        }
-        catch (Exception ex)
-        {
-            // Log exception here if you have a logger
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Error streaming video." });
-        }
     }
 
     /// <summary>
@@ -188,22 +82,6 @@ public class LessonsController(
     }
 
     /// <summary>
-    ///     Deletes a lesson from a section.
-    ///     Route: DELETE /api/lessons/{id}
-    /// </summary>
-    [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteLesson(int id, CancellationToken cancellationToken)
-    {
-        var userId = User.GetUserId();
-        var result = await _lessonService.DeleteLessonAsync(id, userId, cancellationToken);
-
-        return result.IsSuccess ? NoContent() : result.ToProblem();
-    }
-
-    /// <summary>
     ///     Gets all lessons in a section with position information.
     ///     Route: GET /api/lessons/section/{sectionId}
     /// </summary>
@@ -212,9 +90,47 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSectionLessons(int sectionId, CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = User.GetUserId()!;
         var result = await _lessonService.GetSectionLessonsAsync(sectionId, userId, cancellationToken);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Updates the HTML content for an Article-type lesson.
+    /// </summary>
+    [HttpPut("{id}/article")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateArticle(int id, [FromBody] UpdateArticleRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+
+        var result = await _lessonService.UpdateArticleContentAsync(id, request, userId, ct);
+
+        return result.IsSuccess
+            ? Ok()
+            : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Retrieves the HTML content of an Article-type lesson.
+    /// </summary>
+    [HttpGet("{id}/article")]
+    [ProducesResponseType(typeof(ArticleResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetArticle(int id, CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+
+        var result = await _lessonService.GetArticleContentAsync(id, userId!, ct);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
     }
 }

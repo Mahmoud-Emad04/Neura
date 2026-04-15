@@ -1,6 +1,7 @@
 using Neura.Core.Abstractions;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Course;
+using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
 
 namespace Neura.Core.Services;
@@ -35,5 +36,33 @@ public interface ICourseService
     Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken = default);
 
     Task<Result<PaginatedList<CourseSummaryResponse>>> GetBookmarkedAsync(string userId, RequestFilters filters,
+        CancellationToken cancellationToken = default);
+
+    // ══════════════════════════════════════════════════════════════
+    // Commands — Status Transitions
+    // ══════════════════════════════════════════════════════════════
+    Task<Result<CourseStatusResponse>> GetCourseStatusAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<CourseStatusUpdateResponse>> ActivateCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<CourseStatusUpdateResponse>> CompleteCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<CourseStatusUpdateResponse>> ReactivateCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<CourseStatusUpdateResponse>> UnpublishCourseAsync(
+        string keyId,
+        string userId,
         CancellationToken cancellationToken = default);
 }

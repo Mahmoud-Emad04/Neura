@@ -30,7 +30,8 @@ public class MappingConfiguration : IRegister
             .Map(dest => dest.IsBookmarked, src => true);
 
         config.NewConfig<Course, CourseSummaryResponse>()
-            .Map(dest => dest.KeyId, src => hashids.Encode(src.Id));
+            .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))
+            .Map(dest => dest.StatusName, src => src.Status);
 
         //config.NewConfig<CourseMetadataResponse, Course>()
         //    .Map(dest => dest.Prerequisites,

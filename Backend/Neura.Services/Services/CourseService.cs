@@ -1,7 +1,9 @@
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Abstractions.Specification;
 using Neura.Core.Contracts.common;
+using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
+using Neura.Core.Enums;
 using Neura.Core.FilesConsts;
 using Neura.Core.Specifications.Courses;
 using Neura.Services.Helpers;
@@ -41,6 +43,14 @@ public class CourseService(
             c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
             cancellationToken
         );
+        var studentMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+
+        foreach (var course in paginatedCourses.Items)
+        {
+            TryDecodeCourseId(course.KeyId, out var courseId);
+            course.NumberOfStudents =
+                await _context.CourseUsers.CountAsync(c => c.CourseId == courseId && !c.IsDeleted, cancellationToken);
+        }
 
         if (userId is not null)
         {
@@ -142,11 +152,15 @@ public class CourseService(
 
         var course = request.Adapt<Course>();
 
-        course.InstructorName = $"{ownerUser!.FirstName} {ownerUser.LastName}";
+        course.DisplayInstructorName = $"{ownerUser!.FirstName} {ownerUser.LastName}";
         course.CreatedById = userId;
         course.CreatedOn = DateTime.UtcNow;
         course.Tags = tags;
-        course.ImageUrl = DefaultCourseImagePath();
+
+        if (request.Image is not null)
+            course.ImageUrl = await _fileService.UploadImageAsync(request.Image, ImageConsts.Course, cancellationToken);
+        else
+            course.ImageUrl = DefaultCourseImagePath();
 
         _logger.LogInformation("Image with Title {title} & Url {imageurl} Created", course.Title, course.ImageUrl);
 
@@ -213,15 +227,8 @@ public class CourseService(
         if (tags.Count != request.Tags.Count)
             return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseTagNotFound);
 
-        //_context.CoursePrerequisites.Ra().Where(cp => cp.CourseId == courseId);
         _context.CourseLearningOutcomes.RemoveRange(course.LearningOutcomes);
-        //_context.RemoveRange(course.Tags);
-
-        //request.Adapt(course);
-
-        //course.Tags = tags;
-        //course.UpdatedOn = DateTime.UtcNow;
-        //course.UpdatedById = userId;
+        course.IsPubliclyVisible = request.IsPubliclyVisible;
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -352,6 +359,225 @@ public class CourseService(
         return Result.Success(paginatedCourses);
     }
 
+    public async Task<Result<CourseStatusResponse>> GetCourseStatusAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<CourseStatusResponse>(CourseErrors.CourseNotFound);
+
+        var course = await _context.Courses
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        if (course is null)
+            return Result.Failure<CourseStatusResponse>(CourseErrors.CourseNotFound);
+
+        ActivationRequirements? requirements = null;
+
+        if (course.Status == CourseStatus.Pending)
+            requirements = await GetActivationRequirementsAsync(courseId, cancellationToken);
+
+        var response = new CourseStatusResponse
+        {
+            KeyId = keyId,
+            Status = course.Status,
+            StatusName = course.Status.ToString(),
+            IsEnrollmentOpen = course.IsEnrollmentOpen,
+            IsAccessibleToStudents = course.IsAccessibleToStudents,
+            IsPubliclyVisible = course.IsPubliclyVisible,
+            CanActivate = course.Status == CourseStatus.Pending,
+            CanComplete = course.Status == CourseStatus.Active,
+            CanReactivate = course.Status == CourseStatus.Completed,
+            CanUnpublish = course.Status == CourseStatus.Active,
+            Requirements = requirements
+        };
+
+        return Result.Success(response);
+    }
+
+    public async Task<Result<CourseStatusUpdateResponse>> ActivateCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var course = await _context.Courses
+            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        if (course is null)
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var hasPublishedContent = await _context.Lessons
+            .AsNoTracking()
+            .AnyAsync(l =>
+                    l.Section.CourseId == courseId &&
+                    l.IsPublished &&
+                    !l.IsDeleted &&
+                    !l.Section.IsDeleted,
+                cancellationToken);
+
+        if (!hasPublishedContent)
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseHasNoPublishedContent);
+
+        var previousStatus = course.Status;
+
+        var result = course.Activate();
+        if (result.IsFailure)
+            return Result.Failure<CourseStatusUpdateResponse>(result.Error);
+
+        course.UpdatedOn = DateTime.UtcNow;
+        course.UpdatedById = userId;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Course {CourseId} activated by user {UserId}. Status changed from {PreviousStatus} to {CurrentStatus}",
+            courseId,
+            userId,
+            previousStatus,
+            course.Status);
+
+        return Result.Success(new CourseStatusUpdateResponse
+        {
+            KeyId = keyId,
+            PreviousStatus = previousStatus,
+            CurrentStatus = course.Status,
+            Message = "Course activated successfully. Students can now enroll.",
+            UpdatedAt = course.UpdatedOn.Value
+        });
+    }
+
+    public async Task<Result<CourseStatusUpdateResponse>> CompleteCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var course = await _context.Courses
+            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        if (course is null)
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var previousStatus = course.Status;
+
+        var result = course.Complete();
+        if (result.IsFailure)
+            return Result.Failure<CourseStatusUpdateResponse>(result.Error);
+
+        course.UpdatedOn = DateTime.UtcNow;
+        course.UpdatedById = userId;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Course {CourseId} completed by user {UserId}. Status changed from {PreviousStatus} to {CurrentStatus}",
+            courseId,
+            userId,
+            previousStatus,
+            course.Status);
+
+        return Result.Success(new CourseStatusUpdateResponse
+        {
+            KeyId = keyId,
+            PreviousStatus = previousStatus,
+            CurrentStatus = course.Status,
+            Message =
+                "Course marked as completed. Enrolled students can still access content, but no new enrollments allowed.",
+            UpdatedAt = course.UpdatedOn.Value
+        });
+    }
+
+    public async Task<Result<CourseStatusUpdateResponse>> ReactivateCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var course = await _context.Courses
+            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        if (course is null)
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var previousStatus = course.Status;
+
+        var result = course.Reactivate();
+        if (result.IsFailure)
+            return Result.Failure<CourseStatusUpdateResponse>(result.Error);
+
+        course.UpdatedOn = DateTime.UtcNow;
+        course.UpdatedById = userId;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Course {CourseId} reactivated by user {UserId}. Status changed from {PreviousStatus} to {CurrentStatus}",
+            courseId,
+            userId,
+            previousStatus,
+            course.Status);
+
+        return Result.Success(new CourseStatusUpdateResponse
+        {
+            KeyId = keyId,
+            PreviousStatus = previousStatus,
+            CurrentStatus = course.Status,
+            Message = "Course reactivated successfully. New students can now enroll.",
+            UpdatedAt = course.UpdatedOn.Value
+        });
+    }
+
+    public async Task<Result<CourseStatusUpdateResponse>> UnpublishCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var course = await _context.Courses
+            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+        if (course is null)
+            return Result.Failure<CourseStatusUpdateResponse>(CourseErrors.CourseNotFound);
+
+        var previousStatus = course.Status;
+
+        var result = course.Unpublish();
+        if (result.IsFailure)
+            return Result.Failure<CourseStatusUpdateResponse>(result.Error);
+
+        course.UpdatedOn = DateTime.UtcNow;
+        course.UpdatedById = userId;
+
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Course {CourseId} unpublished by user {UserId}. Status changed from {PreviousStatus} to {CurrentStatus}",
+            courseId,
+            userId,
+            previousStatus,
+            course.Status);
+
+        return Result.Success(new CourseStatusUpdateResponse
+        {
+            KeyId = keyId,
+            PreviousStatus = previousStatus,
+            CurrentStatus = course.Status,
+            Message = "Course unpublished. It is now hidden from public listings.",
+            UpdatedAt = course.UpdatedOn.Value
+        });
+    }
+
     private bool TryDecodeCourseId(string keyId, out int courseId)
     {
         var numbers = _helpers.DecodeHash(keyId);
@@ -373,5 +599,49 @@ public class CourseService(
     private static string DefaultCourseImagePath()
     {
         return Path.Combine("Images", ImageConsts.Course, ImageConsts.DefaultCourseImage);
+    }
+
+    private async Task<ActivationRequirements> GetActivationRequirementsAsync(
+        int courseId,
+        CancellationToken cancellationToken)
+    {
+        var stats = await _context.Courses
+            .AsNoTracking()
+            .Where(c => c.Id == courseId)
+            .Select(c => new
+            {
+                TotalSections = c.Sections.Count(s => !s.IsDeleted),
+                TotalLessons = c.Sections
+                    .Where(s => !s.IsDeleted)
+                    .SelectMany(s => s.Lessons)
+                    .Count(l => !l.IsDeleted),
+                PublishedLessons = c.Sections
+                    .Where(s => !s.IsDeleted)
+                    .SelectMany(s => s.Lessons)
+                    .Count(l => !l.IsDeleted && l.IsPublished)
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        var missingRequirements = new List<string>();
+
+        if (stats?.TotalSections == 0)
+            missingRequirements.Add("Course must have at least one section.");
+
+        if (stats?.TotalLessons == 0)
+            missingRequirements.Add("Course must have at least one lesson.");
+
+        if (stats?.PublishedLessons == 0)
+            missingRequirements.Add("Course must have at least one published lesson.");
+
+        return new ActivationRequirements
+        {
+            HasSections = stats?.TotalSections > 0,
+            HasLessons = stats?.TotalLessons > 0,
+            HasPublishedLessons = stats?.PublishedLessons > 0,
+            TotalSections = stats?.TotalSections ?? 0,
+            TotalLessons = stats?.TotalLessons ?? 0,
+            PublishedLessons = stats?.PublishedLessons ?? 0,
+            MissingRequirements = missingRequirements
+        };
     }
 }

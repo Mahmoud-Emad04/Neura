@@ -1,3 +1,6 @@
+using Neura.Api.Validation.File.commen;
+using Neura.Core.Settings;
+
 namespace Neura.Api.Validation.Course;
 
 public class CourseRequestValidator : AbstractValidator<CourseRequest>
@@ -37,5 +40,17 @@ public class CourseRequestValidator : AbstractValidator<CourseRequest>
             .NotEmpty()
             .MaximumLength(500)
             .When(c => c.Prerequisites is not null);
+
+        RuleFor(r => r.Image)
+            .SetValidator(new FileSizeValidator())
+            .SetValidator(new BlockedSignaturesValidator())
+            .SetValidator(new FileNameValidator())
+            .Must((request, context) =>
+            {
+                var extension = Path.GetExtension(request.Image.FileName.ToLower());
+                return FileSettings.AllowedImagesExtensions.Contains(extension);
+            })
+            .WithMessage("Invalid extension")
+            .When(r => r.Image is not null);
     }
 }

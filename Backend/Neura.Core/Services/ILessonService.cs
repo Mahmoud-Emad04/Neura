@@ -5,16 +5,10 @@ namespace Neura.Core.Services;
 
 public interface ILessonService
 {
-    Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request,string userId,
-        CancellationToken cancellationToken = default);
-
-    Task<Result> CompleteLessonAsync(int id, CompleteLessonRequest request,
+    Task<Result<int>> CreateLessonMetadataAsync(CreateLessonRequest request, string userId,
         CancellationToken cancellationToken = default);
 
     Task<Result<LessonResponse>> GetLessonByIdAsync(int lessonId, string userId,
-        CancellationToken cancellationToken = default);
-
-    Task<Result<CloudinaryVideoResponse>> GetCloudinaryVideoAsync(int lessonId, string userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -36,14 +30,13 @@ public interface ILessonService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Deletes a lesson and adjusts positions of remaining lessons.
-    /// </summary>
-    Task<Result> DeleteLessonAsync(int lessonId, string userId,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
     ///     Gets all lessons in a section with their position information.
     /// </summary>
     Task<Result<List<LessonWithPositionResponse>>> GetSectionLessonsAsync(int sectionId, string userId,
         CancellationToken cancellationToken = default);
+
+    Task<Result> UpdateArticleContentAsync(int lessonId, UpdateArticleRequest request, string userId,
+        CancellationToken ct = default);
+
+    Task<Result<ArticleResponse>> GetArticleContentAsync(int lessonId, string userId, CancellationToken ct = default);
 }

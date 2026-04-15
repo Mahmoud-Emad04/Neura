@@ -75,7 +75,6 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IFileService, FileService>();
         services.AddScoped<ILessonService, LessonService>();
-        services.AddScoped<ICloudinaryService, CloudinaryService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
 

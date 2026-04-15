@@ -110,6 +110,18 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
         return Ok(result.Value);
     }
 
+    [HttpGet("{courseId}/status")]
+    [Authorize]
+    //[HasCoursePermission(Permissions.ViewCourseStatus)]
+    public async Task<IActionResult> GetStatus(
+        string courseId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _courseService.GetCourseStatusAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
 
     // ====================================
     // WRITE OPERATIONS (Create / Update)
@@ -130,7 +142,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     [ProducesResponseType(typeof(CourseMetadataResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [HttpPost("")]
-    public async Task<IActionResult> Create([FromBody] CourseRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromForm] CourseRequest request, CancellationToken cancellationToken)
     {
         var result = await _courseService.CreateAsync(request, User.FindFirstValue(ClaimTypes.NameIdentifier)!,
             cancellationToken);
@@ -283,6 +295,54 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     {
         var result = await _courseService.GetBookmarkedAsync(User.GetUserId()!, filters, cancellationToken);
 
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Commands — Status Transitions
+    // ══════════════════════════════════════════════════════════════
+
+    [HttpPost("{courseId}/activate")]
+    [Authorize]
+    //[HasCoursePermission(Permissions.ManageCourseStatus)]
+    public async Task<IActionResult> Activate(
+        string courseId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _courseService.ActivateCourseAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("{courseId}/complete")]
+    [Authorize]
+    //[HasCoursePermission(Permissions.ManageCourseStatus)]
+    public async Task<IActionResult> Complete(
+        string courseId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _courseService.CompleteCourseAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("{courseId}/reactivate")]
+    [Authorize]
+    //[HasCoursePermission(Permissions.ManageCourseStatus)]
+    public async Task<IActionResult> Reactivate(
+        string courseId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _courseService.ReactivateCourseAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpPost("{courseId}/unpublish")]
+    [Authorize]
+    //[HasCoursePermission(Permissions.ManageCourseStatus)]
+    public async Task<IActionResult> Unpublish(
+        string courseId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _courseService.UnpublishCourseAsync(courseId, User.GetUserId()!, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 }

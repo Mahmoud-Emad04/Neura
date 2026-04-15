@@ -1,25 +1,32 @@
-﻿namespace Neura.Core.Contracts.Course;
+﻿using Neura.Core.Enums;
 
-public record CourseMetadataResponse(
-    string KeyId,
-    string Title,
-    string Description,
-    string ImageUrl,
-    DateOnly Startin,
-    DateOnly Endin,
-    DateTime CreatedOn,
-    DateTime? UpdatedOn,
-    string? UpdatedById,
-    string CreatedById,
-    bool IsCompleted,
-    bool IsEnrolled,
-    bool IsOwner,
-    bool IsBookmarked,
-    int Price,
-    double Rating,
-    int TotalReviews,
-    int NumberOfStudents,
-    List<string>? LearningOutcomes,
-    List<TagResponse> Tags,
-    List<string>? Prerequisites
-);
+namespace Neura.Core.Contracts.Course;
+
+public sealed record CourseMetadataResponse
+{
+    public string KeyId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string InstructorName { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
+    public int Price { get; set; }
+    public double Rating { get; set; }
+    public int TotalReviews { get; set; }
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+
+    public CourseStatus Status { get; set; }
+    public string StatusName { get; set; } = string.Empty;
+    public bool IsEnrollmentOpen { get; set; }
+
+
+    public int NumberOfStudents { get; set; }
+    public bool IsEnrolled { get; set; }
+    public bool IsBookmarked { get; set; }
+    public bool IsOwner { get; set; }
+    public bool IsPubliclyVisible { get; set; }
+
+    public IEnumerable<string> Tags { get; set; } = [];
+    public IEnumerable<string> LearningOutcomes { get; set; } = [];
+    public IEnumerable<string> Prerequisites { get; set; } = [];
+}

@@ -4,6 +4,7 @@ public record CourseRequest(
     string Title,
     string Description,
     int Price,
+    IFormFile? Image,
     DateOnly Startin,
     DateOnly Endin,
     List<int> Tags,

@@ -439,33 +439,27 @@ namespace Neura.Repository.Migrations
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("DeletedById")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("DeletedOn")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
 
-                    b.Property<DateOnly>("Endin")
+                    b.Property<string>("DisplayInstructorName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateOnly>("EndDate")
                         .HasColumnType("date");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("InstructorName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPubliclyVisible")
                         .HasColumnType("bit");
 
                     b.Property<int>("Price")
@@ -474,13 +468,20 @@ namespace Neura.Repository.Migrations
                     b.Property<double>("Rating")
                         .HasColumnType("float");
 
-                    b.Property<DateOnly>("Startin")
+                    b.Property<DateOnly>("StartDate")
                         .HasColumnType("date");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<double>("TotalRatingSum")
                         .HasColumnType("float");
@@ -498,7 +499,11 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("CreatedById");
 
+                    b.HasIndex("Status");
+
                     b.HasIndex("UpdatedById");
+
+                    b.HasIndex("Status", "IsDeleted");
 
                     b.ToTable("Courses");
                 });
@@ -538,6 +543,9 @@ namespace Neura.Repository.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArticleContent")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CloudinaryPublicId")
                         .HasColumnType("nvarchar(max)");

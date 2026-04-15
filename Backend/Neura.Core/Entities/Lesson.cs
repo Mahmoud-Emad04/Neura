@@ -13,6 +13,7 @@ public class Lesson : AuditableEntity
     public string? CloudinaryPublicId { get; set; }
     public bool IsVideoPrivate { get; set; } = false;
 
+    public string? ArticleContent { get; set; }
     public TimeSpan Duration { get; set; } = TimeSpan.Zero;
 
     public int OrderIndex { get; set; }
