@@ -1,21 +1,19 @@
-﻿namespace Neura.Api.Validation.Course;
+﻿using Neura.Api.Validation.File.commen;
+using Neura.Core.Settings;
+
+namespace Neura.Api.Validation.Course;
 
 public class CourseUpdateRequestValidator : AbstractValidator<CourseUpdateRequest>
 {
     public CourseUpdateRequestValidator()
     {
         RuleFor(c => c.Title).NotEmpty().Length(3, 100);
-
+        RuleFor(c => c.InstructorName).NotEmpty().Length(3, 100);
         RuleFor(c => c.Description).NotEmpty().Length(3, 1000);
 
-        //RuleFor(c => c.Startin)
-        //    .NotEmpty()
-        //    .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow));
-
-        //RuleFor(c => c.Endin)
-        //    .NotEmpty()
-        //    .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow))
-        //    .GreaterThan(c => c.Startin);
+        RuleFor(c => c.Price)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Price must be zero or a positive value.");
 
         RuleFor(c => c.Tags).NotEmpty();
 
@@ -33,5 +31,17 @@ public class CourseUpdateRequestValidator : AbstractValidator<CourseUpdateReques
             .NotEmpty()
             .MaximumLength(500)
             .When(c => c.Prerequisites is not null);
+
+        RuleFor(r => r.Image)
+            .SetValidator(new FileSizeValidator())
+            .SetValidator(new BlockedSignaturesValidator())
+            .SetValidator(new FileNameValidator())
+            .Must((request, context) =>
+            {
+                var extension = Path.GetExtension(request.Image.FileName.ToLower());
+                return FileSettings.AllowedImagesExtensions.Contains(extension);
+            })
+            .WithMessage("Invalid extension")
+            .When(r => r.Image is not null);
     }
 }

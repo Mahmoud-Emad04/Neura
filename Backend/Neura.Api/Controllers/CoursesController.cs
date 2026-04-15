@@ -168,7 +168,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HttpPut("{courseId}")]
     [HasCoursePermission(Permissions.UpdateCourses)]
-    public async Task<IActionResult> UpdateDetails([FromRoute] string courseId, [FromBody] CourseUpdateRequest request,
+    public async Task<IActionResult> UpdateDetails([FromRoute] string courseId, [FromForm] CourseUpdateRequest request,
         CancellationToken cancellationToken)
     {
         var result = await _courseService.UpdateAsync(courseId, request,

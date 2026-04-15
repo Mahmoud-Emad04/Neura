@@ -7,6 +7,7 @@ public class CourseRequestValidator : AbstractValidator<CourseRequest>
 {
     public CourseRequestValidator()
     {
+        RuleFor(c => c.InstructorName).NotEmpty().Length(3, 100);
         RuleFor(c => c.Title).NotEmpty().Length(3, 100);
 
         RuleFor(c => c.Description).NotEmpty().Length(3, 1000);

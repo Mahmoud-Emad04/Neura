@@ -370,8 +370,10 @@ public class CourseService(
             return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
 
         var course = await _context.Courses
-            .Include(c => c.Tags)
-            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+          .Include(c => c.Tags)
+          .Include(c => c.LearningOutcomes)
+          .Include(c => c.Prerequisites)
+          .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
 
         if (course is null)
             return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
@@ -381,14 +383,92 @@ public class CourseService(
             .ToListAsync(cancellationToken);
 
         if (tags.Count != request.Tags.Count)
-            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseTagNotFound);
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.TagNotFound);
+
+        // ══════════════════════════════════════════════════════════════
+        // 4. Update Basic Properties
+        // ══════════════════════════════════════════════════════════════
+
+        course.Title = request.Title.Trim();
+        course.Description = request.Description?.Trim() ?? string.Empty;
+        course.Price = request.Price;
+        course.DisplayInstructorName = request.InstructorName?.Trim();
+        course.UpdatedOn = DateTime.UtcNow;
+        course.UpdatedById = userId;
+
+        course.Tags.Clear();
+        foreach (var tag in tags)
+        {
+            course.Tags.Add(tag);
+        }
 
         _context.CourseLearningOutcomes.RemoveRange(course.LearningOutcomes);
-        course.IsPubliclyVisible = request.IsPubliclyVisible;
+
+        course.LearningOutcomes = request.LearningOutcomes
+            .Where(lo => !string.IsNullOrWhiteSpace(lo))
+            .Select((outcome, index) => new CourseLearningOutcome
+            {
+                CourseId = courseId,
+                Outcome = outcome.Trim()
+            })
+            .ToList();
+
+        _context.CoursePrerequisites.RemoveRange(course.Prerequisites);
+
+        course.Prerequisites = request.Prerequisites
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Select((prereq, index) => new CoursePrerequisite
+            {
+                CourseId = courseId,
+                Requirement = prereq.Trim()
+            })
+            .ToList();
+
+        if (request.Image is not null)
+        {
+            if (!string.IsNullOrEmpty(course.ImageUrl) && course.ImageUrl != DefaultCourseImagePath())
+            {
+                _fileService.Delete(course.ImageUrl);
+            }
+
+            course.ImageUrl = await _fileService.UploadImageAsync(
+                request.Image,
+                ImageConsts.Course,
+                cancellationToken);
+        }
+
+        _context.CourseLearningOutcomes.RemoveRange(course.LearningOutcomes);
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var response = course.Adapt<CourseMetadataResponse>() with { };
+        var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+
+        var ownerUser = await _userManager.FindByIdAsync(course.CreatedById);
+
+        if (ownerUser is null)
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.CourseNotFound);
+
+        var response = course.Adapt<CourseMetadataResponse>() with
+        {
+            InstructorName = course.DisplayInstructorName ?? $"{ownerUser.FirstName} {ownerUser.LastName}",
+            ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl),
+
+            Tags = course.Tags.Select(c => c.Name).ToList(),
+
+            NumberOfStudents = await _context.CourseUsers
+                .CountAsync(cu => cu.CourseId == courseId && cu.PermissionsMask == studentRoleMask && !cu.IsDeleted,
+                    cancellationToken),
+            IsEnrolled = userId is not null &&
+                         await _context.CourseUsers.AnyAsync(cu => cu.CourseId == courseId && cu.UserId == userId,
+                             cancellationToken),
+
+            IsBookmarked = userId is not null &&
+                           await _context.CourseBookmarks.AnyAsync(
+                               cb => cb.CourseId == courseId && cb.UserId == userId && !cb.IsDeleted,
+                               cancellationToken),
+
+            IsOwner = userId is not null && userId == course.CreatedById
+        };
 
         return Result.Success(response);
     }
