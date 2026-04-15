@@ -72,6 +72,146 @@ public class CourseService(
         return Result.Success(paginatedCourses);
     }
 
+    public async Task<Result<EditableCoursesListSummaryResponse>> GetEditableCoursesAsync(
+    EditableCourseFilters filters,
+    string userId,
+    CancellationToken cancellationToken = default)
+    {
+        var ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
+        var coInstructorMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CoInstructor];
+        var editPermissionMask = ownerMask | coInstructorMask;
+
+        var query = _context.CourseUsers
+        .AsNoTracking()
+        .Where(cu =>
+            cu.UserId == userId &&
+            !cu.IsDeleted &&
+            (cu.PermissionsMask & editPermissionMask) != 0)
+        .Select(cu => new
+        {
+            CourseUser = cu,
+            Course = cu.Course,
+            IsOwner = (cu.PermissionsMask & ownerMask) != 0,
+            IsCoInstructor = (cu.PermissionsMask & coInstructorMask) != 0
+        })
+        .Where(x => !x.Course.IsDeleted);
+
+        query = filters.RoleFilter switch
+        {
+            EditableRoleFilter.OwnedOnly => query.Where(x => x.IsOwner),
+            EditableRoleFilter.CoInstructorOnly => query.Where(x => x.IsCoInstructor && !x.IsOwner),
+            _ => query
+        };
+
+        if (filters.Status.HasValue)
+        {
+            query = query.Where(x => x.Course.Status == filters.Status.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
+        {
+            var searchTerm = filters.SearchTerm.ToLower().Trim();
+            query = query.Where(x =>
+                x.Course.Title.ToLower().Contains(searchTerm) ||
+                x.Course.Description.ToLower().Contains(searchTerm));
+        }
+
+        var totalOwnedCourses = await _context.CourseUsers
+          .AsNoTracking()
+          .CountAsync(cu =>
+          cu.UserId == userId &&
+          !cu.IsDeleted &&
+          !cu.Course.IsDeleted &&
+          (cu.PermissionsMask & ownerMask) != 0,
+          cancellationToken);
+
+        var totalCoInstructorCourses = await _context.CourseUsers
+                .AsNoTracking()
+                .CountAsync(cu =>
+                cu.UserId == userId &&
+                !cu.IsDeleted &&
+                !cu.Course.IsDeleted &&
+                (cu.PermissionsMask & coInstructorMask) != 0 &&
+                (cu.PermissionsMask & ownerMask) == 0,
+                cancellationToken);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var courseIds = await query
+        .Skip((filters.PageNumber - 1) * filters.PageSize)
+        .Take(filters.PageSize)
+        .Select(x => x.Course.Id)
+        .ToListAsync(cancellationToken);
+
+        // Get courses with related data
+        var coursesData = await query
+            .Where(x => courseIds.Contains(x.Course.Id))
+            .Select(x => new
+            {
+                x.Course,
+                x.IsOwner,
+                x.IsCoInstructor
+            })
+            .ToListAsync(cancellationToken);
+        var studentMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+
+        // Student counts per course
+        var studentCounts = await _context.CourseUsers
+            .AsNoTracking()
+            .Where(cu =>
+                courseIds.Contains(cu.CourseId) &&
+                !cu.IsDeleted &&
+                cu.PermissionsMask == studentMask)
+            .GroupBy(cu => cu.CourseId)
+            .Select(g => new { CourseId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CourseId, x => x.Count, cancellationToken);
+
+        var baseUrl = BaseUrl();
+
+        var items = coursesData.Select(x =>
+        {
+            var course = x.Course;
+            var isOwner = x.IsOwner;
+            var isCoInstructor = x.IsCoInstructor;
+
+            studentCounts.TryGetValue(course.Id, out var studentCount);
+
+            return new EditableCourseSummaryResponse
+            {
+                KeyId = _helpers.Encode(course.Id),
+                Title = course.Title,
+                ImageUrl = Path.Combine(baseUrl, course.ImageUrl),
+                Status = course.Status,
+                StatusName = course.Status.ToString(),
+                IsEnrollmentOpen = course.IsEnrollmentOpen,
+                IsPubliclyVisible = course.IsPubliclyVisible,
+                RoleName = isOwner ? "Owner" : "Co-Instructor",
+                IsOwner = isOwner,
+                IsCoInstructor = isCoInstructor,
+                NumberOfStudents = studentCount,
+                CreatedOn = course.CreatedOn,
+                UpdatedOn = course.UpdatedOn,
+                AvailableActions = BuildAvailableActions(course.Status, isOwner, isCoInstructor)
+            };
+        }).ToList();
+
+        var orderedItems = courseIds
+            .Select(id => items.First(i => _helpers.DecodeHash(i.KeyId)[0] == id))
+            .ToList();
+
+        var paginatedList = new PaginatedList<EditableCourseSummaryResponse>(
+            orderedItems,
+            totalCount,
+            filters.PageNumber,
+            filters.PageSize);
+
+        return Result.Success(new EditableCoursesListSummaryResponse
+        {
+            TotalOwnedCourses = totalOwnedCourses,
+            TotalCoInstructorCourses = totalCoInstructorCourses,
+            Courses = paginatedList
+        });
+    }
     public async Task<Result<CourseResponse>> GetContentByIdAsync(string keyId, string? userId,
         CancellationToken cancellationToken = default)
     {
@@ -150,9 +290,12 @@ public class CourseService(
 
         var ownerUser = await _userManager.FindByIdAsync(userId);
 
+        if (ownerUser is null)
+            return Result.Failure<CourseMetadataResponse>(CourseErrors.UserNotFound);
+
         var course = request.Adapt<Course>();
 
-        course.DisplayInstructorName = $"{ownerUser!.FirstName} {ownerUser.LastName}";
+        course.DisplayInstructorName = $"{ownerUser.FirstName} {ownerUser.LastName}";
         course.CreatedById = userId;
         course.CreatedOn = DateTime.UtcNow;
         course.Tags = tags;
@@ -166,11 +309,9 @@ public class CourseService(
 
         _context.Courses.Add(course);
 
-        await _context.SaveChangesAsync(cancellationToken);
-
-        CourseUser courseUser = new()
+        var courseUser = new CourseUser
         {
-            CourseId = course.Id,
+            Course = course,
             UserId = userId,
             PermissionsMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner]
         };
@@ -178,6 +319,13 @@ public class CourseService(
         await _context.CourseUsers.AddAsync(courseUser, cancellationToken);
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+        "Course {CourseId} '{Title}' created by user {UserId}. Status: {Status}",
+        course.Id,
+        course.Title,
+        userId,
+        course.Status);
 
         return Result.Success(course.Adapt<CourseMetadataResponse>());
     }
@@ -328,7 +476,7 @@ public class CourseService(
                 cancellationToken) is not { } bookmark)
             await _context.CourseBookmarks.AddAsync(
                 new CourseBookmark
-                    { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
+                { CourseId = courseId, UserId = userId, IsDeleted = false, CreatedOn = DateTime.UtcNow },
                 cancellationToken);
         else
             bookmark.IsDeleted = !bookmark.IsDeleted;
@@ -642,6 +790,31 @@ public class CourseService(
             TotalLessons = stats?.TotalLessons ?? 0,
             PublishedLessons = stats?.PublishedLessons ?? 0,
             MissingRequirements = missingRequirements
+        };
+    }
+
+    private static CourseAvailableActions BuildAvailableActions(
+        CourseStatus status,
+        bool isOwner,
+        bool isCoInstructor)
+    {
+        return new CourseAvailableActions
+        {
+            // Both Owner and CoInstructor can edit
+            CanEdit = true,
+            CanAddSections = true,
+            CanAddLessons = true,
+
+            // Only Owner can do these
+            CanDelete = isOwner,
+            CanManageStudents = isOwner,
+            CanManageInstructors = isOwner,
+
+            // Status transitions (Owner only)
+            CanActivate = isOwner && status == CourseStatus.Pending,
+            CanComplete = isOwner && status == CourseStatus.Active,
+            CanReactivate = isOwner && status == CourseStatus.Completed,
+            CanUnpublish = isOwner && status == CourseStatus.Active
         };
     }
 }

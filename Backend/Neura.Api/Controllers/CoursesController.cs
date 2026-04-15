@@ -1,9 +1,10 @@
-﻿using System.Security.Claims;
-using Neura.Api.Extensions;
+﻿using Neura.Api.Extensions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
+using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
 using Neura.Services.Filters;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -148,7 +149,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
             cancellationToken);
 
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { courseId = result.Value.KeyId }, null)
+            ? CreatedAtAction(nameof(GetMetadataById), new { courseId = result.Value.KeyId }, null)
             : result.ToProblem();
     }
 
@@ -207,6 +208,30 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
             : result.ToProblem();
     }
 
+    /// <summary>
+    /// Gets all courses the current user can edit (as Owner or Co-Instructor).
+    /// </summary>
+    /// <remarks>
+    /// Returns courses where the user has CourseOwner or CoInstructor permissions.
+    /// Includes stats like student count, lesson count, and available actions.
+    /// </remarks>
+    [HttpGet("my/editable")]
+    [Authorize]
+    [ProducesResponseType(typeof(EditableCoursesListResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetEditableCourses(
+        [FromQuery] EditableCourseFilters filters,
+        CancellationToken cancellationToken)
+    {
+        var result = await _courseService.GetEditableCoursesAsync(
+            filters,
+            User.GetUserId()!,
+            cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
 
     // ============================
     // ACTIONS (Enroll / Bookmark)

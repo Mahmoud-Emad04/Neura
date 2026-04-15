@@ -6,4 +6,5 @@ public interface IServiceHelpers
     int[] DecodeHash(string encoded);
     string? GetCurrentUserId();
     bool IsUserInRole(string role);
+    string Encode(int courseId);
 }

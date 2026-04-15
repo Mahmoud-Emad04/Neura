@@ -38,6 +38,11 @@ public interface ICourseService
     Task<Result<PaginatedList<CourseSummaryResponse>>> GetBookmarkedAsync(string userId, RequestFilters filters,
         CancellationToken cancellationToken = default);
 
+    Task<Result<EditableCoursesListSummaryResponse>> GetEditableCoursesAsync(
+    EditableCourseFilters filters,
+    string userId,
+    CancellationToken cancellationToken = default);
+
     // ══════════════════════════════════════════════════════════════
     // Commands — Status Transitions
     // ══════════════════════════════════════════════════════════════

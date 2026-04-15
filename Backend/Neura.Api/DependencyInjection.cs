@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-using System.Text;
-using Hangfire;
+﻿using Hangfire;
 using HashidsNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -18,6 +16,8 @@ using Neura.Services.Authentication;
 using Neura.Services.Filters;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
+using System.Reflection;
+using System.Text;
 
 namespace Neura.Api;
 
@@ -36,7 +36,7 @@ public static class DependencyInjection
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowAnyOrigin()
-                // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
             ));
         services.AddAuth(configuration);
 
@@ -77,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<ILessonService, LessonService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
+        services.AddScoped<ITagService, TagService>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
 

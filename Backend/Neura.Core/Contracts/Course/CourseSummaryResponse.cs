@@ -22,5 +22,5 @@ public record CourseSummaryResponse
     public bool IsEnrolled { get; set; }
 
     public int TotalReviews { get; set; }
-    public List<TagResponse> Tags { get; set; } = new();
+    public List<CourseTagResponse> Tags { get; set; } = new();
 }
