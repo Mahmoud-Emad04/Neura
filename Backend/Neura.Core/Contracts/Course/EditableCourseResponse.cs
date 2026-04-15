@@ -12,8 +12,6 @@ public sealed record EditableCourseResponse
     public int Price { get; init; }
     public double Rating { get; init; }
     public int TotalReviews { get; init; }
-    public DateOnly StartDate { get; init; }
-    public DateOnly EndDate { get; init; }
 
     // Status
     public CourseStatus Status { get; init; }

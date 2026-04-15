@@ -260,6 +260,8 @@ public class CourseService(
         {
             ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl),
 
+            Tags = course.Tags.Select(c => c.Name).ToList(),
+
             NumberOfStudents = await _context.CourseUsers
                 .CountAsync(cu => cu.CourseId == courseId && cu.PermissionsMask == studentRoleMask && !cu.IsDeleted,
                     cancellationToken),

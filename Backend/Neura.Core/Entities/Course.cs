@@ -13,9 +13,6 @@ public sealed class Course : AuditableEntity
 
     public bool IsPubliclyVisible { get; set; } = false;
 
-    public DateOnly StartDate { get; set; }
-    public DateOnly EndDate { get; set; }
-
     public CourseStatus Status { get; set; } = CourseStatus.Pending;
 
     public string ImageUrl { get; set; } = string.Empty;

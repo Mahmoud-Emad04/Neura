@@ -8,14 +8,14 @@ public class CourseUpdateRequestValidator : AbstractValidator<CourseUpdateReques
 
         RuleFor(c => c.Description).NotEmpty().Length(3, 1000);
 
-        RuleFor(c => c.Startin)
-            .NotEmpty()
-            .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow));
+        //RuleFor(c => c.Startin)
+        //    .NotEmpty()
+        //    .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow));
 
-        RuleFor(c => c.Endin)
-            .NotEmpty()
-            .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow))
-            .GreaterThan(c => c.Startin);
+        //RuleFor(c => c.Endin)
+        //    .NotEmpty()
+        //    .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow))
+        //    .GreaterThan(c => c.Startin);
 
         RuleFor(c => c.Tags).NotEmpty();
 

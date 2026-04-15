@@ -149,7 +149,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
             cancellationToken);
 
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetMetadataById), new { courseId = result.Value.KeyId }, null)
+            ? CreatedAtAction(nameof(GetMetadataById), new { courseId = result.Value.KeyId }, result.Value)
             : result.ToProblem();
     }
 
