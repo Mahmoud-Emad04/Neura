@@ -12,8 +12,6 @@ public sealed record CourseMetadataResponse
     public int Price { get; set; }
     public double Rating { get; set; }
     public int TotalReviews { get; set; }
-    public DateOnly StartDate { get; set; }
-    public DateOnly EndDate { get; set; }
 
     public CourseStatus Status { get; set; }
     public string StatusName { get; set; } = string.Empty;

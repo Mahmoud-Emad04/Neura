@@ -22,13 +22,17 @@ public static class TagErrors
         new("Tag.InvalidName", "Tag name is required and cannot be empty.", StatusCodes.Status400BadRequest);
 
     public static readonly Error InvalidSlug =
-        new("Tag.InvalidSlug", "Tag slug contains invalid characters. Only lowercase letters, numbers, and hyphens are allowed.", StatusCodes.Status400BadRequest);
+        new("Tag.InvalidSlug",
+            "Tag slug contains invalid characters. Only lowercase letters, numbers, and hyphens are allowed.",
+            StatusCodes.Status400BadRequest);
 
     public static readonly Error InvalidColorHex =
         new("Tag.InvalidColorHex", "Color must be a valid hex code (e.g., #FF5733).", StatusCodes.Status400BadRequest);
 
     public static readonly Error CannotDeleteTagWithCourses =
-        new("Tag.CannotDeleteWithCourses", "Cannot delete a tag that is assigned to courses. Remove the tag from all courses first or use force delete.", StatusCodes.Status400BadRequest);
+        new("Tag.CannotDeleteWithCourses",
+            "Cannot delete a tag that is assigned to courses. Remove the tag from all courses first or use force delete.",
+            StatusCodes.Status400BadRequest);
 
     // ══════════════════════════════════════════════════════════════
     // Conflict (409)

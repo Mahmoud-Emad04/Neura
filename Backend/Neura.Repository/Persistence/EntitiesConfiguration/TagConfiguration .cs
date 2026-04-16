@@ -23,7 +23,7 @@ public class TagConfiguration : IEntityTypeConfiguration<Tag>
             .HasMaxLength(500);
 
         builder.Property(t => t.ColorHex)
-            .HasMaxLength(7);  // #FFFFFF
+            .HasMaxLength(7); // #FFFFFF
 
         // Indexes
         builder.HasIndex(t => t.Name)
@@ -36,7 +36,7 @@ public class TagConfiguration : IEntityTypeConfiguration<Tag>
 
         // Global query filter for soft delete
         builder.HasQueryFilter(t => !t.IsDeleted);
-        
+
         builder.HasMany(t => t.Courses)
             .WithMany(c => c.Tags)
             .UsingEntity<Dictionary<string, object>>(

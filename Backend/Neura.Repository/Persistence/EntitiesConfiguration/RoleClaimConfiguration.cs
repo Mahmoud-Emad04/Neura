@@ -4,17 +4,17 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim
 {
     public void Configure(EntityTypeBuilder<IdentityRoleClaim<string>> builder)
     {
-        var permissions = Permissions.GetAll();
-        var roleClaims = new List<IdentityRoleClaim<string>>();
+        //var permissions = Permissions.GetAll();
+        //var roleClaims = new List<IdentityRoleClaim<string>>();
 
-        for (var i = 0; i < permissions.Count; i++)
-            roleClaims.Add(new IdentityRoleClaim<string>
-            {
-                Id = i + 1,
-                RoleId = DefaultRoles.AdminRoleId,
-                ClaimType = Permissions.Type,
-                ClaimValue = permissions[i]
-            });
+        //for (var i = 0; i < permissions.Count; i++)
+        //    roleClaims.Add(new IdentityRoleClaim<string>
+        //    {
+        //        Id = i + 1,
+        //        RoleId = DefaultRoles.AdminRoleId,
+        //        ClaimType = Permissions.Type,
+        //        ClaimValue = permissions[i]
+        //    });
 
         //int idCounter = roleClaims.Count() + 100;
 
@@ -41,6 +41,6 @@ public class RoleClaimConfiguration : IEntityTypeConfiguration<IdentityRoleClaim
         //    }
         //}
 
-        builder.HasData(roleClaims);
+        //builder.HasData(roleClaims);
     }
 }

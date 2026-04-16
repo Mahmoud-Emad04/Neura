@@ -1,5 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
-using Neura.Core.Contracts.Instructor;
+﻿using Neura.Core.Contracts.Instructor;
 using Neura.Core.Contracts.Users;
 using Neura.Services.Helpers;
 
@@ -110,21 +109,22 @@ public class UserService(
     private async Task<(int globalStudentCount, double globalRating, int globalRatingDataCount)> GetStudentsAndRating(
         List<int> instructorCourseIds, CancellationToken cancellationToken)
     {
-        var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+        throw new NotImplementedException();
+        //var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
 
-        var globalStudentCount = await _context.CourseUsers
-            .Where(cu => instructorCourseIds.Contains(cu.CourseId) && cu.PermissionsMask == studentRoleMask)
-            .Select(cu => cu.UserId)
-            .Distinct()
-            .CountAsync(cancellationToken);
+        //var globalStudentCount = await _context.CourseUsers
+        //    .Where(cu => instructorCourseIds.Contains(cu.CourseId) && cu.PermissionsMask == studentRoleMask)
+        //    .Select(cu => cu.UserId)
+        //    .Distinct()
+        //    .CountAsync(cancellationToken);
 
-        var globalRatingData = await _context.Reviews
-            .Where(r => instructorCourseIds.Contains(r.CourseId))
-            .Select(r => (double?)r.Rating)
-            .ToListAsync(cancellationToken);
+        //var globalRatingData = await _context.Reviews
+        //    .Where(r => instructorCourseIds.Contains(r.CourseId))
+        //    .Select(r => (double?)r.Rating)
+        //    .ToListAsync(cancellationToken);
 
-        var globalRating = globalRatingData.Count > 0 ? globalRatingData.Average() ?? 0 : 0;
+        //var globalRating = globalRatingData.Count > 0 ? globalRatingData.Average() ?? 0 : 0;
 
-        return (globalStudentCount, globalRating, globalRatingData.Count);
+        //return (globalStudentCount, globalRating, globalRatingData.Count);
     }
 }

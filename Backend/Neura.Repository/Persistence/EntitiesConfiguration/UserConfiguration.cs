@@ -20,19 +20,19 @@ public class UserConfiguration : IEntityTypeConfiguration<ApplicationUser>
         builder.Property(u => u.DiscordHandle).HasMaxLength(100);
         var passwordHasher = new PasswordHasher<ApplicationUser>();
 
-        builder.HasData(new ApplicationUser
-        {
-            Id = DefaultUsers.AdminId,
-            UserName = DefaultUsers.AdminUsername,
-            NormalizedUserName = DefaultUsers.AdminUsername.ToUpper(),
-            Email = DefaultUsers.AdminEmail,
-            NormalizedEmail = DefaultUsers.AdminEmail.ToUpper(),
-            EmailConfirmed = true,
-            FirstName = "System",
-            LastName = "Admin",
-            SecurityStamp = DefaultUsers.AdminSecurityStamp,
-            ConcurrencyStamp = DefaultUsers.AdminConcurrencyStamp,
-            PasswordHash = DefaultUsers.AdminPasswordHash
-        });
+        //builder.HasData(new ApplicationUser
+        //{
+        //    Id = DefaultUsers.AdminId,
+        //    UserName = DefaultUsers.AdminUsername,
+        //    NormalizedUserName = DefaultUsers.AdminUsername.ToUpper(),
+        //    Email = DefaultUsers.AdminEmail,
+        //    NormalizedEmail = DefaultUsers.AdminEmail.ToUpper(),
+        //    EmailConfirmed = true,
+        //    FirstName = "System",
+        //    LastName = "Admin",
+        //    SecurityStamp = DefaultUsers.AdminSecurityStamp,
+        //    ConcurrencyStamp = DefaultUsers.AdminConcurrencyStamp,
+        //    PasswordHash = DefaultUsers.AdminPasswordHash
+        //});
     }
 }

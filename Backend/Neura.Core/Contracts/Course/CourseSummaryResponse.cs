@@ -2,7 +2,7 @@
 
 namespace Neura.Core.Contracts.Course;
 
-public record CourseSummaryResponse
+public class CourseSummaryResponse
 {
     public string KeyId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;

@@ -1,5 +1,6 @@
-﻿using Neura.Core.Contracts.Tags;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using Neura.Core.Contracts.Tags;
+using Neura.Core.Enums;
 
 namespace Neura.Services.Services;
 
@@ -27,10 +28,7 @@ public partial class TagService : ITagService
         var query = _context.Tags.AsNoTracking();
 
         // Apply filters
-        if (filters.IsActive.HasValue)
-        {
-            query = query.Where(t => t.IsActive == filters.IsActive.Value);
-        }
+        if (filters.IsActive.HasValue) query = query.Where(t => t.IsActive == filters.IsActive.Value);
 
         if (!string.IsNullOrWhiteSpace(filters.SearchTerm))
         {
@@ -192,7 +190,7 @@ public partial class TagService : ITagService
         var tags = await _context.Tags
             .AsNoTracking()
             .Where(t => t.IsActive)
-            .OrderByDescending(t => t.Courses.Count(c => !c.IsDeleted && c.Status == Core.Enums.CourseStatus.Active))
+            .OrderByDescending(t => t.Courses.Count(c => !c.IsDeleted && c.Status == CourseStatus.Active))
             .Take(count)
             .Select(t => new TagSummaryResponse
             {
@@ -368,10 +366,7 @@ public partial class TagService : ITagService
             return Result.Failure(TagErrors.CannotDeleteTagWithCourses);
 
         // If force delete, remove tag from all courses first
-        if (forceDelete && courseCount > 0)
-        {
-            tag.Courses.Clear();
-        }
+        if (forceDelete && courseCount > 0) tag.Courses.Clear();
 
         // Soft delete
         tag.IsDeleted = true;
@@ -519,10 +514,7 @@ public partial class TagService : ITagService
 
         foreach (var tag in tags)
         {
-            if (forceDelete)
-            {
-                tag.Courses.Clear();
-            }
+            if (forceDelete) tag.Courses.Clear();
 
             tag.IsDeleted = true;
             tag.IsActive = false;
@@ -588,7 +580,7 @@ public partial class TagService : ITagService
     private static bool IsValidHexColor(string color)
     {
         if (string.IsNullOrWhiteSpace(color))
-            return true;  // Empty is valid (optional field)
+            return true; // Empty is valid (optional field)
 
         return HexColorRegex().IsMatch(color);
     }

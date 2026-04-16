@@ -169,19 +169,7 @@ public class LessonService(
 
         if (lesson is null)
             return Result.Failure(LessonErrors.NotFound);
-        /*
-                var ownerMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CourseOwner];
-                var coInstructorMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.CoInstructor];
 
-                var hasEditPermission = await _context.CourseUsers
-                    .AnyAsync(cu => cu.CourseId == lesson.Section.CourseId
-                                    && cu.UserId == userId
-                                    && (cu.PermissionsMask == ownerMask || cu.PermissionsMask == coInstructorMask),
-                        cancellationToken);
-
-                if (!hasEditPermission)
-                    return Result.Failure(LessonErrors.UnauthorizedModification);
-        */
         if (!string.IsNullOrWhiteSpace(request.Title))
             lesson.Title = request.Title;
 

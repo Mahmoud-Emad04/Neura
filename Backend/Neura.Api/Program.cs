@@ -14,6 +14,8 @@ builder.Host.UseSerilog((context, configuration) =>
 
 var app = builder.Build();
 
+await DbInitializer.InitializeAsync(app.Services);
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger(options => { options.RouteTemplate = "openapi/{documentName}.json"; });

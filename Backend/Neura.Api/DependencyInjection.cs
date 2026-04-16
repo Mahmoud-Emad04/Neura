@@ -13,7 +13,7 @@ using Neura.Core.Authentication;
 using Neura.Core.Settings;
 using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
-using Neura.Services.Filters;
+using Neura.Services.Extensions;
 using Neura.Services.Helpers;
 using Neura.Services.Services;
 using System.Reflection;
@@ -78,6 +78,11 @@ public static class DependencyInjection
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
         services.AddScoped<ITagService, TagService>();
+        services.AddScoped<ICoursePermissionService, CoursePermissionService>();
+        services.AddScoped<IInstructorApplicationService, InstructorApplicationService>();
+        services.AddScoped<ICoursePermissionService, CoursePermissionService>();
+        services.AddScoped<IEnrollmentService, EnrollmentService>();
+        services.AddScoped<ICourseTeamService, CourseTeamService>();
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
@@ -92,6 +97,8 @@ public static class DependencyInjection
             // Increase Keep-Alive timeout for slow connections watching long videos
             options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
         });
+
+        services.AddNeuraAuthorization();
 
         return services;
     }
@@ -150,8 +157,8 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-        services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
-        services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
+        //services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        //services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
 
 
         services.AddSingleton<IJwtProvider, JwtProvider>();

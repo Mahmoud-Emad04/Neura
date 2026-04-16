@@ -89,6 +89,20 @@ public static class CourseErrors
         new("Course.Status.InvalidUnpublish", "Only active courses can be unpublished.",
             StatusCodes.Status400BadRequest);
 
+    public static readonly Error EnrollmentClosed =
+        new("Course.EnrollmentClosed", "Enrollment is currently closed for this course",
+            StatusCodes.Status400BadRequest);
+
+    public static readonly Error CourseNotPublished =
+        new("Course.NotPublished", "This course is not published yet", StatusCodes.Status400BadRequest);
+
+    public static readonly Error TeamMemberCannotSelfUnenroll =
+        new("Course.TeamMemberCannotSelfUnenroll", "Team members must be removed by the course owner",
+            StatusCodes.Status400BadRequest);
+
+    public static readonly Error CourseNotActive =
+        new("Course.NotActive", "This course is not currently available for enrollment",
+            StatusCodes.Status400BadRequest);
     // ══════════════════════════════════════════════════════════════
     // Conflict (409)
     // ══════════════════════════════════════════════════════════════

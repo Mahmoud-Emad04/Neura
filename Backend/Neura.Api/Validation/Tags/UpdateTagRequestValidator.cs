@@ -2,7 +2,6 @@
 
 namespace Neura.Api.Validation.Tags;
 
-
 public class UpdateTagRequestValidator : AbstractValidator<UpdateTagRequest>
 {
     public UpdateTagRequestValidator()

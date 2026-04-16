@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>You're Invited!</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+<div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #2563eb;">You're Invited to Join a Course Team!</h1>
+
+    <p>Hi there,</p>
+
+    <p><strong>{{InviterName}}</strong> has invited you to join the team for:</p>
+
+    <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h2 style="margin: 0 0 10px 0; color: #1f2937;">{{CourseName}}</h2>
+        <p style="margin: 0; color: #6b7280;">Role: <strong>{{RoleName}}</strong></p>
+    </div>
+
+    {{#if CustomMessage}}
+    <div style="background-color: #eff6ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2563eb;">
+        <p style="margin: 0; font-style: italic;">"{{CustomMessage}}"</p>
+    </div>
+    {{/if}}
+
+    <p>As a <strong>{{RoleName}}</strong>, you will be able to:</p>
+    <ul>
+        {{RolePermissions}}
+    </ul>
+
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{{AcceptUrl}}"
+           style="background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-right: 10px;">Accept
+            Invitation</a>
+        <a href="{{RejectUrl}}"
+           style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Decline</a>
+    </div>
+
+    <p style="color: #6b7280; font-size: 14px;">This invitation expires on <strong>{{ExpiryDate}}</strong>.</p>
+
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+
+    <p style="color: #6b7280; font-size: 12px;">
+        If you didn't expect this invitation, you can safely ignore this email.
+    </p>
+
+    <p>Best regards,<br>The Neura Team</p>
+</div>
+</body>
+</html>

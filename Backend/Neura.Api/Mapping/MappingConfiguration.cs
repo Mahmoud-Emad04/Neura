@@ -31,7 +31,8 @@ public class MappingConfiguration : IRegister
 
         config.NewConfig<Course, CourseSummaryResponse>()
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))
-            .Map(dest => dest.StatusName, src => src.Status);
+            .Map(dest => dest.StatusName, src => src.Status)
+            .Map(dest => dest.InstructorName, src => src.DisplayInstructorName);
 
         //config.NewConfig<CourseMetadataResponse, Course>()
         //    .Map(dest => dest.Prerequisites,

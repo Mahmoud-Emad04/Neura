@@ -26,22 +26,15 @@ public interface ICourseService
     Task<Result<CourseMetadataResponse>> UpdateAsync(string keyId, CourseUpdateRequest request,
         string userId, CancellationToken cancellationToken = default);
 
-    Task<Result> EnrollAsync(string keyId, string userId, CancellationToken cancellationToken = default);
-
-    Task<Result<IEnumerable<CourseMetadataResponse>>> GetEnrolledCoursesAsync(string userId,
-        CancellationToken cancellationToken = default);
-
-    Task<Result> UnenrollAsync(string keyId, string userId, CancellationToken cancellationToken = default);
-
     Task<Result> ToggleBookmarkAsync(string keyId, string userId, CancellationToken cancellationToken = default);
 
     Task<Result<PaginatedList<CourseSummaryResponse>>> GetBookmarkedAsync(string userId, RequestFilters filters,
         CancellationToken cancellationToken = default);
 
     Task<Result<EditableCoursesListSummaryResponse>> GetEditableCoursesAsync(
-    EditableCourseFilters filters,
-    string userId,
-    CancellationToken cancellationToken = default);
+        EditableCourseFilters filters,
+        string userId,
+        CancellationToken cancellationToken = default);
 
     // ══════════════════════════════════════════════════════════════
     // Commands — Status Transitions

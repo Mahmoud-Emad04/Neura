@@ -37,6 +37,7 @@ public sealed record EditableCourseResponse
     public DateTime CreatedOn { get; init; }
     public DateTime? UpdatedOn { get; init; }
 }
+
 public sealed record EditableCourseSummaryResponse
 {
     public string KeyId { get; init; } = string.Empty;
@@ -64,6 +65,7 @@ public sealed record EditableCourseSummaryResponse
     public DateTime CreatedOn { get; init; }
     public DateTime? UpdatedOn { get; init; }
 }
+
 public sealed record CourseAvailableActions
 {
     public bool CanEdit { get; init; }

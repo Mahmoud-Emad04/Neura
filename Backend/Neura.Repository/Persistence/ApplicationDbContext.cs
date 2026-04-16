@@ -21,10 +21,13 @@ public class ApplicationDbContext(
     public DbSet<Section> Sections { get; set; }
     public DbSet<PostLike> PostLikes { get; set; }
     public DbSet<CourseUser> CourseUsers { get; set; }
+    public DbSet<CourseRole> CourseRoles { get; set; }
     public DbSet<PostComment> PostComments { get; set; }
     public DbSet<CourseBookmark> CourseBookmarks { get; set; }
+    public DbSet<CourseInvitation> CourseInvitations { get; set; }
     public DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
     public DbSet<CourseLearningOutcome> CourseLearningOutcomes { get; set; }
+    public DbSet<InstructorApplication> InstructorApplications { get; set; }
     public DbSet<UploadedFile> UploadedFiles { get; set; }
 
 
@@ -50,6 +53,11 @@ public class ApplicationDbContext(
 
 
         //modelBuilder.Entity<Answer>().HasQueryFilter(a => a.IsActive);
+
+        // modelBuilder.ApplyConfiguration(new ApplicationRoleSeed());
+        // modelBuilder.ApplyConfiguration(new CourseRoleSeed());
+        // modelBuilder.ApplyConfiguration(new DefaultUserSeed());
+        // modelBuilder.ApplyConfiguration(new UserRoleSeed());
 
         base.OnModelCreating(modelBuilder);
     }
