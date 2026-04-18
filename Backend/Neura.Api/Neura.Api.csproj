@@ -10,29 +10,31 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
-        <PackageReference Include="Hangfire.Dashboard.Basic.Authentication" Version="8.0.0"/>
-        <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2"/>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+        <PackageReference Include="Hangfire.Dashboard.Basic.Authentication" Version="8.0.0" />
+        <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2"/>
-        <PackageReference Include="Scalar.AspNetCore" Version="2.12.34"/>
-        <PackageReference Include="Serilog.AspNetCore" Version="10.0.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.1"/>
+        <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+        <PackageReference Include="NuGet.Packaging" Version="7.3.1" />
+        <PackageReference Include="NuGet.Protocol" Version="6.12.5" />
+        <PackageReference Include="Scalar.AspNetCore" Version="2.12.34" />
+        <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.1" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Neura.Services\Neura.Services.csproj"/>
+        <ProjectReference Include="..\Neura.Services\Neura.Services.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="wwwroot\Files\Lessons\"/>
-        <Folder Include="wwwroot\Images\PostComment\"/>
-        <Folder Include="wwwroot\Images\Post\"/>
+        <Folder Include="wwwroot\Files\Lessons\" />
+        <Folder Include="wwwroot\Images\PostComment\" />
+        <Folder Include="wwwroot\Images\Post\" />
     </ItemGroup>
 
 </Project>
