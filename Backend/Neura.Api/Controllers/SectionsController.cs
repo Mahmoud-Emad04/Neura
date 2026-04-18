@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using Neura.Core.Contracts.Section;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -64,7 +64,7 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
 
         // This ensures the Location header returns the correct standard URL: /api/sections/{id}
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { sectionId = result.Value.Id }, null)
+            ? CreatedAtAction(nameof(GetById), new { sectionId = result.Value.Id }, result.Value.Id)
             : result.ToProblem();
     }
 
