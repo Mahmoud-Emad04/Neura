@@ -93,7 +93,7 @@ public static class DbInitializer
         if (await context.CourseRoles.AnyAsync())
         {
             logger.LogInformation("Course roles already exist, skipping seed");
-            return;
+            return; 
         }
 
         var courseRoles = new List<CourseRole>

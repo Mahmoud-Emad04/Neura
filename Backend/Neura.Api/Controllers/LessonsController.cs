@@ -1,4 +1,5 @@
-﻿using Neura.Api.Extensions;
+﻿using CloudinaryDotNet;
+using Neura.Api.Extensions;
 using Neura.Core.Contracts.Lessons;
 
 namespace Neura.Api.Controllers;
@@ -10,11 +11,12 @@ public class LessonsController(
     ILessonService lessonService) : ControllerBase
 {
     private readonly ILessonService _lessonService = lessonService;
+	private readonly Cloudinary _cloudinary;
 
-    /// <summary>
-    ///     PAGE 1: Initialize the lesson shell with basic metadata.
-    /// </summary>
-    [HttpPost("init")]
+	/// <summary>
+	///     PAGE 1: Initialize the lesson shell with basic metadata.
+	/// </summary>
+	[HttpPost("init")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Initialize([FromBody] CreateLessonRequest request,

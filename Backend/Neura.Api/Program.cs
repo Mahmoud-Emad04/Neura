@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDependencies(builder.Configuration);
 
 builder.Host.UseSerilog((context, configuration) =>
-    configuration.ReadFrom.Configuration(context.Configuration)
+	configuration.ReadFrom.Configuration(context.Configuration)
 );
 
 var app = builder.Build();
@@ -18,27 +18,27 @@ await DbInitializer.InitializeAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger(options => { options.RouteTemplate = "openapi/{documentName}.json"; });
-    app.MapScalarApiReference(options =>
-    {
-        options
-            .WithTitle("Neura API")
-            .WithTheme(ScalarTheme.Purple)
-            .WithClassicLayout()
-            .WithOpenApiRoutePattern("/openapi/v1.json");
-    });
+	app.UseSwagger(options => { options.RouteTemplate = "openapi/{documentName}.json"; });
+	app.MapScalarApiReference(options =>
+	{
+		options
+			.WithTitle("Neura API")
+			.WithTheme(ScalarTheme.Purple)
+			.WithClassicLayout()
+			.WithOpenApiRoutePattern("/openapi/v1.json");
+	});
 }
 
 app.UseHangfireDashboard("/jobs", new DashboardOptions
 {
-    //Authorization = [
-    //    new HangfireCustomBasicAuthenticationFilter
-    //    {
-    //        User = app.Configuration.GetValue<string>("HangfireSettings:Username"),
-    //        Pass = app.Configuration.GetValue<string>("HangfireSettings:Password")
-    //    }
-    //],
-    DashboardTitle = "Neura"
+	//Authorization = [
+	//    new HangfireCustomBasicAuthenticationFilter
+	//    {
+	//        User = app.Configuration.GetValue<string>("HangfireSettings:Username"),
+	//        Pass = app.Configuration.GetValue<string>("HangfireSettings:Password")
+	//    }
+	//],
+	DashboardTitle = "Neura"
 });
 
 
@@ -55,12 +55,12 @@ using var scopeApplicationContext = app.Services.CreateScope();
 var context = scopeApplicationContext.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 try
 {
-    await context.Database.MigrateAsync();
+	await context.Database.MigrateAsync();
 }
 catch (Exception e)
 {
-    var logger = scopeApplicationContext.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    logger.LogError(e, "An error occurred while migrating the database.");
+	var logger = scopeApplicationContext.ServiceProvider.GetRequiredService<ILogger<Program>>();
+	logger.LogError(e, "An error occurred while migrating the database.");
 }
 
 #endregion
