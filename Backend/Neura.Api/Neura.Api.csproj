@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="CloudinaryDotNet" Version="1.28.0" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
         <PackageReference Include="Hangfire.Dashboard.Basic.Authentication" Version="8.0.0" />
         <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
