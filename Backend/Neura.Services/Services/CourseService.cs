@@ -135,6 +135,7 @@ public class CourseService(
                 cancellationToken);
 
         var totalCount = await query.CountAsync(cancellationToken);
+        //totalCount = (int)Math.Ceiling((decimal)totalCount / filters.PageSize);
 
         var courseIds = await query
             .Skip((filters.PageNumber - 1) * filters.PageSize)
@@ -200,8 +201,8 @@ public class CourseService(
 
         var paginatedList = new PaginatedList<EditableCourseSummaryResponse>(
             orderedItems,
-            totalCount,
             filters.PageNumber,
+            totalCount,
             filters.PageSize);
 
         return Result.Success(new EditableCoursesListSummaryResponse
