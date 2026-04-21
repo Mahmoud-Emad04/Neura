@@ -1,7 +1,8 @@
-﻿using System.Security.Claims;
-using Neura.Core.Authorization.Attributes;
+﻿using Neura.Core.Authorization.Attributes;
+using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -20,12 +21,12 @@ public class EnrollmentController : ControllerBase
     /// <summary>
     ///     Enroll in a course
     /// </summary>
-    [HttpPost("{courseId:int}/enroll")]
+    [HttpPost("{courseId}/enroll")]
     [ProducesResponseType(typeof(EnrollmentResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Enroll(int courseId)
+    public async Task<IActionResult> Enroll(string courseId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var result = await _enrollmentService.EnrollAsync(courseId, userId);
@@ -84,11 +85,11 @@ public class EnrollmentController : ControllerBase
     ///     Get my enrolled courses (as student)
     /// </summary>
     [HttpGet("/api/courses/enrolled")]
-    [ProducesResponseType(typeof(List<MyEnrolledCourseResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMyEnrolledCourses()
+    [ProducesResponseType(typeof(PaginatedList<MyEnrolledCourseResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyEnrolledCourses([FromQuery] RequestFilters requestFilters, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.GetMyEnrolledCoursesAsync(userId);
+        var result = await _enrollmentService.GetMyEnrolledCoursesAsync(userId, requestFilters, cancellationToken);
 
         return result.IsSuccess
             ? Ok(result.Value)

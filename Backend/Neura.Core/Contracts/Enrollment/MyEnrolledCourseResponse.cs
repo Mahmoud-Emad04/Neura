@@ -4,7 +4,7 @@ namespace Neura.Core.Contracts.Enrollment;
 
 public class MyEnrolledCourseResponse
 {
-    public int CourseId { get; set; }
+    public string CourseId { get; set; }
     public string CourseName { get; set; } = string.Empty;
     public string? CourseDescription { get; set; }
     public string? CourseThumbnail { get; set; }

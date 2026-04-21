@@ -1,6 +1,8 @@
 ﻿using Neura.Core.Abstractions.Consts;
+using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
+using Neura.Services.Helpers;
 
 namespace Neura.Services.Services;
 
@@ -9,18 +11,19 @@ public class EnrollmentService : IEnrollmentService
     private readonly ApplicationDbContext _context;
     private readonly ILogger<EnrollmentService> _logger;
     private readonly UserManager<ApplicationUser> _userManager;
-
+    private readonly IServiceHelpers _helpers;
     public EnrollmentService(
         ApplicationDbContext context,
         UserManager<ApplicationUser> userManager,
-        ILogger<EnrollmentService> logger)
+        ILogger<EnrollmentService> logger, IServiceHelpers helpers)
     {
         _context = context;
         _userManager = userManager;
         _logger = logger;
+        _helpers = helpers;
     }
 
-    public async Task<Result<EnrollmentResponse>> EnrollAsync(int courseId, string userId)
+    public async Task<Result<EnrollmentResponse>> EnrollAsync(string keyId, string userId)
     {
         // Get user
         var user = await _userManager.FindByIdAsync(userId);
@@ -30,6 +33,9 @@ public class EnrollmentService : IEnrollmentService
         // Check email verification
         if (!user.EmailConfirmed) return Result.Failure<EnrollmentResponse>(EnrollmentErrors.EmailNotVerified);
 
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<EnrollmentResponse>(CourseErrors.CourseNotFound);
+        
         // Get course
         var course = await _context.Courses
             .AsNoTracking()
@@ -169,9 +175,9 @@ public class EnrollmentService : IEnrollmentService
         });
     }
 
-    public async Task<Result<List<MyEnrolledCourseResponse>>> GetMyEnrolledCoursesAsync(string userId)
+    public async Task<Result<PaginatedList<MyEnrolledCourseResponse>>> GetMyEnrolledCoursesAsync(string userId, RequestFilters requestFilters, CancellationToken cancellationToken)
     {
-        var enrollments = await _context.CourseUsers
+        var enrollments = _context.CourseUsers
             .AsNoTracking()
             .Include(cu => cu.Course)
             .ThenInclude(c => c.CreatedBy)
@@ -180,30 +186,38 @@ public class EnrollmentService : IEnrollmentService
                 cu.UserId == userId &&
                 !cu.IsDeleted &&
                 !cu.Course.IsDeleted &&
-                cu.CourseRole.Level == (int)CourseRoleType.Student)
-            .OrderByDescending(cu => cu.LastAccessedOn ?? cu.EnrolledOn)
-            .ToListAsync();
+                cu.CourseRole.Level == (int)CourseRoleType.Student
+                && (string.IsNullOrEmpty(requestFilters.SearchValue) || ((cu.Course.Title.Contains(requestFilters.SearchValue) || cu.Course.Description.Contains(requestFilters.SearchValue) || (!string.IsNullOrEmpty(cu.Course.DisplayInstructorName) && cu.Course.DisplayInstructorName.Contains(requestFilters.SearchValue)))))
+                && (requestFilters.CourseStatus == null || (requestFilters.CourseStatus == cu.Course.Status)))
 
-        var responses = enrollments.Select(cu => new MyEnrolledCourseResponse
-        {
-            CourseId = cu.CourseId,
-            CourseName = cu.Course.Title,
-            CourseDescription = cu.Course.Description,
-            CourseThumbnail = cu.Course.ImageUrl,
-            InstructorName = $"{cu.Course.CreatedBy.FirstName} {cu.Course.CreatedBy.LastName}",
-            Role = (CourseRoleType)cu.CourseRole.Level,
-            RoleName = cu.CourseRole.Name,
-            IsTeamMember = false,
-            IsOwner = false,
-            EnrolledOn = cu.EnrolledOn,
-            LastAccessedOn = cu.LastAccessedOn,
-            // Progress tracking would be implemented separately
-            ProgressPercentage = null,
-            TotalLessons = 0,
-            CompletedLessons = 0
-        }).ToList();
+            .Select(cu => new MyEnrolledCourseResponse
+            {
+                CourseId = _helpers.Encode(cu.CourseId),
+                CourseName = cu.Course.Title,
+                CourseDescription = cu.Course.Description,
+                CourseThumbnail = cu.Course.ImageUrl,
+                InstructorName = $"{cu.Course.CreatedBy.FirstName} {cu.Course.CreatedBy.LastName}",
+                Role = (CourseRoleType)cu.CourseRole.Level,
+                RoleName = cu.CourseRole.Name,
+                IsTeamMember = false,
+                IsOwner = false,
+                EnrolledOn = cu.EnrolledOn,
+                LastAccessedOn = cu.LastAccessedOn,
+                // Progress tracking would be implemented separately
+                ProgressPercentage = null,
+                TotalLessons = 0,
+                CompletedLessons = 0
+            })
+            .OrderByDescending(cu => cu.LastAccessedOn ?? cu.EnrolledOn);
 
-        return Result.Success(responses);
+        var paginatedCourses = await PaginatedList<MyEnrolledCourseResponse>.CreateAsync(
+            enrollments,
+            requestFilters.PageNumber,
+            requestFilters.PageSize,
+            cancellationToken: cancellationToken
+        );
+
+        return Result.Success(paginatedCourses);
     }
 
     public async Task<Result<List<MyEnrolledCourseResponse>>> GetMyTeachingCoursesAsync(string userId)
@@ -224,7 +238,7 @@ public class EnrollmentService : IEnrollmentService
 
         var responses = teachingCourses.Select(cu => new MyEnrolledCourseResponse
         {
-            CourseId = cu.CourseId,
+            CourseId = _helpers.Encode(cu.CourseId),
             CourseName = cu.Course.Title,
             CourseDescription = cu.Course.Description,
             CourseThumbnail = cu.Course.ImageUrl,
@@ -463,5 +477,19 @@ public class EnrollmentService : IEnrollmentService
         };
     }
 
+    private bool TryDecodeCourseId(string keyId, out int courseId)
+    {
+        var numbers = _helpers.DecodeHash(keyId);
+        if (numbers.Length == 0)
+        {
+            courseId = 0;
+            return false;
+        }
+
+        courseId = numbers[0];
+        return true;
+    }
+
+    
     #endregion
 }

@@ -50,7 +50,7 @@ public class AuthController(
     public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await _authService.RevokeRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
+        var result = await _authService.GetRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }

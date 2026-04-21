@@ -1,4 +1,5 @@
 ﻿using Neura.Core.Abstractions;
+using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 
 namespace Neura.Core.Services;
@@ -8,7 +9,7 @@ public interface IEnrollmentService
     /// <summary>
     ///     Enroll current user in a course
     /// </summary>
-    Task<Result<EnrollmentResponse>> EnrollAsync(int courseId, string userId);
+    Task<Result<EnrollmentResponse>> EnrollAsync(string keyId, string userId);
 
     /// <summary>
     ///     Unenroll current user from a course
@@ -23,7 +24,7 @@ public interface IEnrollmentService
     /// <summary>
     ///     Get all courses user is enrolled in
     /// </summary>
-    Task<Result<List<MyEnrolledCourseResponse>>> GetMyEnrolledCoursesAsync(string userId);
+    Task<Result<PaginatedList<MyEnrolledCourseResponse>>> GetMyEnrolledCoursesAsync(string userId, RequestFilters requestFilters, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Get courses user is teaching (as owner or team member)
