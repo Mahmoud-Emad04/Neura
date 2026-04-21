@@ -384,6 +384,7 @@ public class CourseService(
         course.DisplayInstructorName = request.InstructorName?.Trim();
         course.UpdatedOn = DateTime.UtcNow;
         course.UpdatedById = userId;
+        course.IsPubliclyVisible = request.IsPubliclyVisible;
 
         course.Tags.Clear();
         foreach (var tag in tags) course.Tags.Add(tag);

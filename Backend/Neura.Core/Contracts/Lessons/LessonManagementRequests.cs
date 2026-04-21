@@ -14,7 +14,8 @@ public record UpdateLessonPositionRequest(
 /// </summary>
 public record UpdateLessonPrivacyRequest(
     bool IsVideoPrivate, // true = private (enrolled only), false = public preview
-    bool IsPreview // true = preview mode
+    bool IsPreview, // true = preview mode
+    bool IsPubliclyVisible
 );
 
 /// <summary>
