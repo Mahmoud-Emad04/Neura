@@ -19,7 +19,7 @@ public interface IEnrollmentService
     /// <summary>
     ///     Check enrollment status for a user in a course
     /// </summary>
-    Task<Result<EnrollmentStatusResponse>> GetEnrollmentStatusAsync(int courseId, string userId);
+    Task<Result<EnrollmentStatusResponse>> GetEnrollmentStatusAsync(string courseId, string userId);
 
     /// <summary>
     ///     Get all courses user is enrolled in

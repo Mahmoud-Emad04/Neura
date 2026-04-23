@@ -56,11 +56,11 @@ public class EnrollmentController : ControllerBase
     /// <summary>
     ///     Get enrollment status for a course
     /// </summary>
-    [HttpGet("{courseId:int}/enrollment-status")]
+    [HttpGet("{courseId}/enrollment-status")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(EnrollmentStatusResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetEnrollmentStatus(int courseId)
+    public async Task<IActionResult> GetEnrollmentStatus(string courseId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 

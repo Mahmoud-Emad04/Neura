@@ -7,7 +7,7 @@ public class EnrollmentStatusResponse
     public bool IsEnrolled { get; set; }
     public bool CanEnroll { get; set; }
     public string? CannotEnrollReason { get; set; }
-    public int CourseId { get; set; }
+    public string CourseId { get; set; }
     public string CourseName { get; set; } = string.Empty;
     public bool IsFree { get; set; }
     public decimal Price { get; set; }

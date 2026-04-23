@@ -16,9 +16,6 @@ public class AnnouncementService(
     private readonly IServiceHelpers _helpers = helpers;
     private readonly ILogger<AnnouncementService> _logger = logger;
 
-    //string? CurrentUserId() => _helpers.GetCurrentUserId();
-    //bool IsAdmin() => _helpers.IsUserInRole("Admin");
-
     public async Task<Result<PaginatedList<PostResponse>>> GetAllPostsAsync(int pageNumber = 1, int pageSize = 10,
         CancellationToken cancellationToken = default)
     {

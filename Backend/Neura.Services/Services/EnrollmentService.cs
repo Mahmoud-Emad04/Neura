@@ -35,7 +35,7 @@ public class EnrollmentService : IEnrollmentService
 
         if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure<EnrollmentResponse>(CourseErrors.CourseNotFound);
-        
+
         // Get course
         var course = await _context.Courses
             .AsNoTracking()
@@ -127,8 +127,11 @@ public class EnrollmentService : IEnrollmentService
         return Result.Success();
     }
 
-    public async Task<Result<EnrollmentStatusResponse>> GetEnrollmentStatusAsync(int courseId, string userId)
+    public async Task<Result<EnrollmentStatusResponse>> GetEnrollmentStatusAsync(string keyId, string userId)
     {
+        if (TryDecodeCourseId(keyId, out var courseId))
+            return Result.Failure<EnrollmentStatusResponse>(EnrollmentErrors.CourseNotFound);
+
         var course = await _context.Courses
             .AsNoTracking()
             .FirstOrDefaultAsync(c => c.Id == courseId && !c.IsDeleted);
@@ -164,7 +167,7 @@ public class EnrollmentService : IEnrollmentService
             IsEnrolled = isEnrolled,
             CanEnroll = canEnroll,
             CannotEnrollReason = cannotEnrollReason,
-            CourseId = course.Id,
+            CourseId = keyId,
             CourseName = course.Title,
             IsFree = course.Price == 0,
             Price = course.Price,
@@ -490,6 +493,6 @@ public class EnrollmentService : IEnrollmentService
         return true;
     }
 
-    
+
     #endregion
 }
