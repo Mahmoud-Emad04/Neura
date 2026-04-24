@@ -1,6 +1,8 @@
 ﻿using HashidsNet;
 using Neura.Core.Contracts.Announcement;
+using Neura.Core.Contracts.Exam;
 using Neura.Core.Contracts.Instructor;
+using Neura.Core.Contracts.Question;
 using Neura.Core.Contracts.Section;
 
 namespace Neura.Api.Mapping;
@@ -58,5 +60,42 @@ public class MappingConfiguration : IRegister
 
         config.NewConfig<Post, PostResponse>();
         config.NewConfig<PostComment, PostCommentResponse>();
+
+        config.NewConfig<Exam, ExamResponse>()
+          .Map(dest => dest.TotalQuestions, src => src.Questions.Count)
+          .Map(dest => dest.TotalPoints, src => src.Questions.Sum(q => q.Points))
+          .Map(dest => dest.TotalAttempts, src => src.Attempts.Count);
+        // CreatedOn, UpdatedOn map automatically from AuditableEntity
+
+        // ── Exam → ExamDetailResponse ──
+        config.NewConfig<Exam, ExamDetailResponse>()
+            .Map(dest => dest.TotalQuestions, src => src.Questions.Count)
+            .Map(dest => dest.TotalPoints, src => src.Questions.Sum(q => q.Points))
+            .Map(dest => dest.TotalAttempts, src => src.Attempts.Count)
+            .Ignore(dest => dest.Questions);
+
+        // ── Question → QuestionResponse ──
+        config.NewConfig<Question, QuestionResponse>()
+            .Map(dest => dest.Options, src => src.AnswerOptions.OrderBy(a => a.Order))
+            .Ignore(dest => dest.HasAttempts);
+
+        // ── AnswerOption → AnswerOptionResponse ──
+        config.NewConfig<AnswerOption, AnswerOptionResponse>();
+
+        // ── CreateExamRequest → Exam ──
+        config.NewConfig<CreateExamRequest, Exam>()
+            .Ignore(dest => dest.Id)
+            .Ignore(dest => dest.IsPublished)
+            .Ignore(dest => dest.ShowCorrectAnswersAfterSubmit)
+            .Ignore(dest => dest.CreatedOn)
+            .Ignore(dest => dest.UpdatedOn)
+            .Ignore(dest => dest.CreatedById)
+            .Ignore(dest => dest.UpdatedById)
+            .Ignore(dest => dest.CreatedBy)
+            .Ignore(dest => dest.UpdatedBy)
+            .Ignore(dest => dest.IsDeleted)
+            .Ignore(dest => dest.Lesson)
+            .Ignore(dest => dest.Questions)
+            .Ignore(dest => dest.Attempts);
     }
 }

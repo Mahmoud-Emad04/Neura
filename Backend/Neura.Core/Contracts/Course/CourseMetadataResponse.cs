@@ -19,6 +19,7 @@ public sealed record CourseMetadataResponse
 
 
     public int NumberOfStudents { get; set; }
+
     public bool IsEnrolled { get; set; }
     public bool IsBookmarked { get; set; }
     public bool IsOwner { get; set; }

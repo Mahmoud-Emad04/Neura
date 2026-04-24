@@ -43,11 +43,18 @@ public class CourseService(
             cancellationToken
         );
 
+
         foreach (var course in paginatedCourses.Items)
         {
             TryDecodeCourseId(course.KeyId, out var courseId);
+
+            var lessons = await _context.Lessons.Where(l => l.Section.CourseId == courseId && !l.IsDeleted).Select(l => new { l.Duration }).ToListAsync(cancellationToken);
+
             course.NumberOfStudents =
                 await _context.CourseUsers.CountAsync(c => c.CourseId == courseId && !c.IsDeleted, cancellationToken);
+
+            course.NumberOfLessons = lessons.Count();
+            course.Hours = lessons.Sum(l => (int)l.Duration.TotalMinutes);
         }
 
         if (userId is not null)
@@ -422,8 +429,6 @@ public class CourseService(
                 ImageConsts.Course,
                 cancellationToken);
         }
-
-        _context.CourseLearningOutcomes.RemoveRange(course.LearningOutcomes);
 
         await _context.SaveChangesAsync(cancellationToken);
         return await BuildCourseMetadataResponse(course, userId, courseId, cancellationToken);

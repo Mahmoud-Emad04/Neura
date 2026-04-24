@@ -25,4 +25,6 @@ public class Lesson : AuditableEntity
 
     public int SectionId { get; set; }
     public Section Section { get; set; } = default!;
+
+    public Exam? Exam { get; set; }
 }

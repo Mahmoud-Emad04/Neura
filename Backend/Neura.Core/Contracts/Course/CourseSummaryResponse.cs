@@ -12,7 +12,8 @@ public class CourseSummaryResponse
     public double Rating { get; set; }
 
     public int NumberOfStudents { get; set; }
-
+    public int NumberOfLessons { get; set; }
+    public int Hours { get; set; }
     // Status
     public CourseStatus Status { get; set; }
     public string StatusName { get; set; } = string.Empty;
