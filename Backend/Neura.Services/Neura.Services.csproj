@@ -7,12 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="Jobs\**" />
-        <EmbeddedResource Remove="Jobs\**" />
-        <None Remove="Jobs\**" />
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
         <PackageReference Include="CloudinaryDotNet" Version="1.28.0" />
         <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />

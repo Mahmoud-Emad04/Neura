@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.Extensions.FileProviders;
 using Neura.Api;
 using Neura.Repository.Persistence;
+using Neura.Services.Jobs;
 using Scalar.AspNetCore;
 using Serilog;
 
@@ -47,8 +48,14 @@ var scopeFactory = app.Services.GetRequiredService<IServiceScopeFactory>();
 using var scope = scopeFactory.CreateScope();
 var notificationService = scope.ServiceProvider.GetRequiredService<IUserService>();
 
+
 RecurringJob.AddOrUpdate("SendNewPollsNotification", () => notificationService.SendMail(), "42 19 * * *");
 
+RecurringJob.AddOrUpdate<ExamTimeoutJob>(
+    recurringJobId: "exam-timeout-processor",
+    methodCall: job => job.ExecuteAsync(),
+    cronExpression: "*/1 * * * *"
+);
 
 #region ApplyPendingMigration
 

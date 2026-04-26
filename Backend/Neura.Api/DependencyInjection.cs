@@ -17,6 +17,7 @@ using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
 using Neura.Services.Extensions;
 using Neura.Services.Helpers;
+using Neura.Services.Jobs;
 using Neura.Services.Services;
 using System.Reflection;
 using System.Text;
@@ -94,6 +95,12 @@ public static class DependencyInjection
         services.AddScoped<IEnrollmentService, EnrollmentService>();
         services.AddScoped<ICourseTeamService, CourseTeamService>();
         services.AddScoped<IVideoService, VideoService>();
+        services.AddScoped<IGradingService, GradingService>();
+
+        services.AddScoped<IExamTimeoutService, ExamTimeoutService>();
+        services.AddScoped<ExamTimeoutJob>();
+        services.AddScoped<IExamAttemptService, ExamAttemptService>();
+        services.AddScoped<IExamAnalyticsService, ExamAnalyticsService>();
 
         services.AddSingleton<HtmlSanitizer>(sp =>
         {
