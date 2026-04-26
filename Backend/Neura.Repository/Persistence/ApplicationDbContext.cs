@@ -59,7 +59,7 @@ public class ApplicationDbContext(
         }
 
 
-        //modelBuilder.Entity<Answer>().HasQueryFilter(a => a.IsActive);
+        modelBuilder.Entity<Lesson>().HasQueryFilter(a => !a.IsDeleted);
 
         // modelBuilder.ApplyConfiguration(new ApplicationRoleSeed());
         // modelBuilder.ApplyConfiguration(new CourseRoleSeed());

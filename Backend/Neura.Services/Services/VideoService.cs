@@ -190,6 +190,7 @@ public class VideoService(
         string userId,
         CancellationToken cancellationToken = default)
     {
+        // TODO Why You Use .Include(l => l.Section).ThenInclude(s => s.Course)?
         var lesson = await _context.Lessons
             .Include(l => l.Section).ThenInclude(s => s.Course)
             .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);

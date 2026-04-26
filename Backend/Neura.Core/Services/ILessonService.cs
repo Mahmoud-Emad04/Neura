@@ -5,7 +5,7 @@ namespace Neura.Core.Services;
 
 public interface ILessonService
 {
-    Task<Result<int>> CreateLessonMetadataAsync(int sectionId,CreateLessonRequest request, string userId,
+    Task<Result<int>> CreateLessonMetadataAsync(int sectionId, CreateLessonRequest request, string userId,
         CancellationToken cancellationToken = default);
 
     Task<Result<LessonResponse>> GetLessonByIdAsync(int lessonId, string userId,
@@ -39,4 +39,6 @@ public interface ILessonService
         CancellationToken ct = default);
 
     Task<Result<ArticleResponse>> GetArticleContentAsync(int lessonId, string userId, CancellationToken ct = default);
+
+    Task<Result> DeleteLesson(int lessonId, string userId, CancellationToken cancellationToken = default);
 }
