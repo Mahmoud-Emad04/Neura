@@ -51,20 +51,13 @@ public class ApplicationDbContext(
         {
             if (fk.DeclaringEntityType.ClrType == typeof(CourseUser))
                 continue;
-            // Allow Cascade if the PARENT being deleted is a Post
-            // (This covers both Post -> Comments and Post -> Likes)
             if (fk.PrincipalEntityType.ClrType == typeof(Post))
                 continue;
             fk.DeleteBehavior = DeleteBehavior.Restrict;
         }
 
-
         modelBuilder.Entity<Lesson>().HasQueryFilter(a => !a.IsDeleted);
-
-        // modelBuilder.ApplyConfiguration(new ApplicationRoleSeed());
-        // modelBuilder.ApplyConfiguration(new CourseRoleSeed());
-        // modelBuilder.ApplyConfiguration(new DefaultUserSeed());
-        // modelBuilder.ApplyConfiguration(new UserRoleSeed());
+        modelBuilder.Entity<Exam>().HasQueryFilter(a => !a.IsDeleted);
 
         base.OnModelCreating(modelBuilder);
     }

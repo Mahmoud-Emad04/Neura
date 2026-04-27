@@ -272,21 +272,21 @@ public class LessonService(
         var lesson = await _context.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted);
         if (lesson is null)
             return Result.Failure(LessonErrors.NotFound);
+
         await _context.Lessons.ExecuteUpdateAsync(s => s.SetProperty(l => l.IsDeleted, true));
         if (lesson.Type == LessonType.Quiz)
         {
             var exam = await _context.Exams.FirstOrDefaultAsync(ex => ex.Id == lessonId && !ex.IsDeleted);
             if (exam is null)
-                return Result.Failure(ExamErrors.ExamNotFound);
+                return Result.Success();
             await _context.Exams.ExecuteUpdateAsync(s => s.SetProperty(ex => ex.IsDeleted, true));
         }
+
         if (lesson.Type == LessonType.Video)
 
         {
             if (string.IsNullOrWhiteSpace(lesson.CloudinaryPublicId))
-                return Result.Failure(
-                    new Core.Abstractions.Error("Video.NotAttached", "No video is attached to this lesson.", StatusCodes.Status404NotFound));
-
+                return Result.Success();
             try
             {
                 var deleteParams = new DeletionParams(lesson.CloudinaryPublicId)
@@ -295,7 +295,6 @@ public class LessonService(
                 };
                 await _cloudinary.DestroyAsync(deleteParams);
 
-                // Clear video from lesson
                 lesson.CloudinaryPublicId = null;
                 lesson.CloudinaryVideoUrl = null;
                 lesson.Duration = TimeSpan.Zero;
@@ -313,7 +312,6 @@ public class LessonService(
                 return Result.Failure(
                     new Core.Abstractions.Error("Video.DeleteError", "Failed to delete video from Cloudinary.", StatusCodes.Status500InternalServerError));
             }
-
         }
         return Result.Success();
     }

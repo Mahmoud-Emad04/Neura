@@ -77,7 +77,7 @@ public class LessonsController(
     public async Task<IActionResult> UpdateLesson(int id, [FromBody] UpdateLessonRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = User.GetUserId()!;
         var result = await _lessonService.UpdateLessonAsync(id, request, userId, cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
