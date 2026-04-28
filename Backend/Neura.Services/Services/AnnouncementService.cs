@@ -38,6 +38,37 @@ public class AnnouncementService(
         return Result.Success(paginatedResponse);
     }
 
+    public async Task<Result<PaginatedList<PostResponse>>> GetCurrentUserPostsAsync(bool? isPublic = null,
+        int pageNumber = 1,
+        int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        var currentUserId = CurrentUserId();
+
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Result.Failure<PaginatedList<PostResponse>>(AnnouncementErrors.PostAccessDenied);
+
+        var postsQuery = _context.Posts
+            .Where(p => !p.IsDeleted && p.CreatedById == currentUserId)
+            .Include(p => p.Likes)
+            .Include(p => p.Comments.Where(c => !c.IsDeleted && c.ParentCommentId == null))
+            .ThenInclude(c => c.Replies.Where(r => !r.IsDeleted))
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (isPublic.HasValue)
+            postsQuery = postsQuery.Where(p => p.IsPublic == isPublic.Value);
+
+        postsQuery = postsQuery.OrderByDescending(p => p.CreatedOn);
+
+        var paginatedResponse = await PaginatedList<PostResponse>.CreateAsync(
+            postsQuery.Select(p => MapPostToResponse(p, currentUserId)),
+            pageNumber,
+            pageSize,
+            cancellationToken: cancellationToken);
+
+        return Result.Success(paginatedResponse);
+    }
+
     public async Task<Result<PostResponse>> GetPostByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var currentUserId = CurrentUserId();

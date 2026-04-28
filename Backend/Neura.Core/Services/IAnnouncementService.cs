@@ -9,6 +9,9 @@ public interface IAnnouncementService
     Task<Result<PaginatedList<PostResponse>>> GetAllPostsAsync(int pageNumber = 1, int pageSize = 10,
         CancellationToken cancellationToken = default);
 
+    Task<Result<PaginatedList<PostResponse>>> GetCurrentUserPostsAsync(bool? isPublic = null, int pageNumber = 1,
+        int pageSize = 10, CancellationToken cancellationToken = default);
+
     Task<Result<PostResponse>> GetPostByIdAsync(int id, CancellationToken cancellationToken = default);
 
     Task<Result<PostResponse>> CreatePostAsync(PostRequest request, string userId,

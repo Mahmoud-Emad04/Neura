@@ -22,6 +22,17 @@ public class AnnouncementController(IAnnouncementService announcementService, IL
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HttpGet("posts/my")]
+    public async Task<IActionResult> GetCurrentUserPosts([FromQuery] bool? isPublic = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        var result = await _announcementService.GetCurrentUserPostsAsync(isPublic, pageNumber, pageSize,
+            cancellationToken);
+
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
     [HttpGet("posts/{postId}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetPostById([FromRoute] int postId, CancellationToken cancellationToken = default)
