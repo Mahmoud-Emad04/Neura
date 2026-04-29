@@ -30,7 +30,7 @@ public class AnnouncementService(
             .OrderByDescending(p => p.CreatedOn);
 
         var paginatedResponse = await PaginatedList<PostResponse>.CreateAsync(
-            postsQuery.Select(p => MapPostToResponse(p, currentUserId)),
+            postsQuery.Select(p => MapPostToResponse(p, currentUserId, _helpers.GetBaseUrl())),
             pageNumber,
             pageSize,
             cancellationToken: cancellationToken);
@@ -61,7 +61,7 @@ public class AnnouncementService(
         postsQuery = postsQuery.OrderByDescending(p => p.CreatedOn);
 
         var paginatedResponse = await PaginatedList<PostResponse>.CreateAsync(
-            postsQuery.Select(p => MapPostToResponse(p, currentUserId)),
+            postsQuery.Select(p => MapPostToResponse(p, currentUserId, _helpers.GetBaseUrl())),
             pageNumber,
             pageSize,
             cancellationToken: cancellationToken);
@@ -88,7 +88,7 @@ public class AnnouncementService(
         if (!post.IsPublic && post.CreatedById != currentUserId && !IsAdmin())
             return Result.Failure<PostResponse>(AnnouncementErrors.PostAccessDenied);
 
-        var response = MapPostToResponse(post, currentUserId);
+        var response = MapPostToResponse(post, currentUserId, _helpers.GetBaseUrl());
 
         return Result.Success(response);
     }
@@ -141,7 +141,7 @@ public class AnnouncementService(
         _context.Posts.Add(post);
         await _context.SaveChangesAsync(cancellationToken);
 
-        var response = MapPostToResponse(post, userId);
+        var response = MapPostToResponse(post, userId, _helpers.GetBaseUrl());
 
         return Result.Success(response);
     }
@@ -198,7 +198,7 @@ public class AnnouncementService(
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var response = MapPostToResponse(post, userId);
+        var response = MapPostToResponse(post, userId, _helpers.GetBaseUrl());
 
         return Result.Success(response);
     }
@@ -421,7 +421,7 @@ public class AnnouncementService(
 
     #region Private Helpers
 
-    private static PostResponse MapPostToResponse(Post post, string? currentUserId)
+    private static PostResponse MapPostToResponse(Post post, string? currentUserId, string baseUrl)
     {
         var isLikedByCurrentUser =
             string.IsNullOrEmpty(currentUserId) ? false : post.Likes.Any(l => l.UserId == currentUserId);
@@ -430,7 +430,6 @@ public class AnnouncementService(
             .Where(c => c.ParentCommentId == null)
             .Select(c => MapCommentToResponse(c, c.Replies.ToList()))
             .ToList();
-
         return new PostResponse(
             post.Id,
             post.Title,
@@ -438,7 +437,7 @@ public class AnnouncementService(
             post.IsPublic,
             post.CourseId,
             post.SectionId,
-            post.ImageUrl,
+            post.ImageUrl is null ? post.ImageUrl : $"{baseUrl}/{post.ImageUrl}",
             post.Likes.Count,
             post.CreatedOn,
             post.UpdatedOn,

@@ -63,7 +63,7 @@ public static class DependencyInjection
 
         services.AddDataProtection().SetApplicationName(nameof(Neura));
 
-        services.AddSingleton<IHashids>(_ => new Hashids("f1nd1ngn3m0", 11));
+        services.AddSingleton<IHashids>(_ => new Hashids(configuration["Hashids:Course"], 11));
 
         services.AddOptions<MailSettings>()
             .BindConfiguration(nameof(MailSettings))
@@ -133,10 +133,7 @@ public static class DependencyInjection
         services.Configure<KestrelServerOptions>(options =>
         {
             // Remove limit on body size (for Uploads)
-            options.Limits.MaxRequestBodySize = long.MaxValue;
-
-            // Increase Keep-Alive timeout for slow connections watching long videos
-            options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
+            options.Limits.MaxRequestBodySize = 25 * 1024 * 1024;
         });
 
         services.AddNeuraAuthorization();

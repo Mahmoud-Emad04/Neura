@@ -73,17 +73,19 @@ catch (Exception e)
 
 #endregion
 
+app.UseExceptionHandler();
+
 app.UseSerilogRequestLogging();
 
 app.UseCors();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.UseExceptionHandler();
 
 app.MapStaticAssets();
 
