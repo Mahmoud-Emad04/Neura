@@ -19,13 +19,13 @@ public class QuestionService : IQuestionService
     //  ADD QUESTION
     // ══════════════════════════════════════════
     public async Task<Result<QuestionResponse>> AddAsync(
-        int examId, CreateQuestionRequest request, string userId)
+        int lessonId, CreateQuestionRequest request, string userId)
     {
         var exam = await _context.Exams
             .AsNoTracking()
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure<QuestionResponse>(ExamErrors.ExamNotFound);
@@ -36,12 +36,12 @@ public class QuestionService : IQuestionService
 
         var maxOrder = await _context.Questions
             .AsNoTracking()
-            .Where(q => q.ExamId == examId)
+            .Where(q => q.ExamId == exam.Id)
             .MaxAsync(q => (int?)q.Order) ?? 0;
 
         var question = new Question
         {
-            ExamId = examId,
+            ExamId = exam.Id,
             QuestionText = _sanitizer.Sanitize(request.QuestionText),
             QuestionType = request.QuestionType,
             Points = request.Points,
@@ -152,13 +152,13 @@ public class QuestionService : IQuestionService
     //  REORDER QUESTIONS
     // ══════════════════════════════════════════
     public async Task<Result> ReorderAsync(
-        int examId, ReorderQuestionsRequest request, string userId)
+        int lessonId, ReorderQuestionsRequest request, string userId)
     {
         var exam = await _context.Exams
             .AsNoTracking()
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure(ExamErrors.ExamNotFound);
@@ -168,7 +168,7 @@ public class QuestionService : IQuestionService
             return Result.Failure(QuestionErrors.Forbidden);
 
         var questions = await _context.Questions
-            .Where(q => q.ExamId == examId)
+            .Where(q => q.ExamId == exam.Id)
             .ToListAsync();
 
         var existingIds = questions.Select(q => q.Id).ToHashSet();

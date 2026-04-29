@@ -19,15 +19,15 @@ public class ExamAttemptsController : ControllerBase
     //  GET /api/exam-attempts/exam/{examId}/info
     //  Student landing page — exam info + attempt status
     // ══════════════════════════════════════════
-    [HttpGet("exam/{examId:int}/info")]
+    [HttpGet("exam/{lessonId:int}/info")]
     [ProducesResponseType(typeof(ExamInfoResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetExamInfo([FromRoute] int examId)
+    public async Task<IActionResult> GetExamInfo([FromRoute] int lessonId)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.GetExamInfoAsync(examId, userId);
+        var result = await _attemptService.GetExamInfoAsync(lessonId, userId);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -38,15 +38,15 @@ public class ExamAttemptsController : ControllerBase
     //  POST /api/exam-attempts/exam/{examId}/start
     //  Start a new attempt
     // ══════════════════════════════════════════
-    [HttpPost("exam/{examId:int}/start")]
+    [HttpPost("exam/{lessonId:int}/start")]
     [ProducesResponseType(typeof(StartAttemptResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> StartAttempt([FromRoute] int examId)
+    public async Task<IActionResult> StartAttempt([FromRoute] int lessonId)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.StartAttemptAsync(examId, userId);
+        var result = await _attemptService.StartAttemptAsync(lessonId, userId);
 
         if (result.IsSuccess)
             return StatusCode(StatusCodes.Status201Created, result.Value);

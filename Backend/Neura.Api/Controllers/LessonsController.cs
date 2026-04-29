@@ -1,5 +1,7 @@
 ﻿using Neura.Api.Extensions;
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Lessons;
+using Neura.Core.Enums;
 
 namespace Neura.Api.Controllers;
 
@@ -19,6 +21,7 @@ public class LessonsController(
     [HttpPost("{sectionId}/init")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
     public async Task<IActionResult> Initialize([FromRoute] int sectionId, [FromBody] CreateLessonRequest request,
         CancellationToken cancellationToken)
     {
@@ -34,6 +37,7 @@ public class LessonsController(
     ///     Route: PUT /api/lessons/{id}/position
     /// </summary>
     [HttpPut("{id}/position")]
+    [HasLessonPermission(CoursePermission.EditContent)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -41,7 +45,7 @@ public class LessonsController(
     public async Task<IActionResult> UpdatePosition(int id, [FromBody] UpdateLessonPositionRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = User.GetUserId()!;
         var result = await _lessonService.UpdateLessonPositionAsync(id, request.NewPosition, userId, cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
@@ -56,10 +60,11 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdatePrivacy(int id, [FromBody] UpdateLessonPrivacyRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = User.GetUserId();
+        var userId = User.GetUserId()!;
         var result = await _lessonService.UpdateLessonPrivacyAsync(id, request, userId!, cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
@@ -74,6 +79,7 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdateLesson(int id, [FromBody] UpdateLessonRequest request,
         CancellationToken cancellationToken)
     {
@@ -105,6 +111,7 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdateArticle(int id, [FromBody] UpdateArticleRequest request,
         CancellationToken ct)
     {
@@ -168,6 +175,7 @@ public class LessonsController(
     [ProducesResponseType(typeof(Error), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
+    [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> GetSignedVideoUploadCredentials(int id, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();
@@ -190,6 +198,7 @@ public class LessonsController(
     [ProducesResponseType(typeof(Error), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
+    [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> FinalizeVideoUpload(
         int id,
         [FromBody] FinalizeVideoUploadRequest request,
@@ -213,6 +222,7 @@ public class LessonsController(
     [ProducesResponseType(typeof(Error), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
+    [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> DeleteVideo(int id, CancellationToken cancellationToken)
     {
         var userId = User.GetUserId();

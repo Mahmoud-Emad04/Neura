@@ -30,6 +30,11 @@ public class ExamService : IExamService
         if (lesson is null)
             return Result.Failure<ExamResponse>(ExamErrors.LessonNotFound);
 
+        var courseUser = _context.CourseUsers.Where(cu => cu.UserId == userId && cu.CourseId == lesson.Section.CourseId).FirstOrDefault();
+
+        if (courseUser is null || !CoursePermissionMasks.HasPermission(courseUser.PermissionMask, CoursePermission.EditContent))
+            return Result.Failure<ExamResponse>(ExamErrors.Forbidden);
+
         if (lesson.Type != LessonType.Quiz)
             return Result.Failure<ExamResponse>(ExamErrors.LessonNotQuizType);
 
@@ -63,7 +68,7 @@ public class ExamService : IExamService
     // ══════════════════════════════════════════
     //  GET BY ID (Instructor — full detail)
     // ══════════════════════════════════════════
-    public async Task<Result<ExamDetailResponse>> GetByIdAsync(int examId, string userId)
+    public async Task<Result<ExamDetailResponse>> GetByIdAsync(int lessonId, string userId)
     {
         var exam = await _context.Exams
             .AsNoTracking()
@@ -72,7 +77,7 @@ public class ExamService : IExamService
             .Include(e => e.Attempts)
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure<ExamDetailResponse>(ExamErrors.ExamNotFound);
@@ -114,12 +119,12 @@ public class ExamService : IExamService
     //  UPDATE SETTINGS
     // ══════════════════════════════════════════
     public async Task<Result<ExamResponse>> UpdateSettingsAsync(
-        int examId, UpdateExamSettingsRequest request, string userId)
+        int lessonId, UpdateExamSettingsRequest request, string userId)
     {
         var exam = await _context.Exams
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure<ExamResponse>(ExamErrors.ExamNotFound);
@@ -149,16 +154,16 @@ public class ExamService : IExamService
 
         response.TotalQuestions = await _context.Questions
             .AsNoTracking()
-            .CountAsync(q => q.ExamId == examId);
+            .CountAsync(q => q.ExamId == exam.Id);
 
         response.TotalPoints = await _context.Questions
             .AsNoTracking()
-            .Where(q => q.ExamId == examId)
+            .Where(q => q.ExamId == exam.Id)
             .SumAsync(q => q.Points);
 
         response.TotalAttempts = await _context.ExamAttempts
             .AsNoTracking()
-            .CountAsync(a => a.ExamId == examId);
+            .CountAsync(a => a.ExamId == exam.Id);
 
         return Result.Success(response);
     }
@@ -166,14 +171,14 @@ public class ExamService : IExamService
     // ══════════════════════════════════════════
     //  PUBLISH
     // ══════════════════════════════════════════
-    public async Task<Result> PublishAsync(int examId, string userId)
+    public async Task<Result> PublishAsync(int lessonId, string userId)
     {
         var exam = await _context.Exams
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
             .Include(e => e.Questions)
                 .ThenInclude(q => q.AnswerOptions)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure(ExamErrors.ExamNotFound);
@@ -209,12 +214,12 @@ public class ExamService : IExamService
     // ══════════════════════════════════════════
     //  UNPUBLISH
     // ══════════════════════════════════════════
-    public async Task<Result> UnpublishAsync(int examId, string userId)
+    public async Task<Result> UnpublishAsync(int lessonId, string userId)
     {
         var exam = await _context.Exams
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure(ExamErrors.ExamNotFound);
@@ -227,7 +232,7 @@ public class ExamService : IExamService
             return Result.Failure(ExamErrors.AlreadyUnpublished);
 
         var hasAttempts = await _context.ExamAttempts
-            .AnyAsync(a => a.ExamId == examId);
+            .AnyAsync(a => a.ExamId == exam.Id);
 
         if (hasAttempts)
             return Result.Failure(ExamErrors.CannotUnpublishWithAttempts);
@@ -243,12 +248,12 @@ public class ExamService : IExamService
     // ══════════════════════════════════════════
     //  DELETE
     // ══════════════════════════════════════════
-    public async Task<Result> DeleteAsync(int examId, string userId)
+    public async Task<Result> DeleteAsync(int lessonId, string userId)
     {
         var exam = await _context.Exams
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure(ExamErrors.ExamNotFound);
@@ -258,7 +263,7 @@ public class ExamService : IExamService
             return Result.Failure(ExamErrors.Forbidden);
 
         var hasAttempts = await _context.ExamAttempts
-            .AnyAsync(a => a.ExamId == examId);
+            .AnyAsync(a => a.ExamId == exam.Id);
 
         if (hasAttempts)
             return Result.Failure(ExamErrors.CannotDeleteWithAttempts);

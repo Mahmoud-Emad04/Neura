@@ -1,11 +1,13 @@
 ﻿using Neura.Api.Extensions;
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Question;
 
 namespace Neura.Api.Controllers;
 
-[Route("api/exams/{examId:int}/questions")]
+[Route("api/exams/{lessonId:int}/questions")]
 [ApiController]
 [Authorize]
+[HasExamPermission(Core.Enums.CoursePermission.EditContent)]
 public class ExamQuestionsController : ControllerBase
 {
     private readonly IQuestionService _questionService;
@@ -16,7 +18,7 @@ public class ExamQuestionsController : ControllerBase
     }
 
     // ══════════════════════════════════════════
-    //  POST /api/exams/{examId}/questions
+    //  POST /api/exams/{lessonId}/questions
     // ══════════════════════════════════════════
     [HttpPost]
     [ProducesResponseType(typeof(QuestionResponse), StatusCodes.Status201Created)]
@@ -24,14 +26,14 @@ public class ExamQuestionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Add(
-        [FromRoute] int examId,
+        [FromRoute] int lessonId,
         [FromBody] CreateQuestionRequest request)
     {
         var userId = User.GetUserId()!;
-        var result = await _questionService.AddAsync(examId, request, userId);
+        var result = await _questionService.AddAsync(lessonId, request, userId);
 
         return result.IsSuccess
-        ? CreatedAtAction(nameof(Add), new { examId = result.Value.Id }, result.Value)
+        ? CreatedAtAction(nameof(Add), new { lessonId = result.Value.Id }, result.Value)
         : result.ToProblem();
     }
 
@@ -44,7 +46,7 @@ public class ExamQuestionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(
-        [FromRoute] int examId,
+        [FromRoute] int lessonId,
         [FromRoute] int questionId,
         [FromBody] UpdateQuestionRequest request)
     {
@@ -65,7 +67,7 @@ public class ExamQuestionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
-        [FromRoute] int examId,
+        [FromRoute] int lessonId,
         [FromRoute] int questionId)
     {
         var userId = User.GetUserId()!;
@@ -85,11 +87,11 @@ public class ExamQuestionsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Reorder(
-        [FromRoute] int examId,
+        [FromRoute] int lessonId,
         [FromBody] ReorderQuestionsRequest request)
     {
         var userId = User.GetUserId()!;
-        var result = await _questionService.ReorderAsync(examId, request, userId);
+        var result = await _questionService.ReorderAsync(lessonId, request, userId);
 
         return result.IsSuccess
             ? Ok()

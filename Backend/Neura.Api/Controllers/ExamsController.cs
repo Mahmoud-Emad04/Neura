@@ -1,4 +1,5 @@
 ﻿using Neura.Api.Extensions;
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Exam;
 
 namespace Neura.Api.Controllers;
@@ -30,21 +31,21 @@ public class ExamsController : ControllerBase
         var result = await _examService.CreateAsync(request, userId);
 
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { examId = result.Value.Id }, result.Value)
+            ? CreatedAtAction(nameof(GetById), new { lessonId = result.Value.LessonId }, result.Value)
             : result.ToProblem();
     }
 
     // ══════════════════════════════════════════
     //  GET /api/exams/{examId}
     // ══════════════════════════════════════════
-    [HttpGet("{examId:int}", Name = nameof(GetById))]
+    [HttpGet("{lessonId:int}", Name = nameof(GetById))]
     [ProducesResponseType(typeof(ExamDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById([FromRoute] int examId)
+    public async Task<IActionResult> GetById([FromRoute] int lessonId)
     {
         var userId = User.GetUserId()!;
-        var result = await _examService.GetByIdAsync(examId, userId);
+        var result = await _examService.GetByIdAsync(lessonId, userId);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -71,17 +72,18 @@ public class ExamsController : ControllerBase
     // ══════════════════════════════════════════
     //  PUT /api/exams/{examId}/settings
     // ══════════════════════════════════════════
-    [HttpPut("{examId:int}/settings")]
+    [HttpPut("{lessonId:int}/settings")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(typeof(ExamResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSettings(
-        [FromRoute] int examId,
+        [FromRoute] int lessonId,
         [FromBody] UpdateExamSettingsRequest request)
     {
         var userId = User.GetUserId()!;
-        var result = await _examService.UpdateSettingsAsync(examId, request, userId);
+        var result = await _examService.UpdateSettingsAsync(lessonId, request, userId);
 
         return result.IsSuccess
              ? Ok(result.Value)
@@ -91,15 +93,16 @@ public class ExamsController : ControllerBase
     // ══════════════════════════════════════════
     //  PUT /api/exams/{examId}/publish
     // ══════════════════════════════════════════
-    [HttpPut("{examId:int}/publish")]
+    [HttpPut("{lessonId:int}/publish")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Publish([FromRoute] int examId)
+    public async Task<IActionResult> Publish([FromRoute] int lessonId)
     {
         var userId = User.GetUserId()!;
-        var result = await _examService.PublishAsync(examId, userId);
+        var result = await _examService.PublishAsync(lessonId, userId);
 
         return result.IsSuccess
              ? Ok()
@@ -107,17 +110,18 @@ public class ExamsController : ControllerBase
     }
 
     // ══════════════════════════════════════════
-    //  PUT /api/exams/{examId}/unpublish
+    //  PUT /api/exams/{lessonId}/unpublish
     // ══════════════════════════════════════════
-    [HttpPut("{examId:int}/unpublish")]
+    [HttpPut("{lessonId:int}/unpublish")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Unpublish([FromRoute] int examId)
+    public async Task<IActionResult> Unpublish([FromRoute] int lessonId)
     {
         var userId = User.GetUserId()!;
-        var result = await _examService.UnpublishAsync(examId, userId);
+        var result = await _examService.UnpublishAsync(lessonId, userId);
 
         return result.IsSuccess
              ? Ok()
@@ -125,17 +129,18 @@ public class ExamsController : ControllerBase
     }
 
     // ══════════════════════════════════════════
-    //  DELETE /api/exams/{examId}
+    //  DELETE /api/exams/{lessonId}
     // ══════════════════════════════════════════
-    [HttpDelete("{examId:int}")]
+    [HttpDelete("{lessonId:int}")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete([FromRoute] int examId)
+    public async Task<IActionResult> Delete([FromRoute] int lessonId)
     {
         var userId = User.GetUserId()!;
-        var result = await _examService.DeleteAsync(examId, userId);
+        var result = await _examService.DeleteAsync(lessonId, userId);
 
         return result.IsSuccess
              ? Ok()

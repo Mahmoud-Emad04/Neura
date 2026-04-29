@@ -19,7 +19,7 @@ public class ExamAttemptService : IExamAttemptService
     // ══════════════════════════════════════════
     //  GET EXAM INFO — NO CHANGES
     // ══════════════════════════════════════════
-    public async Task<Result<ExamInfoResponse>> GetExamInfoAsync(int examId, string userId)
+    public async Task<Result<ExamInfoResponse>> GetExamInfoAsync(int lessonId, string userId)
     {
         // ... exactly the same as Step 4 — no changes ...
         var exam = await _context.Exams
@@ -27,7 +27,7 @@ public class ExamAttemptService : IExamAttemptService
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
             .Include(e => e.Questions)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure<ExamInfoResponse>(ExamAttemptErrors.ExamNotFound);
@@ -41,11 +41,11 @@ public class ExamAttemptService : IExamAttemptService
 
         var attemptsTaken = await _context.ExamAttempts
             .AsNoTracking()
-            .CountAsync(a => a.ExamId == examId && a.UserId == userId);
+            .CountAsync(a => a.ExamId == exam.Id && a.UserId == userId);
 
         var inProgressAttempt = await _context.ExamAttempts
             .AsNoTracking()
-            .Where(a => a.ExamId == examId
+            .Where(a => a.ExamId == exam.Id
                      && a.UserId == userId
                      && a.Status == AttemptStatus.InProgress)
             .Select(a => new { a.Id, a.StartedAt })
@@ -79,7 +79,7 @@ public class ExamAttemptService : IExamAttemptService
 
         var response = new ExamInfoResponse
         {
-            ExamId = exam.Id,
+            ExamId = lessonId,
             Title = exam.Title,
             Description = exam.Description,
             DurationInMinutes = exam.DurationInMinutes,
@@ -101,7 +101,7 @@ public class ExamAttemptService : IExamAttemptService
     // ══════════════════════════════════════════
     //  START ATTEMPT — NO CHANGES
     // ══════════════════════════════════════════
-    public async Task<Result<StartAttemptResponse>> StartAttemptAsync(int examId, string userId)
+    public async Task<Result<StartAttemptResponse>> StartAttemptAsync(int lessonId, string userId)
     {
         // ... exactly the same as Step 4 — no changes ...
         var exam = await _context.Exams
@@ -110,7 +110,7 @@ public class ExamAttemptService : IExamAttemptService
                 .ThenInclude(l => l.Section)
             .Include(e => e.Questions)
                 .ThenInclude(q => q.AnswerOptions)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == lessonId);
 
         if (exam is null)
             return Result.Failure<StartAttemptResponse>(ExamAttemptErrors.ExamNotFound);
@@ -123,7 +123,7 @@ public class ExamAttemptService : IExamAttemptService
             return Result.Failure<StartAttemptResponse>(ExamAttemptErrors.NotEnrolled);
 
         var existingInProgress = await _context.ExamAttempts
-            .AnyAsync(a => a.ExamId == examId
+            .AnyAsync(a => a.ExamId == exam.Id
                         && a.UserId == userId
                         && a.Status == AttemptStatus.InProgress);
 
@@ -134,7 +134,7 @@ public class ExamAttemptService : IExamAttemptService
         {
             var attemptsTaken = await _context.ExamAttempts
                 .AsNoTracking()
-                .CountAsync(a => a.ExamId == examId && a.UserId == userId);
+                .CountAsync(a => a.ExamId == exam.Id && a.UserId == userId);
 
             if (attemptsTaken >= exam.MaxAttempts.Value)
                 return Result.Failure<StartAttemptResponse>(ExamAttemptErrors.MaxAttemptsReached);
@@ -176,7 +176,7 @@ public class ExamAttemptService : IExamAttemptService
 
         var attempt = new ExamAttempt
         {
-            ExamId = examId,
+            ExamId = exam.Id,
             UserId = userId,
             StartedAt = DateTime.UtcNow,
             Status = AttemptStatus.InProgress,

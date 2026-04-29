@@ -1,4 +1,5 @@
 ﻿using Neura.Api.Extensions;
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Analytics;
 using Neura.Core.Contracts.ExamAttempt;
 
@@ -6,6 +7,7 @@ namespace Neura.Api.Controllers;
 
 [Route("api/exams/{examId:int}/analytics")]
 [ApiController]
+[HasExamPermission(Core.Enums.CoursePermission.ViewAnalytics)]
 public class ExamAnalyticsController : ControllerBase
 {
     private readonly IExamAnalyticsService _analyticsService;

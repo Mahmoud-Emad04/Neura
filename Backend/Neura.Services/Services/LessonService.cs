@@ -270,16 +270,18 @@ public class LessonService(
     public async Task<Result> DeleteLesson(int lessonId, string userId, CancellationToken cancellationToken)
     {
         var lesson = await _context.Lessons.FirstOrDefaultAsync(l => l.Id == lessonId && !l.IsDeleted);
+
         if (lesson is null)
             return Result.Failure(LessonErrors.NotFound);
 
-        await _context.Lessons.ExecuteUpdateAsync(s => s.SetProperty(l => l.IsDeleted, true));
+        await _context.Lessons
+            .Where(l => l.Id == lessonId)
+            .ExecuteUpdateAsync(s => s.SetProperty(l => l.IsDeleted, true), cancellationToken);
+
         if (lesson.Type == LessonType.Quiz)
         {
-            var exam = await _context.Exams.FirstOrDefaultAsync(ex => ex.Id == lessonId && !ex.IsDeleted);
-            if (exam is null)
-                return Result.Success();
-            await _context.Exams.ExecuteUpdateAsync(s => s.SetProperty(ex => ex.IsDeleted, true));
+            await _context.Exams.Where(l => l.LessonId == lessonId)
+                            .ExecuteUpdateAsync(s => s.SetProperty(ex => ex.IsDeleted, true), cancellationToken);
         }
 
         if (lesson.Type == LessonType.Video)

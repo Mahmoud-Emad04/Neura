@@ -7,11 +7,7 @@ public record SectionResponse(
     string Title,
     string? Description,
     int Position,
-    DateTime CreatedOn,
-    DateTime? UpdatedOn,
-    string CreatedById,
-    string? UpdatedById,
-    bool? IsDeleted,
     int TotalMinutes,
+    int LessonsCount,
     List<LessonResponse>? Lessons
 );

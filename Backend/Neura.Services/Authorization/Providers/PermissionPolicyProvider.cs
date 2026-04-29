@@ -19,6 +19,9 @@ public class PermissionPolicyProvider : IAuthorizationPolicyProvider
 {
     private const string GlobalRolePrefix = "GlobalRole_";
     private const string CoursePermissionPrefix = "CoursePermission_";
+    private const string LessonPermissionPrefix = "LessonPermission_";
+    private const string SectionPermissionPrefix = "SectionPermission_";
+    private const string ExamPermissionPrefix = "ExamPermission_";
 
     private readonly DefaultAuthorizationPolicyProvider _fallbackPolicyProvider;
 
@@ -55,6 +58,49 @@ public class PermissionPolicyProvider : IAuthorizationPolicyProvider
                 var policy = new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
                     .AddRequirements(new CoursePermissionRequirement(permission))
+                    .Build();
+
+                return policy;
+            }
+        }
+
+        if (policyName.StartsWith(LessonPermissionPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var permissionName = policyName[LessonPermissionPrefix.Length..];
+
+            if (Enum.TryParse<CoursePermission>(permissionName, true, out var permission))
+            {
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new LessonPermissionRequirement(permission))
+                    .Build();
+
+                return policy;
+            }
+        }
+        if (policyName.StartsWith(SectionPermissionPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var permissionName = policyName[SectionPermissionPrefix.Length..];
+
+            if (Enum.TryParse<CoursePermission>(permissionName, true, out var permission))
+            {
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new SectionPermissionRequirement(permission))
+                    .Build();
+
+                return policy;
+            }
+        }
+        if (policyName.StartsWith(ExamPermissionPrefix, StringComparison.OrdinalIgnoreCase))
+        {
+            var permissionName = policyName[ExamPermissionPrefix.Length..];
+
+            if (Enum.TryParse<CoursePermission>(permissionName, true, out var permission))
+            {
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new ExamPermissionRequirement(permission))
                     .Build();
 
                 return policy;

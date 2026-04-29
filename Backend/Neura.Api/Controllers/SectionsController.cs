@@ -1,3 +1,4 @@
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Section;
 using System.Security.Claims;
 
@@ -38,6 +39,7 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     [HttpGet("{sectionId}")]
     [ProducesResponseType(typeof(SectionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HasSectionPermission(Core.Enums.CoursePermission.ViewContent)]
     public async Task<IActionResult> GetById([FromRoute] int sectionId, CancellationToken cancellationToken)
     {
         var result = await _sectionService.GetByIdAsync(sectionId, cancellationToken);
@@ -56,6 +58,7 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     [ProducesResponseType(typeof(SectionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HasCoursePermission(Core.Enums.CoursePermission.EditContent)]
     public async Task<IActionResult> Create([FromRoute] string courseId, [FromBody] SectionRequest request,
         CancellationToken cancellationToken)
     {
@@ -80,6 +83,7 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
     public async Task<IActionResult> Update([FromRoute] int sectionId, [FromBody] SectionUpdateRequest request,
         CancellationToken cancellationToken)
     {
@@ -98,6 +102,7 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     [HttpPut("{sectionId}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
     public async Task<IActionResult> ToggleStatus([FromRoute] int sectionId, CancellationToken cancellationToken)
     {
         var result = await _sectionService.ToggleStatusAsync(sectionId, cancellationToken);
@@ -115,6 +120,7 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status409Conflict)]
+    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
     public async Task<IActionResult> Delete([FromRoute] int sectionId, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;

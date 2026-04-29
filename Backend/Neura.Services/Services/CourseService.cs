@@ -2,6 +2,8 @@ using Neura.Core.Abstractions.Specification;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
+using Neura.Core.Contracts.Lessons;
+using Neura.Core.Contracts.Section;
 using Neura.Core.Enums;
 using Neura.Core.FilesConsts;
 using Neura.Core.Specifications.Courses;
@@ -64,13 +66,18 @@ public class CourseService(
                 .Select(b => b.CourseId)
                 .ToListAsync(cancellationToken);
 
+            var courseIds = paginatedCourses.Items.Select(c => _helpers.DecodeHash(c.KeyId)[0]).ToList();
+
+            var enrolledCourseIds = await _context.CourseUsers
+                .Where(cu => courseIds.Contains(cu.CourseId) && cu.UserId == userId)
+                .Select(cu => cu.CourseId)
+                .ToHashSetAsync(cancellationToken);
+
             foreach (var course in paginatedCourses.Items)
                 if (TryDecodeCourseId(course.KeyId, out var id))
                 {
                     course.IsBookmarked = bookmarkedCourseIds.Contains(id);
-                    course.IsEnrolled =
-                        await _context.CourseUsers.AnyAsync(cu => cu.CourseId == id && cu.UserId == userId,
-                            cancellationToken);
+                    course.IsEnrolled = enrolledCourseIds.Contains(id);
                 }
         }
 
@@ -221,31 +228,102 @@ public class CourseService(
     }
 
 
-    public async Task<Result<CourseResponse>> GetContentByIdAsync(string keyId, string? userId,
+    public async Task<Result<CourseResponse>> GetContentByIdAsync(
+        string keyId,
+        string? userId,
         CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
 
-        var course = await _context.Courses
+        var courseExists = await _context.Courses
             .AsNoTracking()
-            .Include(c => c.Sections)
-            .ThenInclude(s => s.Lessons)
-            .SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+            .AnyAsync(c => c.Id == courseId, cancellationToken);
 
-        if (course is null)
+        if (!courseExists)
             return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
 
-        var totalCourseMinutes = course.Sections.SelectMany(s => s.Lessons)
-            .Sum(l => l.Duration.TotalMinutes);
+        var isEnrolled = !string.IsNullOrEmpty(userId) && await _context.CourseUsers
+            .AsNoTracking()
+            .AnyAsync(cu => cu.CourseId == courseId &&
+                           cu.UserId == userId &&
+                           !cu.IsDeleted,
+                     cancellationToken);
 
-        var response = course.Adapt<CourseResponse>() with
-        {
-            Hours = (int)Math.Round(totalCourseMinutes / 60.0)
-        };
+        var sections = await _context.Sections
+            .AsNoTracking()
+            .Where(s => s.CourseId == courseId)
+            .OrderBy(s => s.Position)
+            .Select(s => new
+            {
+                s.Id,
+                s.Title,
+                s.Description,
+                s.Position,
+                Lessons = s.Lessons
+                    .OrderBy(l => l.OrderIndex)
+                    .Select(l => new
+                    {
+                        l.Id,
+                        l.Title,
+                        l.Description,
+                        l.Type,
+                        l.Duration,
+                        l.OrderIndex,
+                        l.IsPreview,
+                        Exam = l.Exam == null ? null : new
+                        {
+                            l.Exam.Id,
+                            l.Exam.Title,
+                            TotalQuestions = l.Exam.Questions.Count(),
+                            l.Exam.DurationInMinutes,
+                            l.Exam.PassingScorePercentage,
+                            l.Exam.MaxAttempts
+                        }
+                    })
+                    .ToList()
+            })
+            .ToListAsync(cancellationToken);
+
+        var sectionResponses = sections.Select(s => new SectionResponse(
+            Id: s.Id,
+            Title: s.Title,
+            Description: s.Description,
+            Position: s.Position,
+            TotalMinutes: (int)s.Lessons.Sum(l => l.Duration.TotalMinutes),
+            LessonsCount: s.Lessons.Count,
+            Lessons: s.Lessons.Select(l => new LessonResponse(
+                // If Quiz → use Exam.Id & Exam.Title, else use Lesson.Id & Lesson.Title
+                Id: l.Type == LessonType.Quiz && l.Exam != null ? l.Exam.Id : l.Id,
+                Title: l.Type == LessonType.Quiz && l.Exam != null ? l.Exam.Title : l.Title,
+                Description: l.Description,
+                Type: l.Type.ToString(),
+                Duration: l.Duration,
+                OrderIndex: l.OrderIndex,
+                IsPreview: l.IsPreview,
+                IsLocked: !l.IsPreview && !isEnrolled,
+                Exam: l.Exam == null ? null : new ExamPreviewInfo(
+                    TotalQuestions: l.Exam.TotalQuestions,
+                    DurationInMinutes: l.Exam.DurationInMinutes,
+                    PassingScorePercentage: l.Exam.PassingScorePercentage,
+                    MaxAttempts: l.Exam.MaxAttempts
+                )
+            )).ToList()
+        )).ToList();
+
+        var totalMinutes = sectionResponses.Sum(s => s.TotalMinutes);
+        var totalLessons = sectionResponses.Sum(s => s.LessonsCount);
+
+        var response = new CourseResponse(
+            KeyId: keyId,
+            TotalHours: (int)Math.Round(totalMinutes / 60.0),
+            TotalLessons: totalLessons,
+            Sections: sectionResponses
+        );
 
         return Result.Success(response);
     }
+
 
     public async Task<Result<CourseMetadataResponse>> GetCourseMetadataAsync(string keyId, string? userId,
         CancellationToken cancellationToken = default)

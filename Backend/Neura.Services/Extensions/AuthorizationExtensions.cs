@@ -20,6 +20,9 @@ public static class AuthorizationExtensions
         // Register authorization handlers
         services.AddScoped<IAuthorizationHandler, GlobalRoleAuthorizationHandler>();
         services.AddScoped<IAuthorizationHandler, CoursePermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, LessonPermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, SectionPermissionAuthorizationHandler>();
+        services.AddScoped<IAuthorizationHandler, ExamPermissionAuthorizationHandler>();
 
         // Add authorization with some predefined policies (optional, for direct use)
         services.AddAuthorizationBuilder()
