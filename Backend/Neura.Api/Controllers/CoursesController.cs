@@ -300,4 +300,19 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
         var result = await _courseService.UnpublishCourseAsync(courseId, User.GetUserId()!, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
+
+    /// <summary>
+    ///     Soft deletes a course.
+    /// </summary>
+    [HasCoursePermission(CoursePermission.DeleteCourse)]
+    [HttpDelete("{courseId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCourse(string courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.DeleteCourseAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
 }

@@ -63,4 +63,9 @@ public interface ICourseService
         string keyId,
         string userId,
         CancellationToken cancellationToken = default);
+
+    Task<Result> DeleteCourseAsync(
+        string keyId,
+        string userId,
+        CancellationToken cancellationToken = default);
 }

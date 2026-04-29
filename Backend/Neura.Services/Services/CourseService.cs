@@ -33,6 +33,7 @@ public class CourseService(
 
 		var query = SpecificationEvaluator.GetQuery(_context.Courses.AsNoTracking(), spec);
 
+
 		var projectedQuery = query.ProjectToType<CourseSummaryResponse>();
 
 		var baseUrl = BaseUrl();
@@ -44,7 +45,6 @@ public class CourseService(
 			c => c.ImageUrl = $"{baseUrl}/{c.ImageUrl}",
 			cancellationToken
 		);
-
 
 		foreach (var course in paginatedCourses.Items)
 		{
@@ -770,6 +770,42 @@ public class CourseService(
 			Message = "Course unpublished. It is now hidden from public listings.",
 			UpdatedAt = course.UpdatedOn.Value
 		});
+	}
+
+	public async Task<Result> DeleteCourseAsync(
+		string keyId,
+		string userId,
+		CancellationToken cancellationToken = default)
+	{
+		if (!TryDecodeCourseId(keyId, out var courseId))
+			return Result.Failure(CourseErrors.CourseNotFound);
+
+		var course = await _context.Courses
+			.SingleOrDefaultAsync(c => c.Id == courseId, cancellationToken);
+
+		if (course is null)
+			return Result.Failure(CourseErrors.CourseNotFound);
+
+		var courseUser = await _context.CourseUsers
+			.AsNoTracking()
+			.Include(cu => cu.CourseRole)
+			.FirstOrDefaultAsync(cu =>
+				cu.CourseId == courseId &&
+				cu.UserId == userId &&
+				!cu.IsDeleted,
+				cancellationToken);
+
+
+		if (course.IsDeleted)
+			return Result.Success();
+
+		course.IsDeleted = true;
+		course.UpdatedOn = DateTime.UtcNow;
+		course.UpdatedById = userId;
+
+		await _context.SaveChangesAsync(cancellationToken);
+
+		return Result.Success();
 	}
 
 	private bool TryDecodeCourseId(string keyId, out int courseId)
