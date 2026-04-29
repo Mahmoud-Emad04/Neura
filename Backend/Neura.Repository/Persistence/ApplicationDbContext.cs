@@ -58,6 +58,7 @@ public class ApplicationDbContext(
 
         modelBuilder.Entity<Lesson>().HasQueryFilter(a => !a.IsDeleted);
         modelBuilder.Entity<Exam>().HasQueryFilter(a => !a.IsDeleted);
+        modelBuilder.Entity<Question>().HasQueryFilter(a => !a.IsDeleted);
 
         base.OnModelCreating(modelBuilder);
     }

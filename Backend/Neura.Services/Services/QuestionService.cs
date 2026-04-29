@@ -116,7 +116,7 @@ public class QuestionService : IQuestionService
             .Include(q => q.Exam)
                 .ThenInclude(e => e.Lesson)
                     .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(q => q.Id == questionId);
+            .FirstOrDefaultAsync(q => q.Id == questionId && !q.IsDeleted);
 
         if (question is null)
             return Result.Failure(QuestionErrors.QuestionNotFound);
@@ -131,7 +131,7 @@ public class QuestionService : IQuestionService
         if (hasAttempts)
             return Result.Failure(QuestionErrors.CannotDeleteWithAttempts);
 
-        _context.Questions.Remove(question);
+        question.IsDeleted = true;
 
         var remainingQuestions = await _context.Questions
             .Where(q => q.ExamId == question.ExamId && q.Id != questionId)

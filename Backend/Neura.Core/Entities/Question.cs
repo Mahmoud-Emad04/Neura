@@ -12,6 +12,8 @@ public class Question
     public decimal Points { get; set; }
     public int Order { get; set; }
 
+    public bool IsDeleted { get; set; } = false;
+
     // Navigation
     public Exam Exam { get; set; } = null!;
     public ICollection<AnswerOption> AnswerOptions { get; set; } = new List<AnswerOption>();
