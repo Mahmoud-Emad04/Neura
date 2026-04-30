@@ -12,6 +12,7 @@ public record PostResponse(
     DateTime CreatedOn,
     DateTime? UpdatedOn,
     string CreatedById,
+    string CreatedByFullName,
     string? UpdatedById,
     bool IsLikedByCurrentUser,
     IEnumerable<PostCommentResponse> Comments
