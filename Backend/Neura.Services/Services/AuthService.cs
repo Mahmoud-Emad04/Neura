@@ -423,7 +423,6 @@ public class AuthService(
         var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
             new Dictionary<string, string>
             {
-                { "{{logo_url}}" , $"{origin}/Images/Logo/logo.png"},
                 { "{{name}}", user.FirstName },
                 { "{{action_url}}", $"{origin}/auth/verify-email?userId={user.Id}&code={code}" }
             }
