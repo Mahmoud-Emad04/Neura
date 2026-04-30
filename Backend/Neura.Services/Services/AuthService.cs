@@ -271,7 +271,13 @@ public class AuthService(
 
         _logger.LogInformation("Confirmation code: {code}", code);
 
+
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+        var httpRequest = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin))
+            origin = $"{httpRequest!.Scheme}://{httpRequest.Host}{httpRequest.PathBase}";
 
         BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin!));
 
@@ -288,7 +294,10 @@ public class AuthService(
 
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
-        var request = _httpContextAccessor.HttpContext?.Request;
+        var httpRequest = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin))
+            origin = $"{httpRequest!.Scheme}://{httpRequest.Host}{httpRequest.PathBase}";
 
         //{
         //    var otp = _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
@@ -414,7 +423,7 @@ public class AuthService(
         var emailBody = EmailBodyBuilder.GenerateEmailBody("EmailConfirmation",
             new Dictionary<string, string>
             {
-                { "{{logo_url}}" , $"{origin}/Images/User/logo.png"},
+                { "{{logo_url}}" , $"{origin}/Images/Logo/logo.png"},
                 { "{{name}}", user.FirstName },
                 { "{{action_url}}", $"{origin}/auth/verify-email?userId={user.Id}&code={code}" }
             }
@@ -469,7 +478,7 @@ public class AuthService(
         );
 
         BackgroundJob.Enqueue(() =>
-            _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Change Password", emailBody));
+            _emailSender.SendEmailAsync(user.Email!, "✅ Neura: Change Password", emailBody));
 
         await Task.CompletedTask;
     }
