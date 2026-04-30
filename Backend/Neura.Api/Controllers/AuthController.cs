@@ -137,9 +137,17 @@ public class AuthController(
     [HttpGet("external-login/{provider}")]
     public IActionResult ExternalLogin(string provider)
     {
-        var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Auth");
-        var properties = _authService.GetExternalAuthProperties(provider, redirectUrl!);
+        var allowed = new[] { "Google", "GitHub" };
+        if (!allowed.Contains(provider, StringComparer.OrdinalIgnoreCase))
+            return BadRequest(new { error = "unsupported_provider" });
 
+        var redirectUrl = Url.Action(
+            nameof(ExternalLoginCallback), "Auth",
+            values: null,
+            protocol: Request.Scheme,
+            host: Request.Host.Value);
+
+        var properties = _authService.GetExternalAuthProperties(provider, redirectUrl!);
         return Challenge(properties, provider);
     }
 
@@ -147,11 +155,15 @@ public class AuthController(
     public async Task<IActionResult> ExternalLoginCallback()
     {
         var result = await _authService.HandleExternalLoginAsync();
-
         var frontendUrl = _configuration["FrontendUrl"];
 
-        if (!result.IsSuccess) return Redirect($"{frontendUrl}/login?error={result.ErrorMessage}");
+        if (!result.IsSuccess)
+        {
+            var safeError = Uri.EscapeDataString(result.ErrorMessage ?? "unknown");
+            return Redirect($"{frontendUrl}/login?error={safeError}");
+        }
 
-        return Redirect($"{frontendUrl}/auth/callback?token={result.Token}&refreshToken={result.RefreshToken}");
+        return Redirect(
+            $"{frontendUrl}/callback#token={result.Token}&refreshToken={result.RefreshToken}");
     }
 }
