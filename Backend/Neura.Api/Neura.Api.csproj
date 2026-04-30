@@ -34,6 +34,7 @@
 
     <ItemGroup>
         <Folder Include="wwwroot\Files\Lessons\" />
+        <Folder Include="wwwroot\Images\User\" />
         <Folder Include="wwwroot\Images\PostComment\" />
         <Folder Include="wwwroot\Images\Post\" />
     </ItemGroup>

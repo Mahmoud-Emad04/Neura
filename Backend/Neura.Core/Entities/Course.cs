@@ -11,8 +11,6 @@ public sealed class Course : AuditableEntity
     public string? DisplayInstructorName { get; set; }
     public string Description { get; set; } = string.Empty;
 
-    public bool IsPubliclyVisible { get; set; } = false;
-
     public CourseStatus Status { get; set; } = CourseStatus.Pending;
 
     public string ImageUrl { get; set; } = string.Empty;

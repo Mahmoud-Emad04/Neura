@@ -39,8 +39,8 @@ public class ExamService : IExamService
             return Result.Failure<ExamResponse>(ExamErrors.LessonNotQuizType);
 
         var courseId = lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure<ExamResponse>(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //return Result.Failure<ExamResponse>(ExamErrors.Forbidden);
 
         var examExists = await _context.Exams
             .AnyAsync(e => e.LessonId == request.LessonId);
@@ -83,8 +83,8 @@ public class ExamService : IExamService
             return Result.Failure<ExamDetailResponse>(ExamErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure<ExamDetailResponse>(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //    return Result.Failure<ExamDetailResponse>(ExamErrors.Forbidden);
 
         var response = await BuildExamDetailResponseAsync(exam);
         return Result.Success(response);
@@ -108,8 +108,8 @@ public class ExamService : IExamService
             return Result.Failure<ExamDetailResponse>(ExamErrors.NoExamForLesson);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure<ExamDetailResponse>(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //    return Result.Failure<ExamDetailResponse>(ExamErrors.Forbidden);
 
         var response = await BuildExamDetailResponseAsync(exam);
         return Result.Success(response);
@@ -130,8 +130,8 @@ public class ExamService : IExamService
             return Result.Failure<ExamResponse>(ExamErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure<ExamResponse>(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //    return Result.Failure<ExamResponse>(ExamErrors.Forbidden);
 
         exam.Title = _sanitizer.Sanitize(request.Title);
         exam.Description = request.Description is not null
@@ -184,8 +184,8 @@ public class ExamService : IExamService
             return Result.Failure(ExamErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //    return Result.Failure(ExamErrors.Forbidden);
 
         if (exam.IsPublished)
             return Result.Failure(ExamErrors.AlreadyPublished);
@@ -225,8 +225,8 @@ public class ExamService : IExamService
             return Result.Failure(ExamErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //    return Result.Failure(ExamErrors.Forbidden);
 
         if (!exam.IsPublished)
             return Result.Failure(ExamErrors.AlreadyUnpublished);
@@ -259,8 +259,8 @@ public class ExamService : IExamService
             return Result.Failure(ExamErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await HasInstructorPermissionAsync(courseId, userId))
-            return Result.Failure(ExamErrors.Forbidden);
+        //if (!await HasInstructorPermissionAsync(courseId, userId))
+        //    return Result.Failure(ExamErrors.Forbidden);
 
         var hasAttempts = await _context.ExamAttempts
             .AnyAsync(a => a.ExamId == exam.Id);
@@ -277,17 +277,17 @@ public class ExamService : IExamService
     // ══════════════════════════════════════════
     //  PRIVATE HELPERS
     // ══════════════════════════════════════════
-    private async Task<bool> HasInstructorPermissionAsync(int courseId, string userId)
-    {
-        var courseUser = await _context.CourseUsers
-            .AsNoTracking()
-            .FirstOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId);
+    //private async Task<bool> HasInstructorPermissionAsync(int courseId, string userId)
+    //{
+    //    var courseUser = await _context.CourseUsers
+    //        .AsNoTracking()
+    //        .FirstOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId);
 
-        if (courseUser is null)
-            return false;
+    //    if (courseUser is null)
+    //        return false;
 
-        return (courseUser.PermissionMask & CoursePermissionMasks.CoInstructor) == CoursePermissionMasks.CoInstructor;
-    }
+    //    return (courseUser.PermissionMask & CoursePermissionMasks.CoInstructor) == CoursePermissionMasks.CoInstructor;
+    //}
 
     private async Task<ExamDetailResponse> BuildExamDetailResponseAsync(Exam exam)
     {

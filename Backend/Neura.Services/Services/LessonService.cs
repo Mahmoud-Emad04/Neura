@@ -142,7 +142,7 @@ public class LessonService(
         if (lesson is null)
             return Result.Failure(LessonErrors.NotFound);
 
-        lesson.IsPublished = request.IsPubliclyVisible;
+        lesson.IsPublished = !request.IsVideoPrivate;
         lesson.IsPreview = request.IsPreview;
         if (lesson.Type == LessonType.Video) lesson.IsVideoPrivate = request.IsVideoPrivate;
 

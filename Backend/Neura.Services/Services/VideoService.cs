@@ -158,10 +158,10 @@ public class VideoService(
             return Result.Failure<VideoLinkResponse>(LessonErrors.NotFound);
 
         // Check privacy and access
-        var isInstructor = lesson.Section.Course.CreatedById == userId;
+        var isInstructor = await IsUserAuthorizedAsync(lessonId, userId, cancellationToken);
 
         // If video is private, only instructor can access
-        if (lesson.IsVideoPrivate && !isInstructor)
+        if (lesson.IsVideoPrivate && isInstructor)
             return Result.Failure<VideoLinkResponse>(LessonErrors.UnauthorizedModification);
 
         //TODO Change If video is private, only instructor can access
@@ -241,7 +241,7 @@ public class VideoService(
         var user = await _userManager.FindByIdAsync(userId);
         if (user is not null && await _userManager.IsInRoleAsync(user, DefaultRoles.SuperAdmin))
             return true;
-        if (user is not null && await _userManager.IsInRoleAsync(user, DefaultRoles.SuperAdmin))
+        if (user is not null && await _userManager.IsInRoleAsync(user, DefaultRoles.Admin))
             return true;
         // Check if user is course owner
         var lesson = await _context.Lessons

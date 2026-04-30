@@ -44,7 +44,7 @@ public class EnrollmentService : IEnrollmentService
         if (course is null) return Result.Failure<EnrollmentResponse>(EnrollmentErrors.CourseNotFound);
 
         // Check if course is active/published
-        if (!course.IsPubliclyVisible) return Result.Failure<EnrollmentResponse>(EnrollmentErrors.CourseNotActive);
+        if (course.Status == CourseStatus.Pending) return Result.Failure<EnrollmentResponse>(EnrollmentErrors.CourseNotActive);
 
         // Check if already enrolled
         var existingEnrollment = await _context.CourseUsers
@@ -149,12 +149,11 @@ public class EnrollmentService : IEnrollmentService
                 !cu.IsDeleted);
 
         var isEnrolled = courseUser is not null;
-        var canEnroll = !isEnrolled && course.IsPubliclyVisible;
+        var canEnroll = !isEnrolled && course.Status != CourseStatus.Pending;
         string? cannotEnrollReason = null;
 
         if (!canEnroll && !isEnrolled)
-            if (!course.IsPubliclyVisible)
-                cannotEnrollReason = "This course is not currently available";
+            cannotEnrollReason = "This course is not currently available";
 
         if (user is not null && !user.EmailConfirmed && !isEnrolled)
         {

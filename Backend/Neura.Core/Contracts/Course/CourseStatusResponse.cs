@@ -9,7 +9,6 @@ public sealed record CourseStatusResponse
     public string StatusName { get; init; } = string.Empty;
     public bool IsEnrollmentOpen { get; init; }
     public bool IsAccessibleToStudents { get; init; }
-    public bool IsPubliclyVisible { get; init; }
     public bool CanActivate { get; init; }
     public bool CanComplete { get; init; }
     public bool CanReactivate { get; init; }

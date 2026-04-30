@@ -1,4 +1,6 @@
-﻿using Neura.Core.Contracts.Authentication;
+﻿using Neura.Api.Extensions;
+using Neura.Core.Contracts.Authentication;
+using Neura.Core.Contracts.Files;
 
 namespace Neura.Api.Controllers;
 
@@ -41,6 +43,16 @@ public class AuthController(
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
+
+    [HttpPut("image")]
+    [Authorize]
+    public async Task<IActionResult> UpdateImage([FromForm] UploadImageRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.UpdateImageAsync(request, User.GetUserId()!, cancellationToken);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
 
     /// <summary>
     ///     Refreshes an expired JWT token.

@@ -9,6 +9,7 @@ public sealed class ApplicationUser : IdentityUser
 
     public string? DiscordHandle { get; set; } = string.Empty;
 
+    public string ImageUrl { get; set; } = string.Empty;
     /// <summary>
     ///     User's biography (used for instructor profile)
     /// </summary>
