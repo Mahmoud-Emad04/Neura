@@ -461,6 +461,7 @@ public class AnnouncementService(
 			post.SectionId,
 			post.ImageUrl is null ? post.ImageUrl : $"{baseUrl}/{post.ImageUrl}",
 			post.Likes.Count,
+			allComments.Count,
 			post.CreatedOn,
 			post.UpdatedOn,
 			post.CreatedById,

@@ -9,6 +9,7 @@ public record PostResponse(
     int? SectionId,
     string? ImageUrl,
     int LikesCount,
+    int CommentsCount,
     DateTime CreatedOn,
     DateTime? UpdatedOn,
     string CreatedById,
