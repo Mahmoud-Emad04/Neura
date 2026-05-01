@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<ICourseTeamService, CourseTeamService>();
         services.AddScoped<IVideoService, VideoService>();
         services.AddScoped<IGradingService, GradingService>();
+        services.AddScoped<ILessonProgressService, LessonProgressService>();
 
         services.AddScoped<IExamTimeoutService, ExamTimeoutService>();
         services.AddScoped<ExamTimeoutJob>();

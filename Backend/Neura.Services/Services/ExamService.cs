@@ -54,7 +54,7 @@ public class ExamService : IExamService
             ? _sanitizer.Sanitize(request.Description)
             : null;
         exam.ShowCorrectAnswersAfterSubmit = true;
-        exam.IsPublished = false;
+        exam.IsPublished = true;
         exam.CreatedById = userId;
         exam.CreatedOn = DateTime.UtcNow;
 
@@ -183,32 +183,48 @@ public class ExamService : IExamService
         if (exam is null)
             return Result.Failure(ExamErrors.ExamNotFound);
 
-        var courseId = exam.Lesson.Section.CourseId;
-        //if (!await HasInstructorPermissionAsync(courseId, userId))
-        //    return Result.Failure(ExamErrors.Forbidden);
-
         if (exam.IsPublished)
-            return Result.Failure(ExamErrors.AlreadyPublished);
+        {
 
-        if (!exam.Questions.Any())
-            return Result.Failure(ExamErrors.NoQuestions);
+            if (!exam.Questions.Any())
+                return Result.Failure(ExamErrors.NoQuestions);
 
-        var hasInvalidQuestions = exam.Questions
-            .Any(q => !q.AnswerOptions.Any(a => a.IsCorrect));
+            var hasInvalidQuestions = exam.Questions
+                .Any(q => !q.AnswerOptions.Any(a => a.IsCorrect));
 
-        if (hasInvalidQuestions)
-            return Result.Failure(ExamErrors.QuestionsWithoutCorrectAnswer);
+            if (hasInvalidQuestions)
+                return Result.Failure(ExamErrors.QuestionsWithoutCorrectAnswer);
 
-        if (exam.NumberOfQuestionsToServe.HasValue
-            && exam.NumberOfQuestionsToServe.Value > exam.Questions.Count)
-            return Result.Failure(ExamErrors.PoolSizeExceedsTotalQuestions);
+            if (exam.NumberOfQuestionsToServe.HasValue
+                && exam.NumberOfQuestionsToServe.Value > exam.Questions.Count)
+                return Result.Failure(ExamErrors.PoolSizeExceedsTotalQuestions);
 
-        exam.IsPublished = true;
-        exam.UpdatedById = userId;
-        exam.UpdatedOn = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+            exam.IsPublished = true;
+            exam.UpdatedById = userId;
+            exam.UpdatedOn = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
-        return Result.Success();
+            return Result.Success();
+        }
+        else
+        {
+
+            if (!exam.IsPublished)
+                return Result.Failure(ExamErrors.AlreadyUnpublished);
+
+            var hasAttempts = await _context.ExamAttempts
+                .AnyAsync(a => a.ExamId == exam.Id);
+
+            if (hasAttempts)
+                return Result.Failure(ExamErrors.CannotUnpublishWithAttempts);
+
+            exam.IsPublished = false;
+            exam.UpdatedById = userId;
+            exam.UpdatedOn = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Result.Success();
+        }
     }
 
     // ══════════════════════════════════════════
@@ -268,7 +284,8 @@ public class ExamService : IExamService
         if (hasAttempts)
             return Result.Failure(ExamErrors.CannotDeleteWithAttempts);
 
-        _context.Exams.Remove(exam);
+        exam.IsDeleted = true;
+
         await _context.SaveChangesAsync();
 
         return Result.Success();

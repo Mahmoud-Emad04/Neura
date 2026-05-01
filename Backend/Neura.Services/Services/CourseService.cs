@@ -229,15 +229,12 @@ public class CourseService(
 
 
     public async Task<Result<CourseResponse>> GetContentByIdAsync(
-        string keyId,
-        string? userId,
-        CancellationToken cancellationToken = default)
+     string keyId, string? userId, CancellationToken cancellationToken = default)
     {
         if (!TryDecodeCourseId(keyId, out var courseId))
             return Result.Failure<CourseResponse>(CourseErrors.CourseNotFound);
 
-        var courseExists = await _context.Courses
-            .AsNoTracking()
+        var courseExists = await _context.Courses.AsNoTracking()
             .AnyAsync(c => c.Id == courseId, cancellationToken);
 
         if (!courseExists)
@@ -245,11 +242,10 @@ public class CourseService(
 
         var isEnrolled = !string.IsNullOrEmpty(userId) && await _context.CourseUsers
             .AsNoTracking()
-            .AnyAsync(cu => cu.CourseId == courseId &&
-                           cu.UserId == userId &&
-                           !cu.IsDeleted,
-                     cancellationToken);
+            .AnyAsync(cu => cu.CourseId == courseId && cu.UserId == userId && !cu.IsDeleted,
+                cancellationToken);
 
+        // Fetch sections + lessons (your existing code) ...
         var sections = await _context.Sections
             .AsNoTracking()
             .Where(s => s.CourseId == courseId)
@@ -280,10 +276,21 @@ public class CourseService(
                             l.Exam.PassingScorePercentage,
                             l.Exam.MaxAttempts
                         }
-                    })
-                    .ToList()
+                    }).ToList()
             })
             .ToListAsync(cancellationToken);
+
+        // NEW: fetch user's completed lesson ids for this course
+        var completedLessonIds = new HashSet<int>();
+        if (!string.IsNullOrEmpty(userId))
+        {
+            completedLessonIds = await _context.LessonCompletions
+                .AsNoTracking()
+                .Where(lc => lc.UserId == userId &&
+                             lc.Lesson.Section.CourseId == courseId)
+                .Select(lc => lc.LessonId)
+                .ToHashSetAsync(cancellationToken);
+        }
 
         var sectionResponses = sections.Select(s => new SectionResponse(
             Id: s.Id,
@@ -293,7 +300,6 @@ public class CourseService(
             TotalMinutes: (int)s.Lessons.Sum(l => l.Duration.TotalMinutes),
             LessonsCount: s.Lessons.Count,
             Lessons: s.Lessons.Select(l => new LessonResponse(
-                // If Quiz → use Exam.Id & Exam.Title, else use Lesson.Id & Lesson.Title
                 Id: l.Type == LessonType.Quiz && l.Exam != null ? l.Exam.Id : l.Id,
                 Title: l.Type == LessonType.Quiz && l.Exam != null ? l.Exam.Title : l.Title,
                 Description: l.Description,
@@ -302,12 +308,12 @@ public class CourseService(
                 OrderIndex: l.OrderIndex,
                 IsPreview: l.IsPreview,
                 IsLocked: !l.IsPreview && !isEnrolled,
+                IsCompleted: completedLessonIds.Contains(l.Id),   // ← NEW
                 Exam: l.Exam == null ? null : new ExamPreviewInfo(
                     TotalQuestions: l.Exam.TotalQuestions,
                     DurationInMinutes: l.Exam.DurationInMinutes,
                     PassingScorePercentage: l.Exam.PassingScorePercentage,
-                    MaxAttempts: l.Exam.MaxAttempts
-                )
+                    MaxAttempts: l.Exam.MaxAttempts)
             )).ToList()
         )).ToList();
 
@@ -318,8 +324,7 @@ public class CourseService(
             KeyId: keyId,
             TotalHours: (int)Math.Round(totalMinutes / 60.0),
             TotalLessons: totalLessons,
-            Sections: sectionResponses
-        );
+            Sections: sectionResponses);
 
         return Result.Success(response);
     }
@@ -938,7 +943,7 @@ public class CourseService(
 
             ImageUrl = Path.Combine(BaseUrl(), course.ImageUrl),
 
-            Tags = course.Tags.Select(c => c.Name).ToList(),
+            Tags = course.Tags.Select(c => new CourseMetadataTagResponse(c.Name, c.Id)).ToList(),
 
             NumberOfStudents = numberOfStudents,
 

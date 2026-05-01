@@ -7,10 +7,11 @@ using Neura.Core.Enums;
 namespace Neura.Services.Services;
 
 public class LessonService(
-    ApplicationDbContext context, Cloudinary cloudinary, ILogger<LessonService> logger) : ILessonService
+    ApplicationDbContext context, Cloudinary cloudinary, IExamService examService, ILogger<LessonService> logger) : ILessonService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly Cloudinary _cloudinary = cloudinary;
+    private readonly IExamService _examService = examService;
     private readonly ILogger<LessonService> _logger = logger;
 
     public async Task<Result<int>> CreateLessonMetadataAsync(int sectionId, CreateLessonRequest request, string userId,
@@ -62,7 +63,7 @@ public class LessonService(
             SectionId = sectionId,
             Type = request.Type,
             OrderIndex = lastOrder + 1,
-            IsPublished = false
+            IsPublished = true
         };
 
         _context.Lessons.Add(lesson);
@@ -142,8 +143,17 @@ public class LessonService(
         if (lesson is null)
             return Result.Failure(LessonErrors.NotFound);
 
+        if (lesson.Type == LessonType.Quiz)
+        {
+            var result = await _examService.PublishAsync(lessonId, userId);
+            if (!result.IsSuccess)
+                return Result.Failure(result.Error);
+            return Result.Success();
+        }
+
         lesson.IsPublished = !request.IsVideoPrivate;
         lesson.IsPreview = request.IsPreview;
+
         if (lesson.Type == LessonType.Video) lesson.IsVideoPrivate = request.IsVideoPrivate;
 
         await _context.SaveChangesAsync(cancellationToken);

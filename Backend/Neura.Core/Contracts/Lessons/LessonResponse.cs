@@ -9,6 +9,7 @@ public record LessonResponse(
     int OrderIndex,
     bool IsPreview,
     bool IsLocked,
+    bool IsCompleted,
     ExamPreviewInfo? Exam
 );
 public record ExamPreviewInfo(

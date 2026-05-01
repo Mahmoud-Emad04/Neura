@@ -27,4 +27,6 @@ public class Lesson : AuditableEntity
     public Section Section { get; set; } = default!;
 
     public Exam? Exam { get; set; }
+
+    public ICollection<LessonCompletion> Completions { get; set; } = [];
 }
