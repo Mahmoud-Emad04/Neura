@@ -10,6 +10,7 @@ public record PostCommentResponse(
 	DateTime? UpdatedOn,
 	string CreatedById,
 	string CreatedByFullName,
+	string? CreatedByImageUrl,
 	string? UpdatedById,
 	IEnumerable<PostCommentResponse> Replies
 );
