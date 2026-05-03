@@ -269,7 +269,7 @@ public class CourseService(
                         l.IsPreview,
                         Exam = l.Exam == null ? null : new
                         {
-                            l.Exam.Id,
+                            l.Id,
                             l.Exam.Title,
                             TotalQuestions = l.Exam.Questions.Count(),
                             l.Exam.DurationInMinutes,

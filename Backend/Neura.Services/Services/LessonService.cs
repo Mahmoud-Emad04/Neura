@@ -63,7 +63,8 @@ public class LessonService(
             SectionId = sectionId,
             Type = request.Type,
             OrderIndex = lastOrder + 1,
-            IsPublished = true
+            IsPublished = true,
+            IsVideoPrivate = false
         };
 
         _context.Lessons.Add(lesson);

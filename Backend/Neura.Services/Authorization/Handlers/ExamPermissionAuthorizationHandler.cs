@@ -36,7 +36,7 @@ public class ExamPermissionAuthorizationHandler : AuthorizationHandler<ExamPermi
 
         // Get courseId from route
         var examId = GetExamIdFromRoute();
-        var courseId = _context.Exams.Where(e => e.Id == examId).Select(e => (int?)e.Lesson.Section.CourseId).FirstOrDefault();
+        var courseId = _context.Exams.Where(e => e.LessonId == examId).Select(e => (int?)e.Lesson.Section.CourseId).FirstOrDefault();
 
         if (courseId is null) return;
 
@@ -66,7 +66,7 @@ public class ExamPermissionAuthorizationHandler : AuthorizationHandler<ExamPermi
         if (httpContext.Request.RouteValues.TryGetValue("id", out var examIdValue))
             rawExamId = examIdValue?.ToString();
         else if (httpContext.Request.RouteValues.TryGetValue("examId", out var idValue)) rawExamId = idValue?.ToString();
-
+        else if (httpContext.Request.RouteValues.TryGetValue("lessonId", out var lessonId)) rawExamId = lessonId?.ToString();
         if (string.IsNullOrEmpty(rawExamId))
             // Try to get from query string
             if (httpContext.Request.Query.TryGetValue("id", out var queryCourseId))

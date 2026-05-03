@@ -183,6 +183,8 @@ public class AuthService(
 
             return Result.Success();
         }
+        foreach (var er in result.Errors)
+            _logger.LogWarning("Error {er}", er);
 
         var error = result.Errors.FirstOrDefault();
 
@@ -418,7 +420,7 @@ public class AuthService(
             new Dictionary<string, string>
             {
                 { "{{name}}", user.FirstName },
-                { "{{action_url}}", $"{origin}/auth/verify-email?userId={user.Id}&code={code}" }
+                { "{{action_url}}", $"https://neuralearning.netlify.app/auth/verify-email?userId={user.Id}&code={code}" }
             }
         );
         BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Neura: Email Confirmation", emailBody));
@@ -466,7 +468,7 @@ public class AuthService(
             new Dictionary<string, string>
             {
                 { "{{name}}", user.FirstName },
-                { "{{action_url}}", $"{origin}/auth/reset-password?email={user.Email}&code={code}" }
+                { "{{action_url}}", $"https://neuralearning.netlify.app/auth/reset-password?email={user.Email}&code={code}" }
             }
         );
 
