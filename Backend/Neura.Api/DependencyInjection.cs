@@ -77,30 +77,31 @@ public static class DependencyInjection
 
         #region AddInjection
 
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<ICourseService, CourseService>();
-        services.AddScoped<IEmailSender, EmailService>();
-        services.AddScoped<ISectionService, SectionService>();
-        services.AddScoped<IAnnouncementService, AnnouncementService>();
+        services.AddScoped<ExamTimeoutJob>();
+        services.AddScoped<ITagService, TagService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IFileService, FileService>();
+        services.AddScoped<IExamService, ExamService>();
+        services.AddScoped<IEmailSender, EmailService>();
+        services.AddScoped<IVideoService, VideoService>();
+        services.AddScoped<ICourseService, CourseService>();
         services.AddScoped<ILessonService, LessonService>();
         services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<IGradingService, GradingService>();
+        services.AddScoped<ISectionService, SectionService>();
+        services.AddScoped<IWebhookService, WebhookService>();
         services.AddScoped<IServiceHelpers, ServiceHelpers>();
-        services.AddScoped<ITagService, TagService>();
-        services.AddScoped<IExamService, ExamService>();
         services.AddScoped<IQuestionService, QuestionService>();
-        services.AddScoped<ICoursePermissionService, CoursePermissionService>();
-        services.AddScoped<IInstructorApplicationService, InstructorApplicationService>();
         services.AddScoped<IEnrollmentService, EnrollmentService>();
         services.AddScoped<ICourseTeamService, CourseTeamService>();
-        services.AddScoped<IVideoService, VideoService>();
-        services.AddScoped<IGradingService, GradingService>();
-
         services.AddScoped<IExamTimeoutService, ExamTimeoutService>();
-        services.AddScoped<ExamTimeoutJob>();
         services.AddScoped<IExamAttemptService, ExamAttemptService>();
+        services.AddScoped<IAnnouncementService, AnnouncementService>();
         services.AddScoped<IExamAnalyticsService, ExamAnalyticsService>();
+        services.AddScoped<ILessonProgressService, LessonProgressService>();
+        services.AddScoped<ICoursePermissionService, CoursePermissionService>();
+        services.AddScoped<IInstructorApplicationService, InstructorApplicationService>();
 
         services.AddSingleton<HtmlSanitizer>(sp =>
         {

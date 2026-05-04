@@ -28,9 +28,11 @@ public class ApplicationDbContext(
     public DbSet<ExamAttempt> ExamAttempts { get; set; }
     public DbSet<AnswerOption> AnswerOptions { get; set; }
     public DbSet<AttemptAnswer> AttemptAnswers { get; set; }
+    public DbSet<ExamViolation> ExamViolations { get; set; }
     public DbSet<CourseBookmark> CourseBookmarks { get; set; }
-    public DbSet<CourseInvitation> CourseInvitations { get; set; }
     public DbSet<AttemptViolation> AttemptViolations { get; set; }
+    public DbSet<CourseInvitation> CourseInvitations { get; set; }
+    public DbSet<LessonCompletion> LessonCompletions { get; set; }
     public DbSet<CoursePrerequisite> CoursePrerequisites { get; set; }
     public DbSet<AttemptAnswerOption> AttemptAnswerOptions { get; set; }
     public DbSet<CourseLearningOutcome> CourseLearningOutcomes { get; set; }

@@ -191,7 +191,6 @@ public class EnrollmentService : IEnrollmentService
                 cu.CourseRole.Level == (int)CourseRoleType.Student
                 && (string.IsNullOrEmpty(requestFilters.SearchValue) || ((cu.Course.Title.Contains(requestFilters.SearchValue) || cu.Course.Description.Contains(requestFilters.SearchValue) || (!string.IsNullOrEmpty(cu.Course.DisplayInstructorName) && cu.Course.DisplayInstructorName.Contains(requestFilters.SearchValue)))))
                 && (requestFilters.CourseStatus == null || (requestFilters.CourseStatus == cu.Course.Status)))
-
             .Select(cu => new MyEnrolledCourseResponse
             {
                 CourseId = _helpers.Encode(cu.CourseId),

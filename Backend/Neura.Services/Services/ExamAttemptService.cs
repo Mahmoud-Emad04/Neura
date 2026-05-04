@@ -9,11 +9,13 @@ public class ExamAttemptService : IExamAttemptService
 {
     private readonly ApplicationDbContext _context;
     private readonly IGradingService _gradingService;
+    private readonly ILessonProgressService _lessonProgressService;
 
-    public ExamAttemptService(ApplicationDbContext context, IGradingService gradingService)
+    public ExamAttemptService(ApplicationDbContext context, IGradingService gradingService, ILessonProgressService lessonProgressService)
     {
         _context = context;
         _gradingService = gradingService;
+        _lessonProgressService = lessonProgressService;
     }
 
     // ══════════════════════════════════════════
@@ -378,6 +380,12 @@ public class ExamAttemptService : IExamAttemptService
             StartedAt = attempt.StartedAt,
             SubmittedAt = attempt.SubmittedAt!.Value
         };
+
+        if (attempt.Passed!.Value)
+        {
+            await _lessonProgressService.MarkQuizLessonCompletedAsync(
+                attempt.Exam.LessonId, userId);
+        }
 
         return Result.Success(response);
     }

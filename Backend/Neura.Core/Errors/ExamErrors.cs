@@ -16,7 +16,8 @@ public static class ExamErrors
 
     public static readonly Error NoExamForLesson =
         new("Exam.NoExamForLesson", "No exam found for this lesson.", StatusCodes.Status404NotFound);
-
+    public static readonly Error InvalidExamId =
+    new("Exam.InvalidId", "Invalid exam ID format", StatusCodes.Status400BadRequest);
     // ══════════════════════════════════════════════════════════════
     // Bad Request (400)
     // ══════════════════════════════════════════════════════════════

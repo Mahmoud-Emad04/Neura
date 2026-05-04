@@ -10,9 +10,11 @@ namespace Neura.Api.Controllers;
 [Authorize]
 public class LessonsController(
     ILessonService lessonService,
+    ILessonProgressService lessonProgressService,
     IVideoService videoService) : ControllerBase
 {
     private readonly ILessonService _lessonService = lessonService;
+    private readonly ILessonProgressService _lessonProgressService = lessonProgressService;
     private readonly IVideoService _videoService = videoService;
 
     /// <summary>
@@ -229,6 +231,24 @@ public class LessonsController(
         var result = await _lessonService.DeleteLesson(id, userId!, cancellationToken);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
+    }
+
+    [HttpPost("{lessonId:int}/complete")]
+    [ProducesResponseType(typeof(LessonCompletionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkCompleted(
+    [FromRoute] int lessonId,
+    CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId()!;
+
+        var result = await _lessonProgressService
+            .MarkLessonCompletedAsync(lessonId, userId, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
     }
 
 }

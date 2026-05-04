@@ -23,7 +23,8 @@ public sealed record CourseMetadataResponse
     public bool IsBookmarked { get; set; }
     public bool IsOwner { get; set; }
 
-    public IEnumerable<string> Tags { get; set; } = [];
+    public IEnumerable<CourseMetadataTagResponse> Tags { get; set; } = [];
     public IEnumerable<string> LearningOutcomes { get; set; } = [];
     public IEnumerable<string> Prerequisites { get; set; } = [];
 }
+public record CourseMetadataTagResponse(string Name, int Id);

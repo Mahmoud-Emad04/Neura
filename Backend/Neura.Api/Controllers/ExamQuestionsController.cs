@@ -7,7 +7,6 @@ namespace Neura.Api.Controllers;
 [Route("api/exams/{lessonId:int}/questions")]
 [ApiController]
 [Authorize]
-[HasExamPermission(Core.Enums.CoursePermission.EditContent)]
 public class ExamQuestionsController : ControllerBase
 {
     private readonly IQuestionService _questionService;
@@ -21,6 +20,7 @@ public class ExamQuestionsController : ControllerBase
     //  POST /api/exams/{lessonId}/questions
     // ══════════════════════════════════════════
     [HttpPost]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(typeof(QuestionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -41,6 +41,7 @@ public class ExamQuestionsController : ControllerBase
     //  PUT /api/exams/{examId}/questions/{questionId}
     // ══════════════════════════════════════════
     [HttpPut("{questionId:int}")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(typeof(QuestionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -62,6 +63,7 @@ public class ExamQuestionsController : ControllerBase
     //  DELETE /api/exams/{examId}/questions/{questionId}
     // ══════════════════════════════════════════
     [HttpDelete("{questionId:int}")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -83,6 +85,7 @@ public class ExamQuestionsController : ControllerBase
     // ══════════════════════════════════════════
     [HttpPut("reorder")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

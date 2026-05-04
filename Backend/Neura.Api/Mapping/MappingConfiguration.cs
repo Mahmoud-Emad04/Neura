@@ -22,7 +22,8 @@ public class MappingConfiguration : IRegister
         config.NewConfig<Course, CourseMetadataResponse>()
             .Map(dest => dest.KeyId, src => hashids.Encode(src.Id))
             .Map(dest => dest.Prerequisites, src => src.Prerequisites.Select(p => p.Requirement))
-            .Map(dest => dest.LearningOutcomes, src => src.LearningOutcomes.Select(p => p.Outcome));
+            .Map(dest => dest.LearningOutcomes, src => src.LearningOutcomes.Select(p => p.Outcome))
+            .Map(dest => dest.Tags, src => src.Tags.Select(t => new CourseMetadataTagResponse(t.Name, t.Id)).ToList());
 
         config.NewConfig<Section, SectionResponse>()
             .Map(dest => dest.TotalMinutes, src => (int)src.Lessons.Sum(l => l.Duration.TotalMinutes))

@@ -26,7 +26,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
                 .ThenInclude(l => l.Section)
             .Include(e => e.Questions)
                 .ThenInclude(q => q.AnswerOptions)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == examId);
 
         if (exam is null)
             return Result.Failure<ExamAnalyticsResponse>(AnalyticsErrors.ExamNotFound);
@@ -46,7 +46,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
 
         var allAttempts = await _context.ExamAttempts
             .AsNoTracking()
-            .Where(a => a.ExamId == examId)
+            .Where(a => a.ExamId == exam.Id)
             .ToListAsync();
 
         var completedAttempts = allAttempts
@@ -91,7 +91,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
         // ── Violation Stats ──
         var violationStats = await _context.AttemptViolations
             .AsNoTracking()
-            .Where(v => v.ExamAttempt.ExamId == examId)
+            .Where(v => v.ExamAttempt.ExamId == exam.Id)
             .GroupBy(v => v.ExamAttemptId)
             .Select(g => new { AttemptId = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -100,7 +100,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
         var studentsWithViolations = violationStats.Count;
 
         // ── Per-Question Analytics ──
-        var questionAnalytics = await BuildQuestionAnalyticsAsync(exam, examId);
+        var questionAnalytics = await BuildQuestionAnalyticsAsync(exam, exam.Id);
 
         var response = new ExamAnalyticsResponse
         {
@@ -138,7 +138,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
             .AsNoTracking()
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == examId);
 
         if (exam is null)
             return Result.Failure<ExamStudentAttemptsResponse>(AnalyticsErrors.ExamNotFound);
@@ -152,7 +152,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
             .AsNoTracking()
             .Include(a => a.User)
             .Include(a => a.Violations)
-            .Where(a => a.ExamId == examId && a.Status != AttemptStatus.InProgress);
+            .Where(a => a.ExamId == exam.Id && a.Status != AttemptStatus.InProgress);
 
         // ── Sorting ──
         query = sortBy?.ToLower() switch
@@ -371,7 +371,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
             .AsNoTracking()
             .Include(e => e.Lesson)
                 .ThenInclude(l => l.Section)
-            .FirstOrDefaultAsync(e => e.Id == examId);
+            .FirstOrDefaultAsync(e => e.LessonId == examId);
 
         if (exam is null)
             return Result.Failure<ScoreDistributionResponse>(AnalyticsErrors.ExamNotFound);
@@ -382,7 +382,7 @@ public class ExamAnalyticsService : IExamAnalyticsService
 
         var percentages = await _context.ExamAttempts
             .AsNoTracking()
-            .Where(a => a.ExamId == examId
+            .Where(a => a.ExamId == exam.Id
                      && a.Status != AttemptStatus.InProgress
                      && a.ScorePercentage.HasValue)
             .Select(a => a.ScorePercentage!.Value)
