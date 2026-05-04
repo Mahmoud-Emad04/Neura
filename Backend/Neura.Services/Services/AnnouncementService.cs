@@ -41,7 +41,7 @@ public class AnnouncementService(
 			.AsSplitQuery()
 			.ToListAsync(cancellationToken);
 
-		var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl)).ToList();
+		var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl, currentUserId)).ToList();
 		var result = new PaginatedList<PostResponse>(mapped, pageNumber, totalCount, pageSize);
 
 		return Result.Success(result);
@@ -76,7 +76,7 @@ public class AnnouncementService(
 			.AsSplitQuery()
 			.ToListAsync(cancellationToken);
 
-		var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl)).ToList();
+		var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl, currentUserId)).ToList();
 		var result = new PaginatedList<PostResponse>(mapped, pageNumber, totalCount, pageSize);
 
 		return Result.Success(result);
@@ -99,7 +99,7 @@ public class AnnouncementService(
 		if (!projection.IsPublic && projection.CreatedById != currentUserId && !IsAdmin())
 			return Result.Failure<PostResponse>(AnnouncementErrors.PostAccessDenied);
 
-		return Result.Success(MapProjectionToResponse(projection, baseUrl));
+		return Result.Success(MapProjectionToResponse(projection, baseUrl, currentUserId));
 	}
 
 	// ---------------------------------------------------------------------
@@ -285,7 +285,8 @@ public class AnnouncementService(
 		var response = MapCommentProjectionToResponse(
 			projection,
 			EmptyRepliesLookup,
-			baseUrl);
+			baseUrl,
+			currentUserId: userId);
 
 		return Result.Success(response);
 	}
@@ -347,7 +348,7 @@ public class AnnouncementService(
 
 		var root = commentAndReplies.First(c => c.Id == commentId);
 		var repliesLookup = BuildRepliesLookup(commentAndReplies);
-		var response = MapCommentProjectionToResponse(root, repliesLookup, baseUrl);
+		var response = MapCommentProjectionToResponse(root, repliesLookup, baseUrl, currentUserId: userId);
 
 		return Result.Success(response);
 	}
@@ -565,14 +566,15 @@ public class AnnouncementService(
 		});
 	}
 
-	private static PostResponse MapProjectionToResponse(PostProjection p, string baseUrl)
+	private static PostResponse MapProjectionToResponse(PostProjection p, string baseUrl, string? currentUserId)
 	{
 		var repliesLookup = BuildRepliesLookup(p.Comments);
+		var isCreatedByCurrentUser = !string.IsNullOrEmpty(currentUserId) && p.CreatedById == currentUserId;
 
 		var rootComments = p.Comments
 			.Where(c => c.ParentCommentId == null)
 			.OrderBy(c => c.CreatedOn)
-			.Select(c => MapCommentProjectionToResponse(c, repliesLookup, baseUrl))
+			.Select(c => MapCommentProjectionToResponse(c, repliesLookup, baseUrl, currentUserId: currentUserId))
 			.ToList();
 
 		return new PostResponse(
@@ -590,6 +592,7 @@ public class AnnouncementService(
 			p.CreatedById,
 			BuildFullName(p.CreatorFirstName, p.CreatorLastName),
 			BuildImageUrl(p.CreatorImageUrl, baseUrl),
+			isCreatedByCurrentUser,
 			p.UpdatedById,
 			p.IsLikedByCurrentUser,
 			rootComments);
@@ -602,7 +605,8 @@ public class AnnouncementService(
 	private static PostCommentResponse MapCommentProjectionToResponse(
 		PostCommentProjection root,
 		IReadOnlyDictionary<int, List<PostCommentProjection>> repliesLookup,
-		string baseUrl)
+		string baseUrl,
+		string? currentUserId)
 	{
 		var mapped = new Dictionary<int, PostCommentResponse>();
 		var stack = new Stack<(PostCommentProjection node, bool processed)>();
@@ -634,6 +638,7 @@ public class AnnouncementService(
 				{
 					mappedChildren = new List<PostCommentResponse>(0);
 				}
+				var isCreatedByCurrentUser = !string.IsNullOrEmpty(currentUserId) && node.CreatedById == currentUserId;
 
 				mapped[node.Id] = new PostCommentResponse(
 					node.Id,
@@ -646,6 +651,7 @@ public class AnnouncementService(
 					node.CreatedById,
 					BuildFullName(node.CreatorFirstName, node.CreatorLastName),
 					BuildImageUrl(node.CreatorImageUrl, baseUrl),
+					isCreatedByCurrentUser,
 					node.UpdatedById,
 					mappedChildren);
 			}
