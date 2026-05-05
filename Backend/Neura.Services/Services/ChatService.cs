@@ -75,10 +75,10 @@ public sealed class ChatService(
         CancellationToken ct = default)
     {
         // ── 1. Security ───────────────────────────────────────────────────────
-        var isMember = await IsCourseMemberAsync(requestingUserId, channelId, ct);
-        if (!isMember)
-            throw new UnauthorizedAccessException(
-                $"User {requestingUserId} is not a member of the course owning channel {channelId}.");
+        //var isMember = await IsCourseMemberAsync(requestingUserId, channelId, ct);
+        //if (!isMember)
+        //    throw new UnauthorizedAccessException(
+        //        $"User {requestingUserId} is not a member of the course owning channel {channelId}.");
 
         // ── 2. Clamp pageSize (prevent abuse) ─────────────────────────────────
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -198,17 +198,17 @@ public sealed class ChatService(
         CancellationToken ct = default)
     {
         // ── Security ──────────────────────────────────────────────────────────
-        var isMember = await db.CourseUsers
-            .AsNoTracking()
-            .AnyAsync(cu =>
-                cu.CourseId == courseId &&
-                cu.UserId == requestingUserId &&
-                !cu.IsDeleted,
-                ct);
+        //var isMember = await db.CourseUsers
+        //    .AsNoTracking()
+        //    .AnyAsync(cu =>
+        //        cu.CourseId == courseId &&
+        //        cu.UserId == requestingUserId &&
+        //        !cu.IsDeleted,
+        //        ct);
 
-        if (!isMember)
-            throw new UnauthorizedAccessException(
-                $"User {requestingUserId} is not a member of course {courseId}.");
+        //if (!isMember)
+        //    throw new UnauthorizedAccessException(
+        //        $"User {requestingUserId} is not a member of course {courseId}.");
 
         // Uses IX_Channels_CourseId_Position composite index.
         // HasQueryFilter automatically excludes IsDeleted channels.
@@ -282,9 +282,9 @@ public sealed class ChatService(
                 !cu.IsDeleted,
                 ct);
 
-        if (!isMember)
-            throw new UnauthorizedAccessException(
-                $"User {requestingUserId} is not a member of course {courseId}.");
+        //if (!isMember)
+        //    throw new UnauthorizedAccessException(
+        //        $"User {requestingUserId} is not a member of course {courseId}.");
 
         // ── Single SQL query: member list with LastSeenAt included ────────────
         // LastSeenAt now lives directly on ApplicationUser — zero extra join

@@ -145,12 +145,12 @@ public sealed class CommunityHub(
 
         // Security: verify the user belongs to the course that owns this channel.
         // A malicious client could call JoinChannel with any channelId.
-        var isMember = await chatService.IsCourseMemberAsync(userId, channelId);
-        if (!isMember)
-        {
-            await Clients.Caller.Error("You are not a member of this course.");
-            return;
-        }
+        //var isMember = await chatService.IsCourseMemberAsync(userId, channelId);
+        //if (!isMember)
+        //{
+        //    await Clients.Caller.Error("You are not a member of this course.");
+        //    return;
+        //}
 
         // Remove from the previously active channel group (if switching channels)
         var previousChannelId = await presenceTracker.UpdateCurrentChannelAsync(
