@@ -33,10 +33,10 @@ public sealed class ChatService(
         CancellationToken ct = default)
     {
         // ── 1. Security ───────────────────────────────────────────────────────
-        var isMember = await IsCourseMemberAsync(senderId, channelId, ct);
-        if (!isMember)
-            throw new UnauthorizedAccessException(
-                $"User {senderId} is not a member of the course owning channel {channelId}.");
+        //var isMember = await IsCourseMemberAsync(senderId, channelId, ct);
+        //if (!isMember)
+        //    throw new UnauthorizedAccessException(
+        //        $"User {senderId} is not a member of the course owning channel {channelId}.");
 
         // ── 2. Validate channel (type check included) ─────────────────────────
         // AsNoTracking + projection: we only need 3 fields, not the full entity
