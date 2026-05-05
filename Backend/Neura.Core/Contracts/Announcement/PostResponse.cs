@@ -15,6 +15,7 @@ public record PostResponse(
     string CreatedById,
     string CreatedByFullName,
     string? CreatedByImageUrl,
+    bool IsCreatedByCurrentUser,
     string? UpdatedById,
     bool IsLikedByCurrentUser,
     IEnumerable<PostCommentResponse> Comments

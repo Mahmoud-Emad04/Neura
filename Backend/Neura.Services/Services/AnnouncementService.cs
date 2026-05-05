@@ -42,8 +42,8 @@ public class AnnouncementService(
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl)).ToList();
-        var result = new PaginatedList<PostResponse>(mapped, pageNumber, totalCount, pageSize);
+		var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl, currentUserId)).ToList();
+		var result = new PaginatedList<PostResponse>(mapped, pageNumber, totalCount, pageSize);
 
         return Result.Success(result);
     }
@@ -77,8 +77,8 @@ public class AnnouncementService(
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl)).ToList();
-        var result = new PaginatedList<PostResponse>(mapped, pageNumber, totalCount, pageSize);
+		var mapped = projections.Select(p => MapProjectionToResponse(p, baseUrl, currentUserId)).ToList();
+		var result = new PaginatedList<PostResponse>(mapped, pageNumber, totalCount, pageSize);
 
         return Result.Success(result);
     }
@@ -100,8 +100,8 @@ public class AnnouncementService(
         if (!projection.IsPublic && projection.CreatedById != currentUserId && !IsAdmin())
             return Result.Failure<PostResponse>(AnnouncementErrors.PostAccessDenied);
 
-        return Result.Success(MapProjectionToResponse(projection, baseUrl));
-    }
+		return Result.Success(MapProjectionToResponse(projection, baseUrl, currentUserId));
+	}
 
     // ---------------------------------------------------------------------
     // Write endpoints — posts
@@ -282,11 +282,12 @@ public class AnnouncementService(
                 _context.PostComments.AsNoTracking().Where(c => c.Id == comment.Id))
             .FirstAsync(cancellationToken);
 
-        // Brand-new comment has no replies
-        var response = MapCommentProjectionToResponse(
-            projection,
-            EmptyRepliesLookup,
-            baseUrl);
+		// Brand-new comment has no replies
+		var response = MapCommentProjectionToResponse(
+			projection,
+			EmptyRepliesLookup,
+			baseUrl,
+			currentUserId: userId);
 
         return Result.Success(response);
     }
@@ -348,9 +349,9 @@ public class AnnouncementService(
                     .Where(c => !c.IsDeleted && (c.Id == commentId || c.ParentCommentId == commentId)))
             .ToListAsync(cancellationToken);
 
-        var root = commentAndReplies.First(c => c.Id == commentId);
-        var repliesLookup = BuildRepliesLookup(commentAndReplies);
-        var response = MapCommentProjectionToResponse(root, repliesLookup, baseUrl);
+		var root = commentAndReplies.First(c => c.Id == commentId);
+		var repliesLookup = BuildRepliesLookup(commentAndReplies);
+		var response = MapCommentProjectionToResponse(root, repliesLookup, baseUrl, currentUserId: userId);
 
         return Result.Success(response);
     }
@@ -568,91 +569,96 @@ public class AnnouncementService(
         });
     }
 
-    private static PostResponse MapProjectionToResponse(PostProjection p, string baseUrl)
-    {
-        var repliesLookup = BuildRepliesLookup(p.Comments);
+	private static PostResponse MapProjectionToResponse(PostProjection p, string baseUrl, string? currentUserId)
+	{
+		var repliesLookup = BuildRepliesLookup(p.Comments);
+		var isCreatedByCurrentUser = !string.IsNullOrEmpty(currentUserId) && p.CreatedById == currentUserId;
 
-        var rootComments = p.Comments
-            .Where(c => c.ParentCommentId == null)
-            .OrderBy(c => c.CreatedOn)
-            .Select(c => MapCommentProjectionToResponse(c, repliesLookup, baseUrl))
-            .ToList();
+		var rootComments = p.Comments
+			.Where(c => c.ParentCommentId == null)
+			.OrderBy(c => c.CreatedOn)
+			.Select(c => MapCommentProjectionToResponse(c, repliesLookup, baseUrl, currentUserId: currentUserId))
+			.ToList();
 
-        return new PostResponse(
-            p.Id,
-            p.Title,
-            p.Content,
-            p.IsPublic,
-            p.CourseId,
-            p.SectionId,
-            BuildImageUrl(p.ImageUrl, baseUrl),
-            p.LikesCount,
-            p.CommentsCount,
-            p.CreatedOn,
-            p.UpdatedOn,
-            p.CreatedById,
-            BuildFullName(p.CreatorFirstName, p.CreatorLastName),
-            BuildImageUrl(p.CreatorImageUrl, baseUrl),
-            p.UpdatedById,
-            p.IsLikedByCurrentUser,
-            rootComments);
-    }
+		return new PostResponse(
+			p.Id,
+			p.Title,
+			p.Content,
+			p.IsPublic,
+			p.CourseId,
+			p.SectionId,
+			BuildImageUrl(p.ImageUrl, baseUrl),
+			p.LikesCount,
+			p.CommentsCount,
+			p.CreatedOn,
+			p.UpdatedOn,
+			p.CreatedById,
+			BuildFullName(p.CreatorFirstName, p.CreatorLastName),
+			BuildImageUrl(p.CreatorImageUrl, baseUrl),
+			isCreatedByCurrentUser,
+			p.UpdatedById,
+			p.IsLikedByCurrentUser,
+			rootComments);
+	}
 
-    /// <summary>
-    /// Iterative post-order traversal — assembles a comment + its full reply
-    /// subtree without recursion and without re-sorting at each level.
-    /// </summary>
-    private static PostCommentResponse MapCommentProjectionToResponse(
-        PostCommentProjection root,
-        IReadOnlyDictionary<int, List<PostCommentProjection>> repliesLookup,
-        string baseUrl)
-    {
-        var mapped = new Dictionary<int, PostCommentResponse>();
-        var stack = new Stack<(PostCommentProjection node, bool processed)>();
-        stack.Push((root, false));
+	/// <summary>
+	/// Iterative post-order traversal — assembles a comment + its full reply
+	/// subtree without recursion and without re-sorting at each level.
+	/// </summary>
+	private static PostCommentResponse MapCommentProjectionToResponse(
+		PostCommentProjection root,
+		IReadOnlyDictionary<int, List<PostCommentProjection>> repliesLookup,
+		string baseUrl,
+		string? currentUserId)
+	{
+		var mapped = new Dictionary<int, PostCommentResponse>();
+		var stack = new Stack<(PostCommentProjection node, bool processed)>();
+		stack.Push((root, false));
 
         while (stack.Count > 0)
         {
             var (node, processed) = stack.Pop();
 
-            if (!processed)
-            {
-                stack.Push((node, true));
-                if (repliesLookup.TryGetValue(node.Id, out var children))
-                {
-                    for (var i = children.Count - 1; i >= 0; i--)
-                        stack.Push((children[i], false));
-                }
-            }
-            else
-            {
-                List<PostCommentResponse> mappedChildren;
-                if (repliesLookup.TryGetValue(node.Id, out var children))
-                {
-                    mappedChildren = new List<PostCommentResponse>(children.Count);
-                    foreach (var c in children)
-                        mappedChildren.Add(mapped[c.Id]);
-                }
-                else
-                {
-                    mappedChildren = new List<PostCommentResponse>(0);
-                }
+			if (!processed)
+			{
+				stack.Push((node, true));
+				if (repliesLookup.TryGetValue(node.Id, out var children))
+				{
+					for (var i = children.Count - 1; i >= 0; i--)
+						stack.Push((children[i], false));
+				}
+			}
+			else
+			{
+				List<PostCommentResponse> mappedChildren;
+				if (repliesLookup.TryGetValue(node.Id, out var children))
+				{
+					mappedChildren = new List<PostCommentResponse>(children.Count);
+					foreach (var c in children)
+						mappedChildren.Add(mapped[c.Id]);
+				}
+				else
+				{
+					mappedChildren = new List<PostCommentResponse>(0);
+				}
+				var isCreatedByCurrentUser = !string.IsNullOrEmpty(currentUserId) && node.CreatedById == currentUserId;
 
-                mapped[node.Id] = new PostCommentResponse(
-                    node.Id,
-                    node.PostId,
-                    node.ParentCommentId,
-                    node.Content,
-                    node.ImageUrl,
-                    node.CreatedOn,
-                    node.UpdatedOn,
-                    node.CreatedById,
-                    BuildFullName(node.CreatorFirstName, node.CreatorLastName),
-                    BuildImageUrl(node.CreatorImageUrl, baseUrl),
-                    node.UpdatedById,
-                    mappedChildren);
-            }
-        }
+				mapped[node.Id] = new PostCommentResponse(
+					node.Id,
+					node.PostId,
+					node.ParentCommentId,
+					node.Content,
+					node.ImageUrl,
+					node.CreatedOn,
+					node.UpdatedOn,
+					node.CreatedById,
+					BuildFullName(node.CreatorFirstName, node.CreatorLastName),
+					BuildImageUrl(node.CreatorImageUrl, baseUrl),
+					isCreatedByCurrentUser,
+					node.UpdatedById,
+					mappedChildren);
+			}
+		}
 
         return mapped[root.Id];
     }
