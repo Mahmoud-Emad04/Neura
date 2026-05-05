@@ -19,6 +19,7 @@ public sealed class ApplicationUser : IdentityUser
     ///     When user was approved as instructor (null if not instructor)
     /// </summary>
     public DateTime? InstructorApprovedOn { get; set; }
+    public DateTime? LastSeenAt { get; set; }
 
     /// <summary>
     ///     Computed: Is this user an approved instructor?

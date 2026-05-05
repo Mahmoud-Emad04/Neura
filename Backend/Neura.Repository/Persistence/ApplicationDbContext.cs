@@ -20,6 +20,8 @@ public class ApplicationDbContext(
     public DbSet<Course> Courses { get; set; }
     public DbSet<Lesson> Lessons { get; set; }
     public DbSet<Section> Sections { get; set; }
+    public DbSet<Channel> Channels { get; set; }
+    public DbSet<Message> Messages { get; set; }
     public DbSet<Question> Questions { get; set; }
     public DbSet<PostLike> PostLikes { get; set; }
     public DbSet<CourseUser> CourseUsers { get; set; }

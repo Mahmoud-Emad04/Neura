@@ -2,6 +2,7 @@
 using Ganss.Xss;
 using Hangfire;
 using HashidsNet;
+using Infrastructure.Services.Community;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -19,6 +20,7 @@ using Neura.Services.Extensions;
 using Neura.Services.Helpers;
 using Neura.Services.Jobs;
 using Neura.Services.Services;
+using StackExchange.Redis;
 using System.Reflection;
 using System.Text;
 
@@ -27,7 +29,7 @@ namespace Neura.Api;
 public static class DependencyInjection
 {
     public static IServiceCollection AddDependencies(this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration, IWebHostEnvironment environment)
     {
         services.AddControllers();
 
@@ -62,6 +64,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         services.AddDataProtection().SetApplicationName(nameof(Neura));
+        services.AddRedis(configuration);
 
         services.AddSingleton<IHashids>(_ => new Hashids(configuration["Hashids:Course"], 11));
 
@@ -74,6 +77,8 @@ public static class DependencyInjection
             .BindConfiguration(CloudinarySettings.SectionName)
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        services.AddSignalR(configuration, environment);
 
         #region AddInjection
 
@@ -228,7 +233,38 @@ public static class DependencyInjection
                     ValidIssuer = jwtSettings?.Issuer,
                     ValidAudience = jwtSettings?.Audience
                 };
+                o.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        // Only activate for SignalR hub paths
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!path.StartsWithSegments("/hubs"))
+                            return Task.CompletedTask;
+
+                        // Pull token from query string (SignalR JS client convention)
+                        var accessToken = context.Request.Query["access_token"];
+
+                        if (!string.IsNullOrWhiteSpace(accessToken))
+                            context.Token = accessToken;
+
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILogger<JwtBearerEvents>>();
+
+                        logger.LogWarning(
+                            "JWT authentication failed: {Error}",
+                            context.Exception.Message);
+
+                        return Task.CompletedTask;
+                    }
+                };
             })
+
             .AddGoogle(options =>
             {
                 options.ClientId = configuration["Authentication:Google:ClientId"]!;
@@ -266,6 +302,82 @@ public static class DependencyInjection
 
         services.AddHangfireServer();
 
+        return services;
+    }
+    private static IServiceCollection AddSignalR(this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
+    {
+        var signalRBuilder = services.AddSignalR(options =>
+        {
+            // Ping every 15s — client must respond within 30s.
+            // If the client misses 2 pings, OnDisconnectedAsync fires.
+            // This is how we detect silent disconnects (phone screen off,
+            // network drop, etc.) rather than waiting for a TCP RST.
+            options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+
+            // Reject payloads > 32 KB.
+            // A message with 4,000 chars + sender metadata is ~6 KB.
+            // 32 KB gives comfortable headroom while preventing abuse.
+            options.MaximumReceiveMessageSize = 32 * 1024;
+
+            // Enable detailed errors in Development only.
+            // In Production, Hub exceptions return a generic message to
+            // the client — stack traces never leave the server.
+            options.EnableDetailedErrors = environment.IsDevelopment();
+        });
+
+        // ── Redis Backplane (Production / Staging only) ───────────────────────
+        var redisConnection = configuration.GetConnectionString("Redis");
+
+        if (!environment.IsDevelopment() && !string.IsNullOrWhiteSpace(redisConnection))
+        {
+            signalRBuilder.AddStackExchangeRedis(redisConnection, options =>
+            {
+                options.Configuration.ChannelPrefix =
+                    RedisChannel.Literal("community-hub");
+
+                options.Configuration.ReconnectRetryPolicy =
+                    new ExponentialRetry(deltaBackOffMilliseconds: 1_000);
+            });
+        }
+
+        // ── Presence Tracker DI ───────────────────────────────────────────────
+        // Phase 1 (Development + single server): in-memory
+        // Phase 2 (Production + multi-server):   Redis
+        //
+        // MUST be Singleton — presence state must survive across HTTP requests.
+        // A Scoped registration would create a fresh empty dictionary per request,
+        // destroying all tracked connections instantly.
+        if (environment.IsDevelopment())
+        {
+            services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+        }
+        else
+        {
+            // Phase 2: swap this line when RedisPresenceTracker is ready
+            services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+            // services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
+        }
+
+
+        // IPresenceTracker — MUST be Singleton.
+        // A Scoped or Transient registration would give each request a
+        // fresh empty dictionary, destroying all connection state.
+        services.AddScoped<IChatService, ChatService>();
+        services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+        return services;
+    }
+    private static IServiceCollection AddRedis(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var redisConnection = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisConnection))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(
+                ConnectionMultiplexer.Connect(redisConnection));
+        }
         return services;
     }
 }

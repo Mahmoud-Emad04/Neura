@@ -2,13 +2,14 @@ using Hangfire;
 using Microsoft.Extensions.FileProviders;
 using Neura.Api;
 using Neura.Repository.Persistence;
+using Neura.Services.Hubs;
 using Neura.Services.Jobs;
 using Scalar.AspNetCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDependencies(builder.Configuration);
+builder.Services.AddDependencies(builder.Configuration, builder.Environment);
 
 builder.Host.UseSerilog((context, configuration) =>
     configuration.ReadFrom.Configuration(context.Configuration)
@@ -87,6 +88,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapHub<CommunityHub>("/hubs/community");
+
 app.MapStaticAssets();
 
 app.UseStaticFiles(new StaticFileOptions
@@ -95,4 +98,5 @@ app.UseStaticFiles(new StaticFileOptions
         Path.Combine(builder.Environment.WebRootPath, "Images")),
     RequestPath = "/Images"
 });
+
 app.Run();
