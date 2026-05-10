@@ -7,6 +7,9 @@ public class Lesson : AuditableEntity
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public LessonStatus Status { get; set; } = LessonStatus.Draft;
+
+
 
     // Cloudinary video storage
     public string? CloudinaryVideoUrl { get; set; }

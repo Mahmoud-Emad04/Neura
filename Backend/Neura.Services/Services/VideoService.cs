@@ -2,6 +2,7 @@ using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Lessons;
+using Neura.Core.Enums;
 using Neura.Core.Settings;
 using Error = Neura.Core.Abstractions.Error;
 
@@ -116,6 +117,7 @@ public class VideoService(
         lesson.Duration = TimeSpan.FromSeconds(request.DurationSeconds);
         lesson.UpdatedOn = DateTime.UtcNow;
         lesson.UpdatedById = userId;
+        lesson.Status = LessonStatus.Active;
 
         await _context.SaveChangesAsync(cancellationToken);
 

@@ -21,7 +21,7 @@ public interface IAuthService
 
     Task<Result<AuthResponse>> ConfirmEmailAsync(ConfirmEmailRequest request,
         CancellationToken cancellationToken = default);
-    Task<Result> UpdateImageAsync(UploadImageRequest uploadImageRequest, string userId,
+    Task<Result<string>> UpdateImageAsync(UploadImageRequest uploadImageRequest, string userId,
         CancellationToken cancellationToken = default);
     Task<Result> ResendConfirmationEmailAsync(ResendConfirmationEmailRequest request);
     Task<Result> SendResetPasswordCodeAsync(string email);

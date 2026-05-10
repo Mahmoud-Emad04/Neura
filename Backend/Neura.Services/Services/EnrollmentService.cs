@@ -1,4 +1,4 @@
-﻿using Neura.Core.Abstractions.Consts;
+using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
@@ -179,6 +179,7 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<Result<PaginatedList<MyEnrolledCourseResponse>>> GetMyEnrolledCoursesAsync(string userId, RequestFilters requestFilters, CancellationToken cancellationToken)
     {
+        var baseUrl = _helpers.GetBaseUrl();
         var enrollments = _context.CourseUsers
             .AsNoTracking()
             .Include(cu => cu.Course)
@@ -193,10 +194,10 @@ public class EnrollmentService : IEnrollmentService
                 && (requestFilters.CourseStatus == null || (requestFilters.CourseStatus == cu.Course.Status)))
             .Select(cu => new MyEnrolledCourseResponse
             {
-                CourseId = _helpers.Encode(cu.CourseId),
-                CourseName = cu.Course.Title,
+                KeyId = _helpers.Encode(cu.CourseId),
+                Title = cu.Course.Title,
                 CourseDescription = cu.Course.Description,
-                CourseThumbnail = cu.Course.ImageUrl,
+                ImageUrl = $"{baseUrl}/{cu.Course.ImageUrl}",
                 InstructorName = $"{cu.Course.CreatedBy.FirstName} {cu.Course.CreatedBy.LastName}",
                 Role = (CourseRoleType)cu.CourseRole.Level,
                 RoleName = cu.CourseRole.Name,
@@ -206,8 +207,14 @@ public class EnrollmentService : IEnrollmentService
                 LastAccessedOn = cu.LastAccessedOn,
                 // Progress tracking would be implemented separately
                 ProgressPercentage = null,
-                TotalLessons = 0,
-                CompletedLessons = 0
+                TotalLessons = _context.Lessons.Count(l => l.Section.CourseId == cu.CourseId && !l.IsDeleted && !l.Section.IsDeleted),
+                CompletedLessons = 0,
+                NumberOfLessons = _context.Lessons.Count(l => l.Section.CourseId == cu.CourseId && !l.IsDeleted && !l.Section.IsDeleted),
+                // Hours computed post-materialization (TimeSpan.TotalHours is not SQL-translatable)
+                Hours = 0,
+                Price = cu.Course.Price,
+                Rating = cu.Course.Rating,
+                IsBookmarked = _context.CourseBookmarks.Any(cb => cb.CourseId == cu.CourseId && cb.UserId == userId && !cb.IsDeleted)
             })
             .OrderByDescending(cu => cu.LastAccessedOn ?? cu.EnrolledOn);
 
@@ -218,6 +225,33 @@ public class EnrollmentService : IEnrollmentService
             cancellationToken: cancellationToken
         );
 
+        // Compute Hours on the client side (TimeSpan.TotalHours cannot be translated to SQL)
+        if (paginatedCourses.Items.Count > 0)
+        {
+            var courseIds = paginatedCourses.Items
+                .Select(c => _helpers.DecodeHash(c.KeyId))
+                .Where(ids => ids.Length > 0)
+                .Select(ids => ids[0])
+                .ToList();
+
+            var durations = await _context.Lessons
+                .AsNoTracking()
+                .Where(l => courseIds.Contains(l.Section.CourseId) && !l.IsDeleted && !l.Section.IsDeleted)
+                .Select(l => new { l.Section.CourseId, l.Duration })
+                .ToListAsync(cancellationToken);
+
+            var hoursByCourse = durations
+                .GroupBy(d => d.CourseId)
+                .ToDictionary(g => g.Key, g => g.Sum(d => d.Duration.TotalHours));
+
+            foreach (var item in paginatedCourses.Items)
+            {
+                var ids = _helpers.DecodeHash(item.KeyId);
+                if (ids.Length > 0 && hoursByCourse.TryGetValue(ids[0], out var hours))
+                    item.Hours = hours;
+            }
+        }
+
         return Result.Success(paginatedCourses);
     }
 
@@ -227,6 +261,9 @@ public class EnrollmentService : IEnrollmentService
             .AsNoTracking()
             .Include(cu => cu.Course)
             .ThenInclude(c => c.CreatedBy)
+            .Include(cu => cu.Course)
+            .ThenInclude(c => c.Sections)
+            .ThenInclude(s => s.Lessons)
             .Include(cu => cu.CourseRole)
             .Where(cu =>
                 cu.UserId == userId &&
@@ -239,10 +276,10 @@ public class EnrollmentService : IEnrollmentService
 
         var responses = teachingCourses.Select(cu => new MyEnrolledCourseResponse
         {
-            CourseId = _helpers.Encode(cu.CourseId),
-            CourseName = cu.Course.Title,
+            KeyId = _helpers.Encode(cu.CourseId),
+            Title = cu.Course.Title,
             CourseDescription = cu.Course.Description,
-            CourseThumbnail = cu.Course.ImageUrl,
+            ImageUrl = cu.Course.ImageUrl,
             InstructorName = $"{cu.Course.CreatedBy.FirstName} {cu.Course.CreatedBy.LastName}",
             Role = (CourseRoleType)cu.CourseRole.Level,
             RoleName = cu.CourseRole.Name,
@@ -251,8 +288,15 @@ public class EnrollmentService : IEnrollmentService
             EnrolledOn = cu.EnrolledOn,
             LastAccessedOn = cu.LastAccessedOn,
             ProgressPercentage = null,
-            TotalLessons = 0,
-            CompletedLessons = 0
+            TotalLessons = cu.Course.Sections.SelectMany(s => s.Lessons).Count(),
+            CompletedLessons = 0,
+            NumberOfLessons = cu.Course.Sections.SelectMany(s => s.Lessons).Count(),
+            Hours = cu.Course.Sections
+                .SelectMany(s => s.Lessons)
+                .Sum(l => l.Duration.TotalHours),
+            Price = cu.Course.Price,
+            Rating = cu.Course.Rating,
+            IsBookmarked = _context.CourseBookmarks.Any(cb => cb.CourseId == cu.CourseId && cb.UserId == userId && !cb.IsDeleted)
         }).ToList();
 
         return Result.Success(responses);
@@ -451,6 +495,94 @@ public class EnrollmentService : IEnrollmentService
             courseUser.LastAccessedOn = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
+    }
+
+    public async Task<Result<EnrollmentDashboardResponse>> GetEnrollmentDashboardAsync(string userId, CancellationToken cancellationToken)
+    {
+        // Get all enrolled course IDs for this user (student role only)
+        var enrolledCourseIds = await _context.CourseUsers
+            .AsNoTracking()
+            .Where(cu =>
+                cu.UserId == userId &&
+                !cu.IsDeleted &&
+                !cu.Course.IsDeleted &&
+                cu.CourseRole.Level == (int)CourseRoleType.Student)
+            .Select(cu => cu.CourseId)
+            .ToListAsync(cancellationToken);
+
+        var totalCourses = enrolledCourseIds.Count;
+
+        if (totalCourses == 0)
+        {
+            return Result.Success(new EnrollmentDashboardResponse
+            {
+                TotalCourses = 0,
+                CompletedCourses = 0,
+                InProgressCourses = 0,
+                TotalHours = 0
+            });
+        }
+
+        // Get total lesson count per course
+        var totalLessonsByCourse = await _context.Lessons
+            .AsNoTracking()
+            .Where(l =>
+                enrolledCourseIds.Contains(l.Section.CourseId) &&
+                !l.IsDeleted &&
+                !l.Section.IsDeleted)
+            .GroupBy(l => l.Section.CourseId)
+            .Select(g => new { CourseId = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        // Get completed lesson count per course for this user
+        var completedLessonsByCourse = await _context.LessonCompletions
+            .AsNoTracking()
+            .Where(lc =>
+                lc.UserId == userId &&
+                enrolledCourseIds.Contains(lc.Lesson.Section.CourseId) &&
+                !lc.Lesson.IsDeleted &&
+                !lc.Lesson.Section.IsDeleted)
+            .GroupBy(lc => lc.Lesson.Section.CourseId)
+            .Select(g => new { CourseId = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var totalLessonsDict = totalLessonsByCourse.ToDictionary(x => x.CourseId, x => x.Count);
+        var completedLessonsDict = completedLessonsByCourse.ToDictionary(x => x.CourseId, x => x.Count);
+
+        var completedCourses = 0;
+        var inProgressCourses = 0;
+
+        foreach (var courseId in enrolledCourseIds)
+        {
+            var total = totalLessonsDict.GetValueOrDefault(courseId, 0);
+            var completed = completedLessonsDict.GetValueOrDefault(courseId, 0);
+
+            if (total > 0 && completed >= total)
+                completedCourses++;
+            else if (completed > 0)
+                inProgressCourses++;
+            // Courses with 0 completed lessons are neither completed nor in-progress
+        }
+
+        // Compute total hours client-side (TimeSpan.TotalHours is not SQL-translatable)
+        var durations = await _context.Lessons
+            .AsNoTracking()
+            .Where(l =>
+                enrolledCourseIds.Contains(l.Section.CourseId) &&
+                !l.IsDeleted &&
+                !l.Section.IsDeleted)
+            .Select(l => l.Duration)
+            .ToListAsync(cancellationToken);
+
+        var totalHours = durations.Sum(d => d.TotalHours);
+
+        return Result.Success(new EnrollmentDashboardResponse
+        {
+            TotalCourses = totalCourses,
+            CompletedCourses = completedCourses,
+            InProgressCourses = inProgressCourses,
+            TotalHours = Math.Round(totalHours, 2)
+        });
     }
 
     #region Private Helpers

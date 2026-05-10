@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace Neura.Services.Services;
 
@@ -119,29 +119,42 @@ public sealed class InMemoryPresenceTracker : IPresenceTracker
     /// <inheritdoc/>
     public async Task<IReadOnlyList<string>> GetOnlineUsersAsync(int courseId)
     {
-        // Read-only — no mutation, no lock needed.
-        // ConcurrentDictionary.Keys snapshot is thread-safe for iteration.
-        await Task.CompletedTask;
+        // Must hold the lock because we read HashSet<string>.Count,
+        // and HashSet is NOT thread-safe for concurrent reads + writes.
+        // A concurrent UserConnectedAsync could mutate the set while we iterate.
+        await _lock.WaitAsync();
+        try
+        {
+            var suffix = $":{courseId}";
 
-        var suffix = $":{courseId}";
-
-        return _presenceMap
-            .Where(kvp => kvp.Key.EndsWith(suffix, StringComparison.Ordinal)
-                       && kvp.Value.Count > 0)
-            .Select(kvp => kvp.Key[..kvp.Key.LastIndexOf(':')]) // extract userId
-            .ToList()
-            .AsReadOnly();
+            return _presenceMap
+                .Where(kvp => kvp.Key.EndsWith(suffix, StringComparison.Ordinal)
+                           && kvp.Value.Count > 0)
+                .Select(kvp => kvp.Key[..kvp.Key.LastIndexOf(':')]) // extract userId
+                .ToList()
+                .AsReadOnly();
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     /// <inheritdoc/>
     public async Task<bool> IsOnlineAsync(string userId, int courseId)
     {
-        await Task.CompletedTask;
+        await _lock.WaitAsync();
+        try
+        {
+            var key = PresenceKey(userId, courseId);
 
-        var key = PresenceKey(userId, courseId);
-
-        return _presenceMap.TryGetValue(key, out var connections)
-            && connections.Count > 0;
+            return _presenceMap.TryGetValue(key, out var connections)
+                && connections.Count > 0;
+        }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     // -------------------------------------------------------------------------

@@ -21,7 +21,7 @@ public sealed class Message
     ///     Soft-delete flag. Hard deletes are never performed on messages.
     ///     The content is replaced with a tombstone string by the service layer.
     /// </summary>
-    public bool IsDeleted { get; private set; }
+    public bool IsDeleted { get; private set; } = false;
 
     // -------------------------------------------------------------------------
     // Foreign Keys
@@ -84,7 +84,8 @@ public sealed class Message
             SenderId = senderId,
             Content = content.Trim(),
             SentAt = DateTime.UtcNow,
-            ReplyToMessageId = replyToMessageId
+            ReplyToMessageId = replyToMessageId,
+            IsDeleted = false
         };
     }
 

@@ -1,4 +1,5 @@
-﻿using Neura.Core.Contracts.Community;
+using Neura.Core.Contracts.Community;
+using Neura.Core.Enums;
 
 namespace Neura.Core.Services;
 
@@ -107,6 +108,74 @@ public interface IChatService
         CancellationToken ct = default);
 
     /// <summary>
+    ///     Creates a new channel within a course.
+    ///     Position is auto-assigned to the end of the current list.
+    ///     Requires CourseRole.Level >= 3 (CoInstructor+) or platform Admin/SuperAdmin.
+    ///
+    ///     Throws <see cref="UnauthorizedAccessException"/>
+    ///         → user lacks channel management permissions.
+    ///     Throws <see cref="KeyNotFoundException"/>
+    ///         → course does not exist.
+    /// </summary>
+    Task<ChannelDto> CreateChannelAsync(
+        int courseId,
+        string requestingUserId,
+        string name,
+        ChannelType type,
+        string? topic = null,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Updates the name and topic of an existing channel.
+    ///     Type and Position are immutable through this method
+    ///     (use ReorderChannelsAsync for position changes).
+    ///     Requires CourseRole.Level >= 3 or platform Admin/SuperAdmin.
+    ///
+    ///     Throws <see cref="UnauthorizedAccessException"/>
+    ///         → user lacks channel management permissions.
+    ///     Throws <see cref="KeyNotFoundException"/>
+    ///         → channel does not exist.
+    /// </summary>
+    Task<ChannelDto> UpdateChannelAsync(
+        int channelId,
+        string requestingUserId,
+        string name,
+        string? topic,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Soft-deletes a channel. Messages within it are NOT cascade-deleted
+    ///     — they become orphaned (accessible via admin queries with IgnoreQueryFilters).
+    ///     Requires CourseRole.Level >= 3 or platform Admin/SuperAdmin.
+    ///
+    ///     Throws <see cref="UnauthorizedAccessException"/>
+    ///         → user lacks channel management permissions.
+    ///     Throws <see cref="KeyNotFoundException"/>
+    ///         → channel does not exist.
+    /// </summary>
+    Task<(int ChannelId, int CourseId)> DeleteChannelAsync(
+        int channelId,
+        string requestingUserId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Bulk-reorders channels within a course.
+    ///     The client sends the complete ordered list of channel IDs;
+    ///     the server assigns Position = index for each entry.
+    ///     Requires CourseRole.Level >= 3 or platform Admin/SuperAdmin.
+    ///
+    ///     Throws <see cref="UnauthorizedAccessException"/>
+    ///         → user lacks channel management permissions.
+    ///     Throws <see cref="InvalidOperationException"/>
+    ///         → channelIds list doesn't match the actual channels in the course.
+    /// </summary>
+    Task<IReadOnlyList<ChannelDto>> ReorderChannelsAsync(
+        int courseId,
+        string requestingUserId,
+        List<int> channelIds,
+        CancellationToken ct = default);
+
+    /// <summary>
     ///     Returns the CourseId that owns the given channel.
     ///     Used by the Hub to resolve the course-{id} group for
     ///     UnreadNotification broadcast after a message is sent.
@@ -124,13 +193,26 @@ public interface IChatService
 
     /// <summary>
     ///     Returns true if the user is an active (non-deleted) member
-    ///     of the course that owns the given channel.
+    ///     of the course that owns the given channel, OR if the user
+    ///     holds a platform Admin/SuperAdmin role (bypass).
     ///     This is the security gate called by the Hub before
     ///     JoinChannel and SendMessage.
     /// </summary>
     Task<bool> IsCourseMemberAsync(
         string userId,
         int channelId,
+        CancellationToken ct = default);
+
+    /// <summary>
+    ///     Returns true if the user is an active (non-deleted) member
+    ///     of the given course, OR if the user holds a platform
+    ///     Admin/SuperAdmin role (bypass).
+    ///     Called by the Hub during OnConnectedAsync to validate the
+    ///     courseId query parameter before joining the course group.
+    /// </summary>
+    Task<bool> IsCourseMemberByIdAsync(
+        string userId,
+        int courseId,
         CancellationToken ct = default);
 
     /// <summary>

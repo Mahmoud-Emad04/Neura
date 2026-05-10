@@ -190,11 +190,11 @@ public class AuthService(
 
         return Result.Failure(new Error(error!.Code, error.Description, StatusCodes.Status400BadRequest));
     }
-    public async Task<Result> UpdateImageAsync(UploadImageRequest request, string userId, CancellationToken cancellationToken = default)
+    public async Task<Result<string>> UpdateImageAsync(UploadImageRequest request, string userId, CancellationToken cancellationToken = default)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null)
-            return Result.Failure(UserErrors.UserNotFound);
+            return Result.Failure<string>(UserErrors.UserNotFound);
 
         if (!string.IsNullOrEmpty(user.ImageUrl) && user.ImageUrl != DefaultUserImagePath())
             _fileService.Delete(user.ImageUrl);
@@ -205,7 +205,8 @@ public class AuthService(
             cancellationToken);
 
         await _userManager.UpdateAsync(user);
-        return Result.Success();
+        string url = _helpers.GetBaseUrl();
+        return Result.Success($"{url}/{user.ImageUrl}");
     }
 
 

@@ -1,4 +1,5 @@
-﻿using Neura.Core.Contracts.Community;
+using Neura.Core.Abstractions.Consts;
+using Neura.Core.Contracts.Community;
 using Neura.Core.Enums;
 using System.Linq.Expressions;
 
@@ -33,10 +34,10 @@ public sealed class ChatService(
         CancellationToken ct = default)
     {
         // ── 1. Security ───────────────────────────────────────────────────────
-        //var isMember = await IsCourseMemberAsync(senderId, channelId, ct);
-        //if (!isMember)
-        //    throw new UnauthorizedAccessException(
-        //        $"User {senderId} is not a member of the course owning channel {channelId}.");
+        var isMember = await IsCourseMemberAsync(senderId, channelId, ct);
+        if (!isMember)
+            throw new UnauthorizedAccessException(
+                $"User {senderId} is not a member of the course owning channel {channelId}.");
 
         // ── 2. Validate channel (type check included) ─────────────────────────
         // AsNoTracking + projection: we only need 3 fields, not the full entity
@@ -75,10 +76,10 @@ public sealed class ChatService(
         CancellationToken ct = default)
     {
         // ── 1. Security ───────────────────────────────────────────────────────
-        //var isMember = await IsCourseMemberAsync(requestingUserId, channelId, ct);
-        //if (!isMember)
-        //    throw new UnauthorizedAccessException(
-        //        $"User {requestingUserId} is not a member of the course owning channel {channelId}.");
+        var isMember = await IsCourseMemberAsync(requestingUserId, channelId, ct);
+        if (!isMember)
+            throw new UnauthorizedAccessException(
+                $"User {requestingUserId} is not a member of the course owning channel {channelId}.");
 
         // ── 2. Clamp pageSize (prevent abuse) ─────────────────────────────────
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -158,24 +159,32 @@ public sealed class ChatService(
             ?? throw new KeyNotFoundException($"Message {messageId} not found.");
 
         // ── Permission check: sender OR course admin (Level >= 3) ─────────────
-        // Resolved in a single EXISTS query — no extra round trips
         var isSender = message.SenderId == requestingUserId;
 
-        var isAdmin = !isSender && await db.CourseUsers
-            .AsNoTracking()
-            .AnyAsync(cu =>
-                cu.UserId == requestingUserId &&
-                cu.CourseId == db.Channels
-                    .Where(c => c.Id == message.ChannelId)
-                    .Select(c => c.CourseId)
-                    .FirstOrDefault() &&
-                cu.CourseRole.Level >= 3 &&
-                !cu.IsDeleted,
-                ct);
+        if (!isSender)
+        {
+            // Resolve courseId from the channel in a clean separate query
+            var channelCourseId = await db.Channels
+                .AsNoTracking()
+                .Where(c => c.Id == message.ChannelId)
+                .Select(c => c.CourseId)
+                .FirstAsync(ct);
 
-        if (!isSender && !isAdmin)
-            throw new UnauthorizedAccessException(
-                "Only the sender or a course admin can delete this message.");
+            var isAdmin = await IsAdminOrSuperAdminAsync(requestingUserId, ct);
+
+            var isCourseAdmin = !isAdmin && await db.CourseUsers
+                .AsNoTracking()
+                .AnyAsync(cu =>
+                    cu.UserId == requestingUserId &&
+                    cu.CourseId == channelCourseId &&
+                    cu.CourseRole.Level >= 3 &&
+                    !cu.IsDeleted,
+                    ct);
+
+            if (!isAdmin && !isCourseAdmin)
+                throw new UnauthorizedAccessException(
+                    "Only the sender or a course admin can delete this message.");
+        }
 
         // Tombstone content, then soft-delete via domain methods
         message.Edit("[message deleted]");
@@ -198,21 +207,14 @@ public sealed class ChatService(
         CancellationToken ct = default)
     {
         // ── Security ──────────────────────────────────────────────────────────
-        //var isMember = await db.CourseUsers
-        //    .AsNoTracking()
-        //    .AnyAsync(cu =>
-        //        cu.CourseId == courseId &&
-        //        cu.UserId == requestingUserId &&
-        //        !cu.IsDeleted,
-        //        ct);
-
-        //if (!isMember)
-        //    throw new UnauthorizedAccessException(
-        //        $"User {requestingUserId} is not a member of course {courseId}.");
+        var isMember = await IsCourseMemberByIdAsync(requestingUserId, courseId, ct);
+        if (!isMember)
+            throw new UnauthorizedAccessException(
+                $"User {requestingUserId} is not a member of course {courseId}.");
 
         // Uses IX_Channels_CourseId_Position composite index.
         // HasQueryFilter automatically excludes IsDeleted channels.
-        return await db.Channels
+        var channels = await db.Channels
             .AsNoTracking()
             .Where(c => c.CourseId == courseId)
             .OrderBy(c => c.Position)
@@ -222,12 +224,141 @@ public sealed class ChatService(
                 c.Topic,
                 c.Type,
                 c.Position))
-            .ToListAsync(ct)
-            .ContinueWith(
-                t => (IReadOnlyList<ChannelDto>)t.Result.AsReadOnly(),
-                ct,
-                TaskContinuationOptions.OnlyOnRanToCompletion,
-                TaskScheduler.Default);
+            .ToListAsync(ct);
+
+        return channels.AsReadOnly();
+    }
+
+    /// <inheritdoc/>
+    public async Task<ChannelDto> CreateChannelAsync(
+        int courseId,
+        string requestingUserId,
+        string name,
+        ChannelType type,
+        string? topic = null,
+        CancellationToken ct = default)
+    {
+        // ── Security: CoInstructor+ or platform Admin ─────────────────────────
+        await EnsureChannelManagementPermissionAsync(requestingUserId, courseId, ct);
+
+        // Verify the course exists
+        var courseExists = await db.Courses
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == courseId, ct);
+        if (!courseExists)
+            throw new KeyNotFoundException($"Course {courseId} not found.");
+
+        // Auto-assign position to the end of the current channel list
+        var maxPosition = await db.Channels
+            .AsNoTracking()
+            .Where(c => c.CourseId == courseId)
+            .Select(c => (int?)c.Position)
+            .MaxAsync(ct) ?? -1;
+
+        var channel = Channel.Create(courseId, name, type, maxPosition + 1, topic);
+        db.Channels.Add(channel);
+        await db.SaveChangesAsync(ct);
+
+        return new ChannelDto(
+            channel.Id,
+            channel.Name,
+            channel.Topic,
+            channel.Type,
+            channel.Position);
+    }
+
+    /// <inheritdoc/>
+    public async Task<ChannelDto> UpdateChannelAsync(
+        int channelId,
+        string requestingUserId,
+        string name,
+        string? topic,
+        CancellationToken ct = default)
+    {
+        // Tracking query intentional — we need EF to persist the mutation
+        var channel = await db.Channels
+            .FirstOrDefaultAsync(c => c.Id == channelId, ct)
+            ?? throw new KeyNotFoundException($"Channel {channelId} not found.");
+
+        // ── Security: CoInstructor+ or platform Admin ─────────────────────────
+        await EnsureChannelManagementPermissionAsync(requestingUserId, channel.CourseId, ct);
+
+        // Domain method handles trim + lowercase
+        channel.UpdateDetails(name, topic);
+        await db.SaveChangesAsync(ct);
+
+        return new ChannelDto(
+            channel.Id,
+            channel.Name,
+            channel.Topic,
+            channel.Type,
+            channel.Position);
+    }
+
+    /// <inheritdoc/>
+    public async Task<(int ChannelId, int CourseId)> DeleteChannelAsync(
+        int channelId,
+        string requestingUserId,
+        CancellationToken ct = default)
+    {
+        // Tracking query intentional — we need to mutate and save
+        var channel = await db.Channels
+            .FirstOrDefaultAsync(c => c.Id == channelId, ct)
+            ?? throw new KeyNotFoundException($"Channel {channelId} not found.");
+
+        // ── Security: CoInstructor+ or platform Admin ─────────────────────────
+        await EnsureChannelManagementPermissionAsync(requestingUserId, channel.CourseId, ct);
+
+        // Domain method sets IsDeleted = true (soft delete)
+        channel.Delete();
+        await db.SaveChangesAsync(ct);
+
+        return (channel.Id, channel.CourseId);
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<ChannelDto>> ReorderChannelsAsync(
+        int courseId,
+        string requestingUserId,
+        List<int> channelIds,
+        CancellationToken ct = default)
+    {
+        // ── Security: CoInstructor+ or platform Admin ─────────────────────────
+        await EnsureChannelManagementPermissionAsync(requestingUserId, courseId, ct);
+
+        // Load all non-deleted channels for this course (tracking enabled for mutation)
+        var channels = await db.Channels
+            .Where(c => c.CourseId == courseId)
+            .ToListAsync(ct);
+
+        // Validate: the provided list must contain exactly the same IDs
+        var existingIds = channels.Select(c => c.Id).OrderBy(id => id).ToList();
+        var providedIds = channelIds.Distinct().OrderBy(id => id).ToList();
+
+        if (!existingIds.SequenceEqual(providedIds))
+            throw new InvalidOperationException(
+                "The provided channel IDs must match exactly the existing channels in this course.");
+
+        // Build a lookup and assign Position = index from the ordered list
+        var lookup = channels.ToDictionary(c => c.Id);
+        for (var i = 0; i < channelIds.Count; i++)
+        {
+            lookup[channelIds[i]].Reorder(i);
+        }
+
+        await db.SaveChangesAsync(ct);
+
+        // Return the reordered list
+        return channels
+            .OrderBy(c => c.Position)
+            .Select(c => new ChannelDto(
+                c.Id,
+                c.Name,
+                c.Topic,
+                c.Type,
+                c.Position))
+            .ToList()
+            .AsReadOnly();
     }
 
     /// <inheritdoc/>
@@ -255,6 +386,10 @@ public sealed class ChatService(
         int channelId,
         CancellationToken ct = default)
     {
+        // Admin/SuperAdmin bypass — platform admins can access any channel
+        if (await IsAdminOrSuperAdminAsync(userId, ct))
+            return true;
+
         // Single-query join: channel → course → courseUsers
         // No in-memory filtering. Fully translatable to SQL.
         return await db.Channels
@@ -268,23 +403,35 @@ public sealed class ChatService(
     }
 
     /// <inheritdoc/>
+    public async Task<bool> IsCourseMemberByIdAsync(
+        string userId,
+        int courseId,
+        CancellationToken ct = default)
+    {
+        // Admin/SuperAdmin bypass — platform admins can access any course
+        if (await IsAdminOrSuperAdminAsync(userId, ct))
+            return true;
+
+        return await db.CourseUsers
+            .AsNoTracking()
+            .AnyAsync(cu =>
+                cu.CourseId == courseId &&
+                cu.UserId == userId &&
+                !cu.IsDeleted,
+                ct);
+    }
+
+    /// <inheritdoc/>
     public async Task<IReadOnlyList<CourseMemberDto>> GetCourseMembersAsync(
         int courseId,
         string requestingUserId,
         CancellationToken ct = default)
     {
         // ── Security ──────────────────────────────────────────────────────────
-        var isMember = await db.CourseUsers
-            .AsNoTracking()
-            .AnyAsync(cu =>
-                cu.CourseId == courseId &&
-                cu.UserId == requestingUserId &&
-                !cu.IsDeleted,
-                ct);
-
-        //if (!isMember)
-        //    throw new UnauthorizedAccessException(
-        //        $"User {requestingUserId} is not a member of course {courseId}.");
+        var isMember = await IsCourseMemberByIdAsync(requestingUserId, courseId, ct);
+        if (!isMember)
+            throw new UnauthorizedAccessException(
+                $"User {requestingUserId} is not a member of course {courseId}.");
 
         // ── Single SQL query: member list with LastSeenAt included ────────────
         // LastSeenAt now lives directly on ApplicationUser — zero extra join
@@ -344,6 +491,61 @@ public sealed class ChatService(
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(u => u.LastSeenAt, now),
                 ct);
+    }
+
+    // =========================================================================
+    // Private Helpers
+    // =========================================================================
+
+    /// <summary>
+    ///     Checks if the user holds a platform-level Admin or SuperAdmin role.
+    ///     Uses the Identity UserRoles join table — single EXISTS query.
+    ///     This bypasses course-level membership checks entirely.
+    /// </summary>
+    private async Task<bool> IsAdminOrSuperAdminAsync(
+        string userId,
+        CancellationToken ct = default)
+    {
+        return await db.UserRoles
+            .AsNoTracking()
+            .AnyAsync(ur =>
+                ur.UserId == userId &&
+                db.Roles
+                    .Where(r => r.Name == DefaultRoles.Admin || r.Name == DefaultRoles.SuperAdmin)
+                    .Select(r => r.Id)
+                    .Contains(ur.RoleId),
+                ct);
+    }
+
+    /// <summary>
+    ///     Throws <see cref="UnauthorizedAccessException"/> if the user is NOT:
+    ///     - A platform Admin/SuperAdmin, OR
+    ///     - A course member with CourseRole.Level >= 3 (CoInstructor+).
+    ///
+    ///     Used by all channel management operations (create, update, delete, reorder).
+    /// </summary>
+    private async Task EnsureChannelManagementPermissionAsync(
+        string requestingUserId,
+        int courseId,
+        CancellationToken ct = default)
+    {
+        // Platform Admin/SuperAdmin bypass
+        if (await IsAdminOrSuperAdminAsync(requestingUserId, ct))
+            return;
+
+        // Course-level role check: Level >= 3 = CoInstructor or CourseOwner
+        var hasPermission = await db.CourseUsers
+            .AsNoTracking()
+            .AnyAsync(cu =>
+                cu.CourseId == courseId &&
+                cu.UserId == requestingUserId &&
+                cu.CourseRole.Level >= 3 &&
+                !cu.IsDeleted,
+                ct);
+
+        if (!hasPermission)
+            throw new UnauthorizedAccessException(
+                $"User {requestingUserId} does not have permission to manage channels in course {courseId}.");
     }
 
     // =========================================================================

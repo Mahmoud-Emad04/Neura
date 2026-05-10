@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Neura.Core.Contracts.Community;
 using Neura.Core.Hubs;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 
 namespace Neura.Services.Hubs;
@@ -28,9 +31,18 @@ namespace Neura.Services.Hubs;
 [Authorize]
 public sealed class CommunityHub(
     IPresenceTracker presenceTracker,
-    IChatService chatService)
+    IChatService chatService,
+    IServiceScopeFactory scopeFactory,
+    ILogger<CommunityHub> logger)
     : Hub<ICommunityHubClient>
 {
+    // -------------------------------------------------------------------------
+    // Rate Limiting (static — shared across all Hub instances)
+    // -------------------------------------------------------------------------
+
+    private static readonly ConcurrentDictionary<string, DateTime> _lastMessageTime = new();
+    private static readonly TimeSpan MinMessageInterval = TimeSpan.FromMilliseconds(500);
+
     // -------------------------------------------------------------------------
     // Connection Lifecycle
     // -------------------------------------------------------------------------
@@ -40,24 +52,34 @@ public sealed class CommunityHub(
     ///
     ///     Flow:
     ///     1. Extract userId + courseId from JWT claims / query string
-    ///     2. Register connection in IPresenceTracker
-    ///     3. Join the course-{id} group (lightweight events only)
-    ///     4. If first connection → broadcast online presence to course peers
-    ///     5. Send back the current online member list to the connecting client
+    ///     2. Validate course membership (reject unauthorized connections)
+    ///     3. Register connection in IPresenceTracker
+    ///     4. Join the course-{id} group (lightweight events only)
+    ///     5. If first connection → broadcast online presence to course peers
+    ///     6. Send back the current online member list to the connecting client
     /// </summary>
     public override async Task OnConnectedAsync()
     {
         var userId = GetUserId();
         var courseId = GetCourseId();
 
-        // Step 3 — join the course-level group (presence + unread badges only)
+        // Security: reject the connection if the user is not a course member
+        // (Admins/SuperAdmins bypass via IsCourseMemberByIdAsync)
+        var isMember = await chatService.IsCourseMemberByIdAsync(userId, courseId);
+        if (!isMember)
+        {
+            Context.Abort();
+            return;
+        }
+
+        // Join the course-level group (presence + unread badges only)
         await Groups.AddToGroupAsync(Context.ConnectionId, HubGroups.Course(courseId));
 
-        // Step 4 — register in presence tracker
+        // Register in presence tracker
         var justCameOnline = await presenceTracker.UserConnectedAsync(
             userId, courseId, Context.ConnectionId);
 
-        // Step 5 — if this is their first connection, notify ALL course peers
+        // If this is their first connection, notify ALL course peers
         if (justCameOnline)
         {
             await Clients
@@ -65,7 +87,7 @@ public sealed class CommunityHub(
                 .PresenceChanged(new PresenceUpdateDto(userId, true));
         }
 
-        // Step 6 — send the current online member list back to the connecting client ONLY
+        // Send the current online member list back to the connecting client ONLY
         // so the UI can hydrate the sidebar without an extra REST call
         var onlineUsers = await presenceTracker.GetOnlineUsersAsync(courseId);
         await Clients.Caller.InitialPresenceSync(onlineUsers);
@@ -114,9 +136,9 @@ public sealed class CommunityHub(
                 .Group(HubGroups.Course(result.CourseId))
                 .PresenceChanged(new PresenceUpdateDto(result.UserId, IsOnline: false));
 
-            // Fire-and-forget SQL write — we are already in the disconnect path,
-            // there is no client to return an error to, and we don't want to
-            // block the disconnect pipeline on a DB write.
+            // Fire-and-forget SQL write using an independent DI scope so the
+            // DbContext outlives the Hub's own scope (which is disposed after
+            // OnDisconnectedAsync returns).
             _ = PersistLastSeenAtSafeAsync(result.UserId);
         }
 
@@ -145,12 +167,13 @@ public sealed class CommunityHub(
 
         // Security: verify the user belongs to the course that owns this channel.
         // A malicious client could call JoinChannel with any channelId.
-        //var isMember = await chatService.IsCourseMemberAsync(userId, channelId);
-        //if (!isMember)
-        //{
-        //    await Clients.Caller.Error("You are not a member of this course.");
-        //    return;
-        //}
+        // Admins/SuperAdmins bypass via the role check inside IsCourseMemberAsync.
+        var isMember = await chatService.IsCourseMemberAsync(userId, channelId);
+        if (!isMember)
+        {
+            await Clients.Caller.Error("You are not a member of this course.");
+            return;
+        }
 
         // Remove from the previously active channel group (if switching channels)
         var previousChannelId = await presenceTracker.UpdateCurrentChannelAsync(
@@ -196,23 +219,44 @@ public sealed class CommunityHub(
     ///     Called when a user submits a message in the chat input.
     ///
     ///     Flow:
-    ///     1. Validate the request payload
-    ///     2. Delegate persistence to IChatService (returns hydrated MessageDto)
-    ///     3. Broadcast full MessageDto to channel-{id} group ONLY
-    ///     4. Broadcast lightweight UnreadNotificationDto to course-{id} group,
-    ///        EXCLUDING users who are already in the channel-{id} group
-    ///        (they already see the message; they don't need an unread badge)
+    ///     1. Validate the request payload (SignalR does NOT auto-validate DataAnnotations)
+    ///     2. Rate-limit to prevent message spam
+    ///     3. Delegate persistence to IChatService (returns hydrated MessageDto)
+    ///     4. Broadcast full MessageDto to channel-{id} group ONLY
+    ///     5. Broadcast lightweight UnreadNotificationDto to course-{id} group,
+    ///        EXCLUDING the sender's own connection
     ///
-    ///     Step 4 is the heart of the Hybrid strategy — heavy payload goes to
+    ///     Step 5 is the heart of the Hybrid strategy — heavy payload goes to
     ///     channel subscribers only; everyone else gets just a badge ping.
     /// </summary>
     public async Task SendMessage(SendMessageHubRequest request)
     {
         var userId = GetUserId();
 
-        // ----------------------------------------------------------------
-        // Persist to SQL via service layer
-        // ----------------------------------------------------------------
+        // ── 1. Manual input validation (SignalR skips DataAnnotations) ────
+        if (request.ChannelId <= 0)
+        {
+            await Clients.Caller.Error("Invalid channel ID.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Content) || request.Content.Length > 4_000)
+        {
+            await Clients.Caller.Error("Message content must be between 1 and 4000 characters.");
+            return;
+        }
+
+        // ── 2. Rate limiting ─────────────────────────────────────────────
+        var now = DateTime.UtcNow;
+        if (_lastMessageTime.TryGetValue(userId, out var lastTime)
+            && (now - lastTime) < MinMessageInterval)
+        {
+            await Clients.Caller.Error("You are sending messages too quickly.");
+            return;
+        }
+        _lastMessageTime[userId] = now;
+
+        // ── 3. Persist to SQL via service layer ──────────────────────────
         MessageDto messageDto;
         try
         {
@@ -228,23 +272,16 @@ public sealed class CommunityHub(
             return;
         }
 
-        // ----------------------------------------------------------------
-        // Broadcast full message to channel-{id} subscribers
-        // ----------------------------------------------------------------
+        // ── 4. Broadcast full message to channel-{id} subscribers ────────
         await Clients
             .Group(HubGroups.Channel(request.ChannelId))
             .ReceiveMessage(messageDto);
 
-        // ----------------------------------------------------------------
-        // Broadcast unread badge to course-{id} group,
-        // but SKIP connections that are already in the channel group —
-        // they're actively watching the channel and don't need an unread badge.
-        //
+        // ── 5. Broadcast unread badge to course-{id} group ───────────────
         // SignalR's GroupExcept only accepts connection IDs, not group names.
         // We exclude only the SENDER's own connection here.
         // Users actively in the channel group will ignore the UnreadNotification
         // client-side because their channel is already active/focused.
-        // ----------------------------------------------------------------
         var courseId = await chatService.GetCourseIdForChannelAsync(request.ChannelId);
 
         await Clients
@@ -252,7 +289,7 @@ public sealed class CommunityHub(
             .UnreadNotification(new UnreadNotificationDto(
                 CourseId: courseId,
                 ChannelId: request.ChannelId,
-                ChannelName: string.Empty // Step 3: ChatService will hydrate this
+                ChannelName: string.Empty
             ));
     }
 
@@ -291,18 +328,22 @@ public sealed class CommunityHub(
     /// <summary>
     ///     Wraps the LastSeenAt SQL write in a try/catch so a DB failure
     ///     never propagates into the disconnect pipeline and crashes the Hub.
-    ///     Errors are logged — not silently swallowed — via the injected logger.
+    ///
+    ///     Uses IServiceScopeFactory to create an independent DI scope so the
+    ///     DbContext lives as long as this background task — NOT the Hub's scope
+    ///     (which is disposed after OnDisconnectedAsync returns).
     /// </summary>
     private async Task PersistLastSeenAtSafeAsync(string userId)
     {
         try
         {
-            await chatService.PersistLastSeenAtAsync(userId);   // courseId gone
+            using var scope = scopeFactory.CreateScope();
+            var scopedChatService = scope.ServiceProvider.GetRequiredService<IChatService>();
+            await scopedChatService.PersistLastSeenAtAsync(userId);
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine(
-                $"[CommunityHub] Failed to persist LastSeenAt for user {userId}: {ex.Message}");
+            logger.LogError(ex, "Failed to persist LastSeenAt for user {UserId}", userId);
         }
     }
 }

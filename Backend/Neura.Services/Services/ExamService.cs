@@ -59,6 +59,10 @@ public class ExamService : IExamService
         exam.CreatedOn = DateTime.UtcNow;
 
         _context.Exams.Add(exam);
+
+        await _context.Lessons.Where(l => l.Id == request.LessonId).ExecuteUpdateAsync(setter => setter.SetProperty(l => l.Status, LessonStatus.Active));
+        await _context.Lessons.Where(l => l.Id == request.LessonId).ExecuteUpdateAsync(setter => setter.SetProperty(l => l.Duration, lesson.Duration = TimeSpan.FromMinutes(request.DurationInMinutes ?? 0)));
+
         await _context.SaveChangesAsync();
 
         var response = exam.Adapt<ExamResponse>();

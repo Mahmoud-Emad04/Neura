@@ -1,4 +1,4 @@
-﻿using Neura.Core.Abstractions;
+using Neura.Core.Abstractions;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 
@@ -49,6 +49,11 @@ public interface IEnrollmentService
     ///     Remove a student from a course (by instructor)
     /// </summary>
     Task<Result> RemoveStudentAsync(int courseId, string studentId, string requesterId);
+
+    /// <summary>
+    ///     Get enrollment dashboard summary for a user (total, completed, in-progress, hours)
+    /// </summary>
+    Task<Result<EnrollmentDashboardResponse>> GetEnrollmentDashboardAsync(string userId, CancellationToken cancellationToken);
 
     /// <summary>
     ///     Update last accessed timestamp

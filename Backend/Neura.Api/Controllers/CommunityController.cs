@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Neura.Core.Contracts.Community;
 using Neura.Core.Hubs;
 using Neura.Services.Hubs;
@@ -15,11 +15,15 @@ namespace Neura.Api.Controllers;
 ///     └─────────────────────────────────────────────────────────────────┘
 ///
 ///     What lives here (not in the Hub):
-///     ├── GET channels         → initial sidebar load
-///     ├── GET message history  → cursor-paginated scroll
-///     ├── GET course members   → member list panel hydration
-///     ├── PATCH message        → edit (triggers Hub broadcast via IHubContext)
-///     └── DELETE message       → soft-delete (triggers Hub broadcast via IHubContext)
+///     ├── GET    channels           → initial sidebar load
+///     ├── POST   channels           → create (broadcast ChannelCreated)
+///     ├── PUT    channels/{id}      → update (broadcast ChannelUpdated)
+///     ├── DELETE channels/{id}      → soft-delete (broadcast ChannelDeleted)
+///     ├── PUT    channels/reorder   → drag-and-drop reorder
+///     ├── GET    message history    → cursor-paginated scroll
+///     ├── GET    course members     → member list panel hydration
+///     ├── PATCH  message            → edit (broadcast MessageEdited)
+///     └── DELETE message            → soft-delete (broadcast MessageDeleted)
 /// </summary>
 [ApiController]
 [Authorize]
@@ -29,9 +33,9 @@ public sealed class CommunityController(
     IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : ControllerBase
 {
-    // -------------------------------------------------------------------------
-    // Channels
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Channels — Read
+    // =========================================================================
 
     /// <summary>
     ///     Returns all text + voice channels for a course, ordered by Position.
@@ -41,7 +45,6 @@ public sealed class CommunityController(
     [HttpGet("courses/{courseId:int}/channels")]
     [ProducesResponseType(typeof(IReadOnlyList<ChannelDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetChannels(
         int courseId,
         CancellationToken ct = default)
@@ -59,9 +62,187 @@ public sealed class CommunityController(
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
+    // Channels — Create
+    // =========================================================================
+
+    /// <summary>
+    ///     Creates a new channel within a course.
+    ///     Requires CourseRole.Level >= 3 (CoInstructor+) or platform Admin/SuperAdmin.
+    ///     Broadcasts ChannelCreated to course group so all connected peers
+    ///     see the new channel in their sidebar immediately.
+    ///     POST /api/community/courses/{courseId}/channels
+    /// </summary>
+    [HttpPost("courses/{courseId:int}/channels")]
+    [ProducesResponseType(typeof(ChannelDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateChannel(
+        int courseId,
+        [FromBody] CreateChannelRequest request,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var channelDto = await chatService.CreateChannelAsync(
+                courseId,
+                GetUserId(),
+                request.Name,
+                request.Type,
+                request.Topic,
+                ct);
+
+            // Broadcast to course group — sidebar updates in real time
+            await hubContext.Clients
+                .Group(HubGroups.Course(courseId))
+                .ChannelCreated(channelDto);
+
+            return CreatedAtAction(
+                nameof(GetChannels),
+                new { courseId },
+                channelDto);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    // =========================================================================
+    // Channels — Update
+    // =========================================================================
+
+    /// <summary>
+    ///     Updates an existing channel's name and topic.
+    ///     Type and Position are immutable through this endpoint.
+    ///     Requires CourseRole.Level >= 3 or platform Admin/SuperAdmin.
+    ///     Broadcasts ChannelUpdated to course group.
+    ///     PUT /api/community/channels/{channelId}
+    /// </summary>
+    [HttpPut("channels/{channelId:int}")]
+    [ProducesResponseType(typeof(ChannelDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateChannel(
+        int channelId,
+        [FromBody] UpdateChannelRequest request,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var channelDto = await chatService.UpdateChannelAsync(
+                channelId,
+                GetUserId(),
+                request.Name,
+                request.Topic,
+                ct);
+
+            // Resolve courseId for the broadcast group
+            var courseId = await chatService.GetCourseIdForChannelAsync(channelId, ct);
+
+            await hubContext.Clients
+                .Group(HubGroups.Course(courseId))
+                .ChannelUpdated(channelDto);
+
+            return Ok(channelDto);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    // =========================================================================
+    // Channels — Delete
+    // =========================================================================
+
+    /// <summary>
+    ///     Soft-deletes a channel. Messages within it are preserved
+    ///     (accessible via admin queries).
+    ///     Requires CourseRole.Level >= 3 or platform Admin/SuperAdmin.
+    ///     Broadcasts ChannelDeleted to course group so peers remove it from sidebar.
+    ///     DELETE /api/community/channels/{channelId}
+    /// </summary>
+    [HttpDelete("channels/{channelId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteChannel(
+        int channelId,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var (deletedId, courseId) = await chatService.DeleteChannelAsync(
+                channelId, GetUserId(), ct);
+
+            // Broadcast to course group
+            await hubContext.Clients
+                .Group(HubGroups.Course(courseId))
+                .ChannelDeleted(deletedId);
+
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    // =========================================================================
+    // Channels — Reorder
+    // =========================================================================
+
+    /// <summary>
+    ///     Bulk-reorders all channels in a course.
+    ///     The client sends the complete ordered list of channel IDs
+    ///     after a drag-and-drop operation.
+    ///     Requires CourseRole.Level >= 3 or platform Admin/SuperAdmin.
+    ///     PUT /api/community/courses/{courseId}/channels/reorder
+    /// </summary>
+    [HttpPut("courses/{courseId:int}/channels/reorder")]
+    [ProducesResponseType(typeof(IReadOnlyList<ChannelDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> ReorderChannels(
+        int courseId,
+        [FromBody] ReorderChannelsRequest request,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var reorderedChannels = await chatService.ReorderChannelsAsync(
+                courseId, GetUserId(), request.ChannelIds, ct);
+
+            return Ok(reorderedChannels);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // =========================================================================
     // Message History
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     /// <summary>
     ///     Cursor-paginated message history for a channel.
@@ -97,9 +278,9 @@ public sealed class CommunityController(
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Message Edit
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     /// <summary>
     ///     Edits a message and broadcasts the change to the channel group via SignalR.
@@ -136,9 +317,9 @@ public sealed class CommunityController(
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Message Delete
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     /// <summary>
     ///     Soft-deletes a message and broadcasts the tombstone to the channel group.
@@ -174,9 +355,9 @@ public sealed class CommunityController(
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Course Members
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     /// <summary>
     ///     Returns all course members with their real-time online status.
@@ -203,9 +384,9 @@ public sealed class CommunityController(
         }
     }
 
-    // -------------------------------------------------------------------------
+    // =========================================================================
     // Private Helpers
-    // -------------------------------------------------------------------------
+    // =========================================================================
 
     private string GetUserId() =>
         User.FindFirstValue(ClaimTypes.NameIdentifier)

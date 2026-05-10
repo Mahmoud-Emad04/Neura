@@ -73,18 +73,22 @@ public class ApplicationDbContext(
             .Entries<AuditableEntity>()
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
 
-        var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        // HttpContext is null for SignalR WebSocket transport (after the initial handshake).
+        // Gracefully skip audit fields when userId cannot be resolved.
+        var userId = _httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         foreach (var entityEntry in entries)
             if (entityEntry.State == EntityState.Added)
             {
                 entityEntry.Entity.CreatedOn = DateTime.UtcNow;
-                entityEntry.Entity.CreatedById = userId;
+                if (userId is not null)
+                    entityEntry.Entity.CreatedById = userId;
             }
             else
             {
                 entityEntry.Entity.UpdatedOn = DateTime.UtcNow;
-                entityEntry.Entity.UpdatedById = userId;
+                if (userId is not null)
+                    entityEntry.Entity.UpdatedById = userId;
             }
 
         return base.SaveChangesAsync(cancellationToken);

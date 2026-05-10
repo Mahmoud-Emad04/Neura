@@ -64,7 +64,8 @@ public class LessonService(
             Type = request.Type,
             OrderIndex = lastOrder + 1,
             IsPublished = true,
-            IsVideoPrivate = false
+            IsVideoPrivate = false,
+            Status = LessonStatus.Draft
         };
 
         _context.Lessons.Add(lesson);
@@ -231,6 +232,9 @@ public class LessonService(
         if (lesson.Type != LessonType.Article)
             return Result.Failure(new Core.Abstractions.Error("Lesson.InvalidType", "Content can only be added to Article-type lessons.",
                 StatusCodes.Status400BadRequest));
+
+        if (lesson.Status == LessonStatus.Draft)
+            lesson.Status = LessonStatus.Active;
 
         var sanitizer = new HtmlSanitizer();
         var cleanHtml = sanitizer.Sanitize(request.HtmlContent);

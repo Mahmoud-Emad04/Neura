@@ -1,4 +1,4 @@
-﻿using Neura.Core.Authorization.Attributes;
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
@@ -166,6 +166,20 @@ public class EnrollmentController : ControllerBase
 
         return result.IsSuccess
             ? NoContent()
+            : result.ToProblem();
+    }
+    /// <summary>
+    ///     Get enrollment dashboard summary (total, completed, in-progress, hours)
+    /// </summary>
+    [HttpGet("/api/courses/enrollment-dashboard")]
+    [ProducesResponseType(typeof(EnrollmentDashboardResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEnrollmentDashboard(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var result = await _enrollmentService.GetEnrollmentDashboardAsync(userId, cancellationToken);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
             : result.ToProblem();
     }
 }

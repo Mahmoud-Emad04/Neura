@@ -257,6 +257,7 @@ public class CourseService(
                 s.Description,
                 s.Position,
                 Lessons = s.Lessons
+                    .Where(l => l.Status == LessonStatus.Active && !l.IsDeleted)
                     .OrderBy(l => l.OrderIndex)
                     .Select(l => new
                     {

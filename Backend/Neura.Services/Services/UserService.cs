@@ -83,12 +83,13 @@ public class UserService(
 
         var (globalStudentCount, globalRating, globalRatingDataCount) =
             await GetStudentsAndRating(instructorCourseIds, cancellationToken);
-
+        string baseUrl = BaseUrl();
         return Result.Success(user.Adapt<InstructorSummaryResponse>() with
         {
             Name = $"{user.FirstName} {user.LastName}",
             TotalStudents = globalStudentCount,
             TotalReviews = globalRatingDataCount,
+            ImageUrl = string.IsNullOrEmpty(user.ImageUrl) ? null : $"{baseUrl}/{user.ImageUrl}",
             Rating = globalRating,
             TotalCourses = instructorCourseIds.Count
         });
@@ -127,4 +128,9 @@ public class UserService(
 
         return (globalStudentCount, globalRating, globalRatingData.Count);
     }
+    private string BaseUrl()
+    {
+        return _helpers.GetBaseUrl();
+    }
+
 }

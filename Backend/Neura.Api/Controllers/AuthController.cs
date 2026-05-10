@@ -50,7 +50,7 @@ public class AuthController(
     {
         var result = await _authService.UpdateImageAsync(request, User.GetUserId()!, cancellationToken);
 
-        return result.IsSuccess ? Ok() : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
 
