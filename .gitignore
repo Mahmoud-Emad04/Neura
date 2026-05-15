@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Backend/Neura.Services/Helpers/ImageService.cs
+/Backend/Neura.Api/appsettings.json
+/Backend/Neura.Api/appsettings.Development.json
