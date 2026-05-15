@@ -243,4 +243,13 @@ public interface IChatService
     Task PersistLastSeenAtAsync(
         string userId,
         CancellationToken ct = default);    // ← courseId parameter REMOVED
+
+    /// <summary>
+    ///     Returns true if the channel is a Voice channel (ChannelType.Voice).
+    ///     Used by voice-channel SignalR methods to validate before operations.
+    ///
+    ///     Throws <see cref="KeyNotFoundException"/>
+    ///         → channel does not exist.
+    /// </summary>
+    Task<bool> IsVoiceChannelAsync(int channelId, CancellationToken ct = default);
 }

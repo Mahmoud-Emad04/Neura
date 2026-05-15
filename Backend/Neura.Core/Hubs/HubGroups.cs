@@ -1,5 +1,14 @@
-﻿namespace Neura.Core.Hubs;
+namespace Neura.Core.Hubs;
 
+/// <summary>
+///     Group name generators for SignalR hybrid strategy.
+///
+/// ┌─────────────────────────────────────────────────────────────┐
+/// │  course-{id}    → presence updates + unread notifications  │
+/// │  channel-{id}   → full MessageDto payloads                │
+/// │  voice-{id}     → voice channel participant events         │
+/// └─────────────────────────────────────────────────────────────┘
+/// </summary>
 public static class HubGroups
 {
     /// <summary>
@@ -20,4 +29,12 @@ public static class HubGroups
     /// </summary>
     public static string Channel(int channelId)
         => $"channel-{channelId}";
+
+    /// <summary>
+    ///     Voice-channel group for real-time participant events.
+    ///     Joined: when user joins a voice channel.
+    ///     Left:   when user leaves or is kicked.
+    /// </summary>
+    public static string VoiceChannel(int channelId)
+        => $"voice-{channelId}";
 }

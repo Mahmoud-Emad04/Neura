@@ -32,6 +32,7 @@ namespace Neura.Services.Hubs;
 public sealed class CommunityHub(
     IPresenceTracker presenceTracker,
     IChatService chatService,
+    IVoiceChannelService voiceService,
     IServiceScopeFactory scopeFactory,
     ILogger<CommunityHub> logger)
     : Hub<ICommunityHubClient>
@@ -141,6 +142,9 @@ public sealed class CommunityHub(
             // OnDisconnectedAsync returns).
             _ = PersistLastSeenAtSafeAsync(result.UserId);
         }
+
+        // If the user was in a voice channel, remove them and broadcast left.
+        _ = LeaveVoiceChannelSafeAsync(result.UserId);
 
         await base.OnDisconnectedAsync(exception);
     }
@@ -294,6 +298,183 @@ public sealed class CommunityHub(
     }
 
     // -------------------------------------------------------------------------
+    // Voice Channel Events
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    ///     Called when a user joins a voice channel.
+    ///     Flow: validate membership → join voice room → join voice-{id} group
+    ///           → broadcast VoiceParticipantJoined → send participant list to caller.
+    /// </summary>
+    public async Task JoinVoiceChannel(JoinVoiceRequest request)
+    {
+        var userId = GetUserId();
+
+        VoiceParticipantDto participant;
+        try
+        {
+            participant = await voiceService.JoinVoiceAsync(
+                userId, Context.ConnectionId, request.ChannelId);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await Clients.Caller.Error("You are not a member of this course.");
+            return;
+        }
+        catch (KeyNotFoundException ex)
+        {
+            await Clients.Caller.Error(ex.Message);
+            return;
+        }
+        catch (InvalidOperationException ex)
+        {
+            await Clients.Caller.Error(ex.Message);
+            return;
+        }
+
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId,
+            HubGroups.VoiceChannel(request.ChannelId));
+
+        await Clients
+            .Group(HubGroups.VoiceChannel(request.ChannelId))
+            .VoiceParticipantJoined(participant);
+
+        var participants = await voiceService.GetParticipantsAsync(
+            request.ChannelId, userId);
+        await Clients.Caller.InitialVoiceRoomSync(participants);
+    }
+
+    /// <summary>
+    ///     Called when a user leaves a voice channel.
+    ///     Removes connection from voice-{id} group and broadcasts VoiceParticipantLeft.
+    /// </summary>
+    public async Task LeaveVoiceChannel(int channelId)
+    {
+        var userId = GetUserId();
+
+        await Groups.RemoveFromGroupAsync(
+            Context.ConnectionId,
+            HubGroups.VoiceChannel(channelId));
+
+        _ = voiceService.LeaveVoiceAsync(userId);
+
+        await Clients
+            .Group(HubGroups.VoiceChannel(channelId))
+            .VoiceParticipantLeft(userId);
+    }
+
+    /// <summary>
+    ///     Called when a user mutes / deafens / speaks.
+    ///     Updates state and broadcasts the diff to all voice-room peers.
+    /// </summary>
+    public async Task UpdateVoiceState(UpdateVoiceStateRequest request)
+    {
+        var userId = GetUserId();
+
+        var currentChannelId = voiceService.GetUserCurrentChannelId(userId);
+        if (!currentChannelId.HasValue)
+        {
+            await Clients.Caller.Error("You are not in a voice channel.");
+            return;
+        }
+
+        VoiceParticipantDto? updated;
+        try
+        {
+            updated = await voiceService.UpdateStateAsync(
+                userId, currentChannelId.Value,
+                request.IsMuted, request.IsDeafened, request.IsSpeaking);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await Clients.Caller.Error("You are not a member of this course.");
+            return;
+        }
+
+        if (updated is null)
+        {
+            await Clients.Caller.Error("You are not in a voice channel.");
+            return;
+        }
+
+        await Clients
+            .Group(HubGroups.VoiceChannel(currentChannelId.Value))
+            .VoiceParticipantStateChanged(
+                userId,
+                updated.IsMuted,
+                updated.IsDeafened,
+                updated.IsSpeaking);
+    }
+
+    /// <summary>
+    ///     CoInstructors+ can kick a user from a voice channel.
+    ///     Broadcasts VoiceChannelKicked to the kicked user only,
+    ///     and VoiceParticipantLeft to the rest of the room.
+    /// </summary>
+    public async Task KickFromVoiceChannel(int channelId, string targetUserId)
+    {
+        var requestingUserId = GetUserId();
+
+        KickResult result;
+        try
+        {
+            result = await voiceService.KickAsync(
+                targetUserId, channelId, requestingUserId);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await Clients.Caller.Error(
+                "You do not have permission to kick from this voice channel.");
+            return;
+        }
+
+        // Remove the target connection from the voice group
+        var targetConnectionId = voiceService.GetConnectionId(targetUserId);
+        if (!string.IsNullOrEmpty(targetConnectionId))
+        {
+            await Groups.RemoveFromGroupAsync(
+                targetConnectionId,
+                HubGroups.VoiceChannel(channelId));
+        }
+
+        // Notify the kicked user only
+        await Clients
+            .Group(HubGroups.VoiceChannel(channelId))
+            .VoiceChannelKicked(targetUserId);
+
+        // Notify room peers
+        await Clients
+            .Group(HubGroups.VoiceChannel(channelId))
+            .VoiceParticipantLeft(targetUserId);
+    }
+
+    // -------------------------------------------------------------------------
+    // WebRTC Signaling
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    ///     Called by a participant who just created an RTCSessionDescription (offer/answer).
+    ///     Forwarded to a specific peer via their targetConnectionId so the hub acts as
+    ///     a SignalR-based WebRTC signaling relay.
+    /// </summary>
+    public async Task SendWebRTCSignal(string targetConnectionId, object signal)
+    {
+        var senderId = GetUserId();
+        var senderChannelId = voiceService.GetUserCurrentChannelId(senderId);
+
+        if (!senderChannelId.HasValue)
+        {
+            await Clients.Caller.Error("You are not in a voice channel.");
+            return;
+        }
+
+        // Forward to the specific target connection only
+        await Clients.Client(targetConnectionId)
+            .WebRTCSignal(senderId, signal);
+    }
+
+    // -------------------------------------------------------------------------
     // Private Helpers
     // -------------------------------------------------------------------------
 
@@ -344,6 +525,35 @@ public sealed class CommunityHub(
         catch (Exception ex)
         {
             logger.LogError(ex, "Failed to persist LastSeenAt for user {UserId}", userId);
+        }
+    }
+
+    /// <summary>
+    ///     Cleans up voice channel state on disconnect.
+    ///     Fire-and-forget via _ = so it never blocks the disconnect pipeline.
+    ///     Uses IServiceScopeFactory so the DbContext outlives the Hub's own scope.
+    /// </summary>
+    private async Task LeaveVoiceChannelSafeAsync(string userId)
+    {
+        try
+        {
+            var channelId = voiceService.GetUserCurrentChannelId(userId);
+            if (!channelId.HasValue)
+                return;
+
+            // Ask voiceService to remove the participant
+            await voiceService.LeaveVoiceAsync(userId);
+
+            // Broadcast left to remaining peers in the voice room.
+            // The SignalR group auto-removes the connection on disconnect,
+            // so we only notify the remaining participants.
+            await Clients
+                .Group(HubGroups.VoiceChannel(channelId.Value))
+                .VoiceParticipantLeft(userId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to clean up voice channel for user {UserId}", userId);
         }
     }
 }

@@ -65,7 +65,6 @@ public static class DependencyInjection
 		services.AddHttpContextAccessor();
 
 		services.AddDataProtection().SetApplicationName(nameof(Neura));
-		services.AddRedis(configuration);
 
 		services.AddSingleton<IHashids>(_ => new Hashids(configuration["Hashids:Course"], 11));
 
@@ -367,6 +366,7 @@ public static class DependencyInjection
 		// A Scoped or Transient registration would give each request a
 		// fresh empty dictionary, destroying all connection state.
 		services.AddScoped<IChatService, ChatService>();
+		services.AddScoped<IVoiceChannelService, VoiceChannelService>();
 		services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
 		return services;
 	}

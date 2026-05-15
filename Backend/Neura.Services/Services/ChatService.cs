@@ -493,6 +493,17 @@ public sealed class ChatService(
                 ct);
     }
 
+    /// <inheritdoc/>
+    public async Task<bool> IsVoiceChannelAsync(
+        int channelId,
+        CancellationToken ct = default)
+    {
+        return await db.Channels
+            .AsNoTracking()
+            .Where(c => c.Id == channelId)
+            .AnyAsync(c => c.Type == ChannelType.Voice, ct);
+    }
+
     // =========================================================================
     // Private Helpers
     // =========================================================================

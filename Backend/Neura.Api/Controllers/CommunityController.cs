@@ -30,6 +30,7 @@ namespace Neura.Api.Controllers;
 [Route("api/community")]
 public sealed class CommunityController(
     IChatService chatService,
+    IVoiceChannelService voiceService,
     IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : ControllerBase
 {
@@ -352,6 +353,44 @@ public sealed class CommunityController(
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
+        }
+    }
+
+    // =========================================================================
+    // Voice Channel Participants (REST initial load)
+    // =========================================================================
+
+    /// <summary>
+    ///     Returns the current participant list for a voice channel.
+    ///     Called when a user opens the voice channel panel to hydrate
+    ///     the participant list without a SignalR round-trip.
+    ///     GET /api/community/channels/{channelId}/voice-participants
+    /// </summary>
+    [HttpGet("channels/{channelId:int}/voice-participants")]
+    [ProducesResponseType(typeof(IReadOnlyList<VoiceParticipantDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVoiceParticipants(
+        int channelId,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var participants = await voiceService.GetParticipantsAsync(
+                channelId, GetUserId());
+            return Ok(participants);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 
