@@ -3,6 +3,7 @@
 public record AuthResponse(
     string Id,
     string Username,
+    string ImageUrl,
     string? DiscordHandle,
     string Email,
     string FirstName,

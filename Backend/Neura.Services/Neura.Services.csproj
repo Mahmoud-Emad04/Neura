@@ -7,32 +7,26 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Remove="Jobs\**"/>
-        <EmbeddedResource Remove="Jobs\**"/>
-        <None Remove="Jobs\**"/>
+        <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0" />
+        <PackageReference Include="CloudinaryDotNet" Version="1.28.0" />
+        <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22" />
+        <PackageReference Include="Hangfire.Core" Version="1.8.22" />
+        <PackageReference Include="Hangfire.SqlServer" Version="1.8.22" />
+        <PackageReference Include="Hashids.net" Version="1.7.0" />
+        <PackageReference Include="HtmlSanitizer" Version="9.0.892" />
+        <PackageReference Include="MailKit" Version="4.16.0" />
+        <PackageReference Include="Mapster" Version="7.4.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.2" />
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.7" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.2.0" />
+        <PackageReference Include="NReco.VideoInfo" Version="1.2.1" />
+        <PackageReference Include="StackExchange.Redis" Version="2.12.14" />
+        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
+        <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.7" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="AspNet.Security.OAuth.GitHub" Version="10.0.0"/>
-        <PackageReference Include="CloudinaryDotNet" Version="1.28.0"/>
-        <PackageReference Include="Hangfire.AspNetCore" Version="1.8.22"/>
-        <PackageReference Include="Hangfire.Core" Version="1.8.22"/>
-        <PackageReference Include="Hangfire.SqlServer" Version="1.8.22"/>
-        <PackageReference Include="Hashids.net" Version="1.7.0"/>
-        <PackageReference Include="HtmlSanitizer" Version="9.0.892"/>
-        <PackageReference Include="MailKit" Version="4.15.1"/>
-        <PackageReference Include="Mapster" Version="7.4.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.2"/>
-        <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="10.0.2"/>
-        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.2.0"/>
-        <PackageReference Include="MimeKit" Version="4.15.1"/>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
-        <PackageReference Include="NReco.VideoInfo" Version="1.2.1"/>
-        <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Neura.Repository\Neura.Repository.csproj"/>
+        <ProjectReference Include="..\Neura.Repository\Neura.Repository.csproj" />
     </ItemGroup>
 
 </Project>

@@ -7,6 +7,9 @@ public class Lesson : AuditableEntity
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public LessonStatus Status { get; set; } = LessonStatus.Draft;
+
+
 
     // Cloudinary video storage
     public string? CloudinaryVideoUrl { get; set; }
@@ -25,4 +28,8 @@ public class Lesson : AuditableEntity
 
     public int SectionId { get; set; }
     public Section Section { get; set; } = default!;
+
+    public Exam? Exam { get; set; }
+
+    public ICollection<LessonCompletion> Completions { get; set; } = [];
 }

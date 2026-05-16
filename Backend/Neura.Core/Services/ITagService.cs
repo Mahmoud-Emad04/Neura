@@ -3,7 +3,6 @@ using Neura.Core.Contracts.Tags;
 
 namespace Neura.Core.Services;
 
-
 public interface ITagService
 {
     // ══════════════════════════════════════════════════════════════
@@ -11,34 +10,34 @@ public interface ITagService
     // ══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Gets all tags with pagination and filtering (Admin)
+    ///     Gets all tags with pagination and filtering (Admin)
     /// </summary>
     Task<Result<TagListResponse>> GetAllAsync(
         TagFilters filters,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets all active tags for dropdowns/selection (Public)
+    ///     Gets all active tags for dropdowns/selection (Public)
     /// </summary>
     Task<Result<IEnumerable<TagSummaryResponse>>> GetActiveTagsAsync(
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a tag by ID
+    ///     Gets a tag by ID
     /// </summary>
     Task<Result<TagResponse>> GetByIdAsync(
         int id,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets a tag by slug
+    ///     Gets a tag by slug
     /// </summary>
     Task<Result<TagResponse>> GetBySlugAsync(
         string slug,
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets popular tags (most used)
+    ///     Gets popular tags (most used)
     /// </summary>
     Task<Result<IEnumerable<TagSummaryResponse>>> GetPopularTagsAsync(
         int count = 10,
@@ -49,7 +48,7 @@ public interface ITagService
     // ══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Creates a new tag
+    ///     Creates a new tag
     /// </summary>
     Task<Result<TagResponse>> CreateAsync(
         CreateTagRequest request,
@@ -57,7 +56,7 @@ public interface ITagService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Updates an existing tag
+    ///     Updates an existing tag
     /// </summary>
     Task<Result<TagResponse>> UpdateAsync(
         int id,
@@ -66,7 +65,7 @@ public interface ITagService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes a tag (soft delete)
+    ///     Deletes a tag (soft delete)
     /// </summary>
     Task<Result> DeleteAsync(
         int id,
@@ -75,7 +74,7 @@ public interface ITagService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Toggles tag active status
+    ///     Toggles tag active status
     /// </summary>
     Task<Result<TagResponse>> ToggleActiveAsync(
         int id,
@@ -87,7 +86,7 @@ public interface ITagService
     // ══════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Updates display order for multiple tags
+    ///     Updates display order for multiple tags
     /// </summary>
     Task<Result> BulkUpdateOrderAsync(
         BulkUpdateTagsOrderRequest request,
@@ -95,7 +94,7 @@ public interface ITagService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Toggles active status for multiple tags
+    ///     Toggles active status for multiple tags
     /// </summary>
     Task<Result> BulkToggleActiveAsync(
         BulkToggleTagsActiveRequest request,
@@ -103,7 +102,7 @@ public interface ITagService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Deletes multiple tags
+    ///     Deletes multiple tags
     /// </summary>
     Task<Result> BulkDeleteAsync(
         BulkDeleteTagsRequest request,

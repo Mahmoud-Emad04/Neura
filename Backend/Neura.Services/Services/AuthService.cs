@@ -1,14 +1,17 @@
-﻿using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using Hangfire;
+﻿using Hangfire;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.WebUtilities;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
+using Neura.Core.Contracts.Files;
+using Neura.Core.FilesConsts;
 using Neura.Services.Helpers;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using Error = Neura.Core.Abstractions.Error;
 
 namespace Neura.Services.Services;
 
@@ -19,12 +22,15 @@ public class AuthService(
     IJwtProvider jwtProvider,
     IEmailSender emailSender,
     IHttpContextAccessor httpContextAccessor,
+    IFileService fileService,
+    IServiceHelpers helpers,
     ILogger<AuthService> logger) : IAuthService
 {
     private readonly ApplicationDbContext _context = context;
     private readonly IEmailSender _emailSender = emailSender;
-
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+    private readonly IFileService _fileService = fileService;
+    private readonly IServiceHelpers _helpers = helpers;
     private readonly IJwtProvider _jwtProvider = jwtProvider;
     private readonly ILogger<AuthService> _logger = logger;
     private readonly int _refreshTokenExpiryDays = 14;
@@ -63,8 +69,8 @@ public class AuthService(
         });
 
         await _userManager.UpdateAsync(user);
-
-        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName,
+        string baseUrl = _helpers.GetBaseUrl();
+        var response = new AuthResponse(user.Id, user.UserName!, $"{baseUrl}/{user.ImageUrl}", user.DiscordHandle, user.Email!, user.FirstName,
             user.LastName, token, expires,
             refreshToken,
             refreshTokenExpiry);
@@ -105,8 +111,8 @@ public class AuthService(
 
 
         await _userManager.UpdateAsync(user);
-
-        var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName,
+        string baseUrl = _helpers.GetBaseUrl();
+        var response = new AuthResponse(user.Id, user.UserName!, $"{baseUrl}/{user.ImageUrl}", user.DiscordHandle, user.Email!, user.FirstName,
             user.LastName, newtoken, expires,
             newrefreshToken,
             refreshTokenExpiry);
@@ -157,6 +163,7 @@ public class AuthService(
             return Result.Failure(UserErrors.DuplicatedUserName);
 
         var user = registerRequest.Adapt<ApplicationUser>();
+        user.ImageUrl = Path.Combine("Images", ImageConsts.User, ImageConsts.DefaultUserImage);
         var result = await _userManager.CreateAsync(user, registerRequest.Password);
         if (result.Succeeded)
         {
@@ -176,11 +183,32 @@ public class AuthService(
 
             return Result.Success();
         }
+        foreach (var er in result.Errors)
+            _logger.LogWarning("Error {er}", er);
 
         var error = result.Errors.FirstOrDefault();
 
         return Result.Failure(new Error(error!.Code, error.Description, StatusCodes.Status400BadRequest));
     }
+    public async Task<Result<string>> UpdateImageAsync(UploadImageRequest request, string userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
+            return Result.Failure<string>(UserErrors.UserNotFound);
+
+        if (!string.IsNullOrEmpty(user.ImageUrl) && user.ImageUrl != DefaultUserImagePath())
+            _fileService.Delete(user.ImageUrl);
+
+        user.ImageUrl = await _fileService.UploadImageAsync(
+            request.Image,
+            ImageConsts.User,
+            cancellationToken);
+
+        await _userManager.UpdateAsync(user);
+        string url = _helpers.GetBaseUrl();
+        return Result.Success($"{url}/{user.ImageUrl}");
+    }
+
 
     public async Task<Result<AuthResponse>> ConfirmEmailAsync(ConfirmEmailRequest request,
         CancellationToken cancellationToken)
@@ -219,8 +247,8 @@ public class AuthService(
             });
 
             await _userManager.UpdateAsync(user);
-
-            var response = new AuthResponse(user.Id, user.UserName!, user.DiscordHandle, user.Email!, user.FirstName,
+            string baseUrl = _helpers.GetBaseUrl();
+            var response = new AuthResponse(user.Id, user.UserName!, $"{baseUrl}/{user.ImageUrl}", user.DiscordHandle, user.Email!, user.FirstName,
                 user.LastName, token, expires,
                 refreshToken,
                 refreshTokenExpiry);
@@ -247,7 +275,13 @@ public class AuthService(
 
         _logger.LogInformation("Confirmation code: {code}", code);
 
+
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
+
+        var httpRequest = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin))
+            origin = $"{httpRequest!.Scheme}://{httpRequest.Host}{httpRequest.PathBase}";
 
         BackgroundJob.Enqueue(() => SendConfirmationEmail(user, code, origin!));
 
@@ -264,7 +298,10 @@ public class AuthService(
 
         var origin = _httpContextAccessor.HttpContext?.Request.Headers.Origin;
 
-        var request = _httpContextAccessor.HttpContext?.Request;
+        var httpRequest = _httpContextAccessor.HttpContext?.Request;
+
+        if (string.IsNullOrEmpty(origin))
+            origin = $"{httpRequest!.Scheme}://{httpRequest.Host}{httpRequest.PathBase}";
 
         //{
         //    var otp = _userManager.GenerateTwoFactorTokenAsync(user, TokenOptions.DefaultEmailProvider);
@@ -305,7 +342,7 @@ public class AuthService(
 
         var error = result.Errors.First();
 
-        return Result.Failure(new Error(error.Code, error.Description, StatusCodes.Status401Unauthorized));
+        return Result.Failure(new Core.Abstractions.Error(error.Code, error.Description, StatusCodes.Status401Unauthorized));
     }
 
     public AuthenticationProperties GetExternalAuthProperties(string provider, string redirectUrl)
@@ -319,38 +356,36 @@ public class AuthService(
         if (info == null)
             return new ExternalAuthResult(false, null, null, "ExternalAuthFailed");
 
-        var result = await _signInManager.ExternalLoginSignInAsync(
-            info.LoginProvider,
-            info.ProviderKey,
-            false,
-            true);
+        // 1. Try to find existing linked user
+        var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
 
-        ApplicationUser? user;
-
-        if (result.Succeeded)
+        // 2. If not linked, fall back to email
+        if (user == null)
         {
-            // Scenario A: User Exists and is Linked
-            user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
-        }
-        else
-        {
-            // Scenario B: New User or Link Existing Email
             var email = info.Principal.FindFirstValue(ClaimTypes.Email);
-            var name = info.Principal.FindFirstValue(ClaimTypes.Name);
-
-            if (string.IsNullOrEmpty(email))
+            if (string.IsNullOrWhiteSpace(email))
                 return new ExternalAuthResult(false, null, null, "EmailNotFound");
 
             user = await _userManager.FindByEmailAsync(email);
 
+            // 3. Create new user if needed
             if (user == null)
             {
+                var name = info.Principal.FindFirstValue(ClaimTypes.Name) ?? "";
+                var givenName = info.Principal.FindFirstValue(ClaimTypes.GivenName);
+                var familyName = info.Principal.FindFirstValue(ClaimTypes.Surname);
+                var picture = info.Principal.FindFirstValue("picture")
+                              ?? info.Principal.FindFirstValue("urn:github:avatar_url");
+
+                var parts = name.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+
                 user = new ApplicationUser
                 {
                     UserName = email,
                     Email = email,
-                    FirstName = name?.Split(" ").FirstOrDefault() ?? "User",
-                    LastName = name?.Split(" ").LastOrDefault() ?? "",
+                    FirstName = givenName ?? parts.ElementAtOrDefault(0) ?? "User",
+                    LastName = familyName ?? parts.ElementAtOrDefault(1) ?? "",
+                    ImageUrl = string.IsNullOrWhiteSpace(picture) ? DefaultUserImagePath() : picture,
                     EmailConfirmed = true
                 };
 
@@ -362,27 +397,22 @@ public class AuthService(
                 }
             }
 
+            // 4. Link external login to user
             var linkResult = await _userManager.AddLoginAsync(user, info);
             if (!linkResult.Succeeded)
                 return new ExternalAuthResult(false, null, null, "LinkFailed");
         }
 
-        if (user == null) return new ExternalAuthResult(false, null, null, "UserCreationFailed");
+        // 5. Sign out the temporary external cookie (cleanup)
+        await _signInManager.SignOutAsync();
 
-        // 5. Generate JWT (Using the Helper)
-        // Pass CancellationToken.None since this method doesn't take one
+        // 6. Generate JWT
         var authResult = await GenerateAuthResponseAsync(user, CancellationToken.None);
-
-        if (authResult.IsFailure) return new ExternalAuthResult(false, null, null, authResult.Error.Code);
+        if (authResult.IsFailure)
+            return new ExternalAuthResult(false, null, null, authResult.Error.Code);
 
         var response = authResult.Value;
-
-        return new ExternalAuthResult(
-            true,
-            response.Token,
-            response.RefreshToken,
-            null
-        );
+        return new ExternalAuthResult(true, response.Token, response.RefreshToken, null);
     }
 
     public async Task SendConfirmationEmail(ApplicationUser user, string code, string origin)
@@ -391,7 +421,7 @@ public class AuthService(
             new Dictionary<string, string>
             {
                 { "{{name}}", user.FirstName },
-                { "{{action_url}}", $"{origin}/auth/verify-email?userId={user.Id}&code={code}" }
+                { "{{action_url}}", $"https://neuralearning.netlify.app/auth/verify-email?userId={user.Id}&code={code}" }
             }
         );
         BackgroundJob.Enqueue(() => _emailSender.SendEmailAsync(user.Email!, "✅ Neura: Email Confirmation", emailBody));
@@ -415,10 +445,11 @@ public class AuthService(
         });
 
         await _userManager.UpdateAsync(user);
-
+        string baseUrl = _helpers.GetBaseUrl();
         var response = new AuthResponse(
             user.Id,
             user.UserName!,
+            $"{baseUrl}/{user.ImageUrl}",
             user.DiscordHandle,
             user.Email!,
             user.FirstName,
@@ -438,12 +469,12 @@ public class AuthService(
             new Dictionary<string, string>
             {
                 { "{{name}}", user.FirstName },
-                { "{{action_url}}", $"{origin}/auth/reset-password?email={user.Email}&code={code}" }
+                { "{{action_url}}", $"https://neuralearning.netlify.app/auth/reset-password?email={user.Email}&code={code}" }
             }
         );
 
         BackgroundJob.Enqueue(() =>
-            _emailSender.SendEmailAsync(user.Email!, "✅ Survey Basket: Change Password", emailBody));
+            _emailSender.SendEmailAsync(user.Email!, "✅ Neura: Change Password", emailBody));
 
         await Task.CompletedTask;
     }
@@ -469,4 +500,10 @@ public class AuthService(
 
         return (userRoles, userPermissions);
     }
+
+    private static string DefaultUserImagePath()
+    {
+        return Path.Combine("Images", ImageConsts.User, ImageConsts.DefaultUserImage);
+    }
+
 }

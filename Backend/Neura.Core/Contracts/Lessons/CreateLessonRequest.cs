@@ -3,7 +3,7 @@
 namespace Neura.Core.Contracts.Lessons;
 
 public record CreateLessonRequest(
-    string Title,
-    int SectionId,
-    LessonType Type
+	string Title,
+	int Position,
+	LessonType Type
 );

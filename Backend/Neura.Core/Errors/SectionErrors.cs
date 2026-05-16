@@ -13,4 +13,7 @@ public static class SectionErrors
     public static readonly Error SectionPositionConflict =
         new("Section.PositionConflict", "Another section in this course already uses the same position.",
             StatusCodes.Status409Conflict);
+
+    public static readonly Error SectionAlreadyDeleted =
+        new("Section.AlreadyDeleted", "The specified section is already deleted.", StatusCodes.Status409Conflict);
 }

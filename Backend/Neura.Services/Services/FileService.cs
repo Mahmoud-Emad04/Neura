@@ -19,7 +19,7 @@ public class FileService(IWebHostEnvironment webHostEnvironment, ApplicationDbCo
         using var stream = File.Create(path);
         await file.CopyToAsync(stream, cancellationToken);
 
-        return Path.Combine("Images", folderName, uniqueName);
+        return $"Images/{folderName}/{uniqueName}";
     }
 
     public async Task<Guid> UploadAsync(IFormFile file, string folderName,

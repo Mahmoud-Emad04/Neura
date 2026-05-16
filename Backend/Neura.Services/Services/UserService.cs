@@ -83,12 +83,13 @@ public class UserService(
 
         var (globalStudentCount, globalRating, globalRatingDataCount) =
             await GetStudentsAndRating(instructorCourseIds, cancellationToken);
-
+        string baseUrl = BaseUrl();
         return Result.Success(user.Adapt<InstructorSummaryResponse>() with
         {
             Name = $"{user.FirstName} {user.LastName}",
             TotalStudents = globalStudentCount,
             TotalReviews = globalRatingDataCount,
+            ImageUrl = string.IsNullOrEmpty(user.ImageUrl) ? null : $"{baseUrl}/{user.ImageUrl}",
             Rating = globalRating,
             TotalCourses = instructorCourseIds.Count
         });
@@ -110,10 +111,10 @@ public class UserService(
     private async Task<(int globalStudentCount, double globalRating, int globalRatingDataCount)> GetStudentsAndRating(
         List<int> instructorCourseIds, CancellationToken cancellationToken)
     {
-        var studentRoleMask = CourseRolePermissionMap.RolePermissionsMask[DefaultRoles.Student];
+        var studentRoleMask = CoursePermissionMasks.Student;
 
         var globalStudentCount = await _context.CourseUsers
-            .Where(cu => instructorCourseIds.Contains(cu.CourseId) && cu.PermissionsMask == studentRoleMask)
+            .Where(cu => instructorCourseIds.Contains(cu.CourseId) && cu.PermissionMask == studentRoleMask)
             .Select(cu => cu.UserId)
             .Distinct()
             .CountAsync(cancellationToken);
@@ -127,4 +128,9 @@ public class UserService(
 
         return (globalStudentCount, globalRating, globalRatingData.Count);
     }
+    private string BaseUrl()
+    {
+        return _helpers.GetBaseUrl();
+    }
+
 }

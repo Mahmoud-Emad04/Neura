@@ -11,8 +11,6 @@ public sealed class Course : AuditableEntity
     public string? DisplayInstructorName { get; set; }
     public string Description { get; set; } = string.Empty;
 
-    public bool IsPubliclyVisible { get; set; } = false;
-
     public CourseStatus Status { get; set; } = CourseStatus.Pending;
 
     public string ImageUrl { get; set; } = string.Empty;
@@ -28,7 +26,7 @@ public sealed class Course : AuditableEntity
     public ICollection<CourseUser> CourseUsers { get; set; } = [];
     public ICollection<CourseLearningOutcome> LearningOutcomes { get; set; } = [];
     public ICollection<CoursePrerequisite> Prerequisites { get; set; } = [];
-
+    public ICollection<Channel> Channels { get; set; } = [];
     /// <summary>
     ///     Checks if the course is currently accepting new enrollments.
     /// </summary>

@@ -6,19 +6,19 @@ public class RoleConfiguration : IEntityTypeConfiguration<ApplicationRole>
 {
     public void Configure(EntityTypeBuilder<ApplicationRole> builder)
     {
-        builder.HasData(new ApplicationRole
-        {
-            Id = DefaultRoles.AdminRoleId,
-            Name = DefaultRoles.Admin,
-            NormalizedName = DefaultRoles.Admin.ToUpper(),
-            ConcurrencyStamp = DefaultRoles.AdminRoleConcurrencyStamp
-        }, new ApplicationRole
-        {
-            Id = DefaultRoles.MemberRoleId,
-            Name = DefaultRoles.Member,
-            IsDefualt = true,
-            NormalizedName = DefaultRoles.Member.ToUpper(),
-            ConcurrencyStamp = DefaultRoles.MemberRoleConcurrencyStamp
-        });
+        builder.Property(x => x.Description)
+            .HasMaxLength(500);
+
+        builder.Property(x => x.IsDefault)
+            .HasDefaultValue(false);
+
+        builder.Property(x => x.IsDeleted)
+            .HasDefaultValue(false);
+
+        builder.Property(x => x.Level)
+            .HasDefaultValue(0);
+
+        // Index for hierarchy queries
+        builder.HasIndex(x => x.Level);
     }
 }

@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Contracts.Files;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
@@ -19,6 +19,17 @@ public class AnnouncementController(IAnnouncementService announcementService, IL
         CancellationToken cancellationToken = default)
     {
         var result = await _announcementService.GetAllPostsAsync(pageNumber, pageSize, cancellationToken);
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    [HttpGet("posts/my")]
+    public async Task<IActionResult> GetCurrentUserPosts([FromQuery] bool? isPublic = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10, CancellationToken cancellationToken = default)
+    {
+        var result = await _announcementService.GetCurrentUserPostsAsync(isPublic, pageNumber, pageSize,
+            cancellationToken);
+
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 

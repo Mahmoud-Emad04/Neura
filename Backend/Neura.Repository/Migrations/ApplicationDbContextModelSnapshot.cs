@@ -58,27 +58,6 @@ namespace Neura.Repository.Migrations
                     b.ToTable("CourseTag");
                 });
 
-            modelBuilder.Entity("CourseUser", b =>
-                {
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("PermissionsMask")
-                        .HasColumnType("int");
-
-                    b.HasKey("CourseId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("CourseUsers");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.Property<int>("Id")
@@ -102,85 +81,6 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetRoleClaims", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            ClaimType = "permissions",
-                            ClaimValue = "courses:read",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            ClaimType = "permissions",
-                            ClaimValue = "courses:add",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            ClaimType = "permissions",
-                            ClaimValue = "courses:update",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            ClaimType = "permissions",
-                            ClaimValue = "courses:delete",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            ClaimType = "permissions",
-                            ClaimValue = "users:read",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            ClaimType = "permissions",
-                            ClaimValue = "users:add",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            ClaimType = "permissions",
-                            ClaimValue = "users:update",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            ClaimType = "permissions",
-                            ClaimValue = "roles:read",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            ClaimType = "permissions",
-                            ClaimValue = "roles:add",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            ClaimType = "permissions",
-                            ClaimValue = "roles:update",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            ClaimType = "permissions",
-                            ClaimValue = "results:read",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -243,13 +143,6 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = "019a1c20-390c-704d-92e1-7dcf93597854",
-                            RoleId = "019a1c20-390e-7fd8-9b20-cddc38906b5b"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -271,6 +164,35 @@ namespace Neura.Repository.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Neura.Core.Entities.AnswerOption", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId", "Order");
+
+                    b.ToTable("AnswerOptions");
+                });
+
             modelBuilder.Entity("Neura.Core.Entities.ApplicationRole", b =>
                 {
                     b.Property<string>("Id")
@@ -280,11 +202,24 @@ namespace Neura.Repository.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsDefualt")
-                        .HasColumnType("bit");
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Level")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Name")
                         .HasMaxLength(256)
@@ -296,32 +231,14 @@ namespace Neura.Repository.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Level");
+
                     b.HasIndex("NormalizedName")
                         .IsUnique()
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "019a1c20-390e-7fd8-9b20-cddc38906b5b",
-                            ConcurrencyStamp = "019a1c20-390e-7fd8-9b20-cdddf127ba16",
-                            IsDefualt = false,
-                            IsDeleted = false,
-                            Name = "Admin",
-                            NormalizedName = "ADMIN"
-                        },
-                        new
-                        {
-                            Id = "019a1c20-390e-7fd8-9b20-cde0cc78e33e",
-                            ConcurrencyStamp = "019a1c20-390e-7fd8-9b20-cddf89d2a037",
-                            IsDefualt = true,
-                            IsDeleted = false,
-                            Name = "Member",
-                            NormalizedName = "MEMBER"
-                        });
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.ApplicationUser", b =>
@@ -331,6 +248,9 @@ namespace Neura.Repository.Migrations
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
+
+                    b.Property<string>("Bio")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
@@ -352,10 +272,19 @@ namespace Neura.Repository.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("InstructorApprovedOn")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LastSeenAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -401,27 +330,130 @@ namespace Neura.Repository.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
 
-                    b.HasData(
-                        new
-                        {
-                            Id = "019a1c20-390c-704d-92e1-7dcf93597854",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "019a1c20-390e-7fd8-9b20-cdde028f1737",
-                            DiscordHandle = "",
-                            Email = "Admin@Neura.org",
-                            EmailConfirmed = true,
-                            FirstName = "System",
-                            LastName = "Admin",
-                            LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@NEURA.ORG",
-                            NormalizedUserName = "ADMIN",
-                            PasswordHash = "AQAAAAIAAYagAAAAEBDYTWQhmZWLhUtSPh1TISSaEknFYx24VlXXgkZFBH2u5xMwIe/y/EIxlg4wCpZQoQ==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "019a1c20390e7fd89b20cddb68eed9f5",
-                            TwoFactorEnabled = false,
-                            UserName = "Admin"
-                        });
+            modelBuilder.Entity("Neura.Core.Entities.AttemptAnswer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ExamAttemptId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("QuestionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("ExamAttemptId", "QuestionId")
+                        .IsUnique();
+
+                    b.ToTable("AttemptAnswers");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.AttemptAnswerOption", b =>
+                {
+                    b.Property<int>("AttemptAnswerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("AnswerOptionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AttemptAnswerId", "AnswerOptionId");
+
+                    b.HasIndex("AnswerOptionId");
+
+                    b.ToTable("AttemptAnswerOptions");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.AttemptViolation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ExamAttemptId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ViolationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamAttemptId");
+
+                    b.ToTable("AttemptViolations");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Channel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Position")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("CourseId", "Position");
+
+                    b.ToTable("Channels");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Course", b =>
@@ -454,9 +486,6 @@ namespace Neura.Repository.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPubliclyVisible")
                         .HasColumnType("bit");
 
                     b.Property<int>("Price")
@@ -502,6 +531,83 @@ namespace Neura.Repository.Migrations
                     b.ToTable("Courses");
                 });
 
+            modelBuilder.Entity("Neura.Core.Entities.CourseInvitation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcceptedUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CourseRoleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CustomMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("ExpiresOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvitedById")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("InvitedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<DateTime?>("RespondedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcceptedUserId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("CourseRoleId");
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("InvitedById");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("CourseId", "Status");
+
+                    b.HasIndex("CourseId", "Email", "Status");
+
+                    b.ToTable("CourseInvitations", (string)null);
+                });
+
             modelBuilder.Entity("Neura.Core.Entities.CourseLearningOutcome", b =>
                 {
                     b.Property<int>("CourseId")
@@ -528,6 +634,359 @@ namespace Neura.Repository.Migrations
                     b.HasKey("CourseId", "Requirement");
 
                     b.ToTable("CoursePrerequisites");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.CourseRole", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsSystem")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("PermissionMask")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Level");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("CourseRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.CourseUser", b =>
+                {
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CourseRoleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EnrolledById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("EnrolledOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int?>("InvitationId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("LastAccessedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("PermissionMask")
+                        .HasColumnType("int");
+
+                    b.HasKey("CourseId", "UserId");
+
+                    b.HasIndex("CourseRoleId");
+
+                    b.HasIndex("EnrolledById");
+
+                    b.HasIndex("InvitationId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("CourseId", "IsDeleted");
+
+                    b.ToTable("CourseUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Exam", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("DurationInMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("EnableTabSwitchDetection")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxViolationsBeforeAutoSubmit")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NumberOfQuestionsToServe")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("PassingScorePercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<bool>("ShowCorrectAnswersAfterSubmit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("ShuffleAnswers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShuffleQuestions")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("LessonId")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("Exams");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.ExamAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswerOrder")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExamId")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("Passed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("QuestionOrder")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("Score")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("decimal(7,2)");
+
+                    b.Property<decimal?>("ScorePercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ExamId", "UserId");
+
+                    b.HasIndex("Status", "StartedAt")
+                        .HasFilter("[Status] = 'InProgress'");
+
+                    b.ToTable("ExamAttempts");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.ExamViolation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CausedAutoSubmit")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DetectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("ExamAttemptId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ExamId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StudentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UpdatedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ExamAttemptId");
+
+                    b.HasIndex("ExamId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("ExamViolations");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.InstructorApplication", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("CanReapplyAfter")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Experience")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ReviewedById")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ReviewedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Pending");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewedById");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Status", "CreatedOn");
+
+                    b.ToTable("InstructorApplications", (string)null);
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>
@@ -582,6 +1041,9 @@ namespace Neura.Repository.Migrations
                     b.Property<int>("SectionId")
                         .HasColumnType("int");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -605,6 +1067,74 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("SectionId", "OrderIndex");
 
                     b.ToTable("Lessons");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.LessonCompletion", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CompletedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UserId", "LessonId");
+
+                    b.HasIndex("LessonId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("LessonCompletions");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Message", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ChannelId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime?>("EditedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<long?>("ReplyToMessageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReplyToMessageId");
+
+                    b.HasIndex("SenderId")
+                        .HasDatabaseName("IX_Messages_SenderId");
+
+                    b.HasIndex("ChannelId", "Id")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("IX_Messages_ChannelId_Id_Desc");
+
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Post", b =>
@@ -755,6 +1285,43 @@ namespace Neura.Repository.Migrations
                         .IsUnique();
 
                     b.ToTable("PostLikes");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Question", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ExamId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Points")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("QuestionType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamId", "Order");
+
+                    b.ToTable("Questions");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Section", b =>
@@ -981,25 +1548,6 @@ namespace Neura.Repository.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("CourseUser", b =>
-                {
-                    b.HasOne("Neura.Core.Entities.Course", "Course")
-                        .WithMany("CourseUsers")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
-                        .WithMany("CourseUsers")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Neura.Core.Entities.ApplicationRole", null)
@@ -1051,6 +1599,17 @@ namespace Neura.Repository.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Neura.Core.Entities.AnswerOption", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Question", "Question")
+                        .WithMany("AnswerOptions")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
             modelBuilder.Entity("Neura.Core.Entities.ApplicationUser", b =>
                 {
                     b.OwnsMany("Neura.Core.Entities.RefreshTokens", "RefreshTokens", b1 =>
@@ -1088,6 +1647,80 @@ namespace Neura.Repository.Migrations
                     b.Navigation("RefreshTokens");
                 });
 
+            modelBuilder.Entity("Neura.Core.Entities.AttemptAnswer", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.ExamAttempt", "ExamAttempt")
+                        .WithMany("AttemptAnswers")
+                        .HasForeignKey("ExamAttemptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.Question", "Question")
+                        .WithMany("AttemptAnswers")
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExamAttempt");
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.AttemptAnswerOption", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.AnswerOption", "AnswerOption")
+                        .WithMany("AttemptAnswerOptions")
+                        .HasForeignKey("AnswerOptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.AttemptAnswer", "AttemptAnswer")
+                        .WithMany("SelectedOptions")
+                        .HasForeignKey("AttemptAnswerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AnswerOption");
+
+                    b.Navigation("AttemptAnswer");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.AttemptViolation", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.ExamAttempt", "ExamAttempt")
+                        .WithMany("Violations")
+                        .HasForeignKey("ExamAttemptId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ExamAttempt");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Channel", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Course", "Course")
+                        .WithMany("Channels")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("UpdatedBy");
+                });
+
             modelBuilder.Entity("Neura.Core.Entities.Course", b =>
                 {
                     b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
@@ -1103,6 +1736,40 @@ namespace Neura.Repository.Migrations
                     b.Navigation("CreatedBy");
 
                     b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.CourseInvitation", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "AcceptedUser")
+                        .WithMany("ReceivedInvitations")
+                        .HasForeignKey("AcceptedUserId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Neura.Core.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.CourseRole", "CourseRole")
+                        .WithMany()
+                        .HasForeignKey("CourseRoleId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "InvitedBy")
+                        .WithMany("SentInvitations")
+                        .HasForeignKey("InvitedById")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("AcceptedUser");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("CourseRole");
+
+                    b.Navigation("InvitedBy");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.CourseLearningOutcome", b =>
@@ -1121,6 +1788,148 @@ namespace Neura.Repository.Migrations
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.CourseUser", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Course", "Course")
+                        .WithMany("CourseUsers")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.CourseRole", "CourseRole")
+                        .WithMany("CourseUsers")
+                        .HasForeignKey("CourseRoleId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "EnrolledBy")
+                        .WithMany()
+                        .HasForeignKey("EnrolledById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Neura.Core.Entities.CourseInvitation", "Invitation")
+                        .WithMany()
+                        .HasForeignKey("InvitationId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
+                        .WithMany("CourseUsers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("CourseRole");
+
+                    b.Navigation("EnrolledBy");
+
+                    b.Navigation("Invitation");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Exam", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.Lesson", "Lesson")
+                        .WithOne("Exam")
+                        .HasForeignKey("Neura.Core.Entities.Exam", "LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.ExamAttempt", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Exam", "Exam")
+                        .WithMany("Attempts")
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.ExamViolation", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ExamAttempt", "ExamAttempt")
+                        .WithMany()
+                        .HasForeignKey("ExamAttemptId");
+
+                    b.HasOne("Neura.Core.Entities.Exam", "Exam")
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById");
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Exam");
+
+                    b.Navigation("ExamAttempt");
+
+                    b.Navigation("Student");
+
+                    b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.InstructorApplication", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "ReviewedBy")
+                        .WithMany()
+                        .HasForeignKey("ReviewedById")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
+                        .WithMany("InstructorApplications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ReviewedBy");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>
@@ -1146,6 +1955,50 @@ namespace Neura.Repository.Migrations
                     b.Navigation("Section");
 
                     b.Navigation("UpdatedBy");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.LessonCompletion", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Lesson", "Lesson")
+                        .WithMany("Completions")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Message", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Channel", "Channel")
+                        .WithMany("Messages")
+                        .HasForeignKey("ChannelId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Neura.Core.Entities.Message", "ReplyToMessage")
+                        .WithMany()
+                        .HasForeignKey("ReplyToMessageId");
+
+                    b.HasOne("Neura.Core.Entities.ApplicationUser", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Channel");
+
+                    b.Navigation("ReplyToMessage");
+
+                    b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Post", b =>
@@ -1232,6 +2085,17 @@ namespace Neura.Repository.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Neura.Core.Entities.Question", b =>
+                {
+                    b.HasOne("Neura.Core.Entities.Exam", "Exam")
+                        .WithMany("Questions")
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Exam");
+                });
+
             modelBuilder.Entity("Neura.Core.Entities.Section", b =>
                 {
                     b.HasOne("Neura.Core.Entities.Course", "Course")
@@ -1290,13 +2154,36 @@ namespace Neura.Repository.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Neura.Core.Entities.AnswerOption", b =>
+                {
+                    b.Navigation("AttemptAnswerOptions");
+                });
+
             modelBuilder.Entity("Neura.Core.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("CourseUsers");
+
+                    b.Navigation("InstructorApplications");
+
+                    b.Navigation("ReceivedInvitations");
+
+                    b.Navigation("SentInvitations");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.AttemptAnswer", b =>
+                {
+                    b.Navigation("SelectedOptions");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Channel", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Course", b =>
                 {
+                    b.Navigation("Channels");
+
                     b.Navigation("CourseUsers");
 
                     b.Navigation("LearningOutcomes");
@@ -1306,6 +2193,32 @@ namespace Neura.Repository.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.CourseRole", b =>
+                {
+                    b.Navigation("CourseUsers");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Exam", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.ExamAttempt", b =>
+                {
+                    b.Navigation("AttemptAnswers");
+
+                    b.Navigation("Violations");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Lesson", b =>
+                {
+                    b.Navigation("Completions");
+
+                    b.Navigation("Exam");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Post", b =>
@@ -1318,6 +2231,13 @@ namespace Neura.Repository.Migrations
             modelBuilder.Entity("Neura.Core.Entities.PostComment", b =>
                 {
                     b.Navigation("Replies");
+                });
+
+            modelBuilder.Entity("Neura.Core.Entities.Question", b =>
+                {
+                    b.Navigation("AnswerOptions");
+
+                    b.Navigation("AttemptAnswers");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.Section", b =>

@@ -17,7 +17,6 @@ public sealed record EditableCourseResponse
     public CourseStatus Status { get; init; }
     public string StatusName { get; init; } = string.Empty;
     public bool IsEnrollmentOpen { get; init; }
-    public bool IsPubliclyVisible { get; init; }
 
     // User's role in this course
     public string RoleName { get; init; } = string.Empty;
@@ -37,6 +36,7 @@ public sealed record EditableCourseResponse
     public DateTime CreatedOn { get; init; }
     public DateTime? UpdatedOn { get; init; }
 }
+
 public sealed record EditableCourseSummaryResponse
 {
     public string KeyId { get; init; } = string.Empty;
@@ -48,7 +48,6 @@ public sealed record EditableCourseSummaryResponse
     public CourseStatus Status { get; init; }
     public string StatusName { get; init; } = string.Empty;
     public bool IsEnrollmentOpen { get; init; }
-    public bool IsPubliclyVisible { get; init; }
 
     // User's role in this course
     public string RoleName { get; init; } = string.Empty;
@@ -64,6 +63,7 @@ public sealed record EditableCourseSummaryResponse
     public DateTime CreatedOn { get; init; }
     public DateTime? UpdatedOn { get; init; }
 }
+
 public sealed record CourseAvailableActions
 {
     public bool CanEdit { get; init; }

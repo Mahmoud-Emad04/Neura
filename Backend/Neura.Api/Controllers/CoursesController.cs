@@ -1,9 +1,9 @@
 ﻿using Neura.Api.Extensions;
-using Neura.Core.Abstractions.Consts;
+using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
-using Neura.Services.Filters;
+using Neura.Core.Enums;
 using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
@@ -90,30 +90,9 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
             : course.ToProblem();
     }
 
-    /// <summary>
-    ///     Retrieves all courses the current user is enrolled in.
-    /// </summary>
-    /// <remarks>
-    ///     Returns only active enrollments (excludes soft-deleted ones).
-    ///     Courses where the user is the owner are excluded.
-    /// </remarks>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A list of enrolled course metadata.</returns>
-    /// <response code="200">Returns the list of enrolled courses.</response>
-    [HttpGet("my-learning")]
-    [EndpointSummary("Get my enrolled courses")]
-    [ProducesResponseType(typeof(IEnumerable<CourseMetadataResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<CourseMetadataResponse>>> GetMyLearning(
-        CancellationToken cancellationToken)
-    {
-        var result = await _courseService.GetEnrolledCoursesAsync(User.GetUserId()!, cancellationToken);
-
-        return Ok(result.Value);
-    }
 
     [HttpGet("{courseId}/status")]
-    [Authorize]
-    //[HasCoursePermission(Permissions.ViewCourseStatus)]
+    [HasCoursePermission(CoursePermission.ViewAnalytics)]
     public async Task<IActionResult> GetStatus(
         string courseId,
         CancellationToken cancellationToken)
@@ -142,6 +121,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <response code="400">Validation failed (e.g., invalid or duplicate tags).</response>
     [ProducesResponseType(typeof(CourseMetadataResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
+    //[InstructorOnly]
     [HttpPost("")]
     public async Task<IActionResult> Create([FromForm] CourseRequest request, CancellationToken cancellationToken)
     {
@@ -157,7 +137,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     ///     Updates the details of a course (title, description, tags, dates, outcomes, prerequisites).
     /// </summary>
     /// <remarks>
-    ///     Requires <see cref="Permissions.UpdateCourses" /> permission on the course.
+    ///     Requires <see cref="CoursePermission.EditContent" /> permission on the course.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="request">The update payload.</param>
@@ -167,7 +147,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     [ProducesResponseType(typeof(Error), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HttpPut("{courseId}")]
-    [HasCoursePermission(Permissions.UpdateCourses)]
+    [HasCoursePermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdateDetails([FromRoute] string courseId, [FromForm] CourseUpdateRequest request,
         CancellationToken cancellationToken)
     {
@@ -186,7 +166,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     /// <remarks>
     ///     Accepts <c>multipart/form-data</c>. The previous image is deleted automatically
     ///     unless it is the default placeholder.
-    ///     Requires <see cref="Permissions.UpdateCourses" /> permission on the course.
+    ///     Requires <see cref="CoursePermission.EditContent" /> permission on the course.
     /// </remarks>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="uploadImage">The form file containing the new image.</param>
@@ -196,7 +176,7 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     [ProducesResponseType(typeof(Error), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HttpPut("{courseId}/cover-image")]
-    [HasCoursePermission(Permissions.UpdateCourses)]
+    [HasCoursePermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdateImage([FromRoute] string courseId, [FromForm] UploadImageRequest uploadImage,
         CancellationToken cancellationToken)
     {
@@ -209,11 +189,11 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     }
 
     /// <summary>
-    /// Gets all courses the current user can edit (as Owner or Co-Instructor).
+    ///     Gets all courses the current user can edit (as Owner or Co-Instructor).
     /// </summary>
     /// <remarks>
-    /// Returns courses where the user has CourseOwner or CoInstructor permissions.
-    /// Includes stats like student count, lesson count, and available actions.
+    ///     Returns courses where the user has CourseOwner or CoInstructor permissions.
+    ///     Includes stats like student count, lesson count, and available actions.
     /// </remarks>
     [HttpGet("my/editable")]
     [Authorize]
@@ -236,55 +216,6 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     // ============================
     // ACTIONS (Enroll / Bookmark)
     // ============================
-
-    /// <summary>
-    ///     Enrolls the current user in a specific course.
-    /// </summary>
-    /// <remarks>
-    ///     Idempotent — if the user was previously enrolled and soft-deleted,
-    ///     the enrollment is restored.
-    /// </remarks>
-    /// <param name="courseId">The hashed string ID of the course.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="204">User successfully enrolled.</response>
-    /// <response code="404">Course not found.</response>
-    [HttpPost("{courseId}/enroll")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Enroll([FromRoute] string courseId, CancellationToken cancellationToken)
-    {
-        var result = await _courseService.EnrollAsync(courseId, User.GetUserId()!, cancellationToken);
-
-        return result.IsSuccess
-            ? NoContent()
-            : result.ToProblem();
-    }
-
-
-    /// <summary>
-    ///     Unenrolls the current user from a course.
-    /// </summary>
-    /// <remarks>
-    ///     The enrollment is soft-deleted.
-    ///     Course owners cannot unenroll — they must delete the course or transfer ownership.
-    /// </remarks>
-    /// <param name="courseId">The hashed string ID of the course.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <response code="204">Successfully unenrolled.</response>
-    /// <response code="400">The user is the course owner.</response>
-    /// <response code="404">The user is not enrolled in this course.</response>
-    [HttpDelete("{courseId}/enroll")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Unenroll([FromRoute] string courseId, CancellationToken cancellationToken)
-    {
-        var result = await _courseService.UnenrollAsync(courseId, User.GetUserId()!, cancellationToken);
-
-        return result.IsSuccess
-            ? NoContent()
-            : result.ToProblem();
-    }
 
     /// <summary>
     ///     Toggles the bookmark status for a specific course.
@@ -326,10 +257,9 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
     // ══════════════════════════════════════════════════════════════
     // Commands — Status Transitions
     // ══════════════════════════════════════════════════════════════
-
+    [HasCoursePermission(CoursePermission.ManageSettings)]
     [HttpPost("{courseId}/activate")]
     [Authorize]
-    //[HasCoursePermission(Permissions.ManageCourseStatus)]
     public async Task<IActionResult> Activate(
         string courseId,
         CancellationToken cancellationToken)
@@ -338,9 +268,9 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HasCoursePermission(CoursePermission.ManageSettings)]
     [HttpPost("{courseId}/complete")]
     [Authorize]
-    //[HasCoursePermission(Permissions.ManageCourseStatus)]
     public async Task<IActionResult> Complete(
         string courseId,
         CancellationToken cancellationToken)
@@ -349,9 +279,9 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HasCoursePermission(CoursePermission.ManageSettings)]
     [HttpPost("{courseId}/reactivate")]
     [Authorize]
-    //[HasCoursePermission(Permissions.ManageCourseStatus)]
     public async Task<IActionResult> Reactivate(
         string courseId,
         CancellationToken cancellationToken)
@@ -360,14 +290,29 @@ public class CoursesController(ICourseService courseService, ILogger<CoursesCont
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
+    [HasCoursePermission(CoursePermission.ManageSettings)]
     [HttpPost("{courseId}/unpublish")]
     [Authorize]
-    //[HasCoursePermission(Permissions.ManageCourseStatus)]
     public async Task<IActionResult> Unpublish(
         string courseId,
         CancellationToken cancellationToken)
     {
         var result = await _courseService.UnpublishCourseAsync(courseId, User.GetUserId()!, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Soft deletes a course.
+    /// </summary>
+    [HasCoursePermission(CoursePermission.DeleteCourse)]
+    [HttpDelete("{courseId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteCourse(string courseId, CancellationToken cancellationToken)
+    {
+        var result = await _courseService.DeleteCourseAsync(courseId, User.GetUserId()!, cancellationToken);
+        return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Authentication;
+using Neura.Core.Contracts.Files;
 
 namespace Neura.Core.Services;
 
@@ -20,7 +21,8 @@ public interface IAuthService
 
     Task<Result<AuthResponse>> ConfirmEmailAsync(ConfirmEmailRequest request,
         CancellationToken cancellationToken = default);
-
+    Task<Result<string>> UpdateImageAsync(UploadImageRequest uploadImageRequest, string userId,
+        CancellationToken cancellationToken = default);
     Task<Result> ResendConfirmationEmailAsync(ResendConfirmationEmailRequest request);
     Task<Result> SendResetPasswordCodeAsync(string email);
     Task<Result> ResetPasswordAsync(ResetPasswordRequest request);

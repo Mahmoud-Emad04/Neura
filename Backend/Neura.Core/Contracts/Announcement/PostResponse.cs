@@ -9,9 +9,13 @@ public record PostResponse(
     int? SectionId,
     string? ImageUrl,
     int LikesCount,
+    int CommentsCount,
     DateTime CreatedOn,
     DateTime? UpdatedOn,
     string CreatedById,
+    string CreatedByFullName,
+    string? CreatedByImageUrl,
+    bool IsCreatedByCurrentUser,
     string? UpdatedById,
     bool IsLikedByCurrentUser,
     IEnumerable<PostCommentResponse> Comments

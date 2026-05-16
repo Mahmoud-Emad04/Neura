@@ -1,4 +1,6 @@
-﻿namespace Neura.Core.Contracts.common;
+﻿using Neura.Core.Enums;
+
+namespace Neura.Core.Contracts.common;
 
 public record RequestFilters
 {
@@ -8,4 +10,6 @@ public record RequestFilters
     public string? SortColumn { get; init; }
     public string? SortDirection { get; init; } = "ASC";
     public bool? IsFree { get; set; }
+    public bool? IsBookmarked { get; set; }
+    public CourseStatus? CourseStatus { get; set; }
 }

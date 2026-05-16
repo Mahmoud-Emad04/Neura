@@ -6,6 +6,7 @@ public class ServiceHelpers(IHttpContextAccessor httpContextAccessor, IHashids h
 {
     private readonly IHashids _hashids = hashids;
     private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+
     public string GetBaseUrl()
     {
         var request = _httpContextAccessor.HttpContext?.Request;
@@ -15,7 +16,7 @@ public class ServiceHelpers(IHttpContextAccessor httpContextAccessor, IHashids h
 
     public int[] DecodeHash(string encoded)
     {
-        if (string.IsNullOrWhiteSpace(encoded)) return Array.Empty<int>();
+        if (string.IsNullOrWhiteSpace(encoded)) return [];
         return _hashids.Decode(encoded);
     }
 
@@ -28,6 +29,7 @@ public class ServiceHelpers(IHttpContextAccessor httpContextAccessor, IHashids h
     {
         return _httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
     }
+
     public string Encode(int courseId)
     {
         var hashids = new Hashids("f1nd1ngn3m0", 11);
