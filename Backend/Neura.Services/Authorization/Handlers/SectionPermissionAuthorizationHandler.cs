@@ -36,7 +36,7 @@ public class SectionPermissionAuthorizationHandler : AuthorizationHandler<Sectio
 
         // Get courseId from route
         var SectionId = GetSectionIdFromRoute();
-        var courseId = _context.Sections.Where(s => s.Id == SectionId).Select(l => (int?)l.CourseId).FirstOrDefault();
+        var courseId = _context.Sections.IgnoreQueryFilters().Where(s => s.Id == SectionId).Select(l => (int?)l.CourseId).FirstOrDefault();
 
         if (courseId is null) return;
 

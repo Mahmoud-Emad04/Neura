@@ -1,4 +1,4 @@
-﻿using CloudinaryDotNet;
+using CloudinaryDotNet;
 using Ganss.Xss;
 using Hangfire;
 using HashidsNet;
@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Neura.Api.Errors;
+using Neura.Api.Infrastructure;
 using Neura.Api.OpenApiTransformers;
 using Neura.Core.Authentication;
 using Neura.Core.Settings;
@@ -28,357 +29,360 @@ namespace Neura.Api;
 
 public static class DependencyInjection
 {
-	public static IServiceCollection AddDependencies(this IServiceCollection services,
-		IConfiguration configuration, IWebHostEnvironment environment)
-	{
-		services.AddControllers();
-
-		services.AddHybridCache();
-
-		services.AddHttpClient();
-
-		services.AddCors(options =>
-			options.AddDefaultPolicy(builder =>
-					builder
-						.AllowAnyMethod()
-						.AllowAnyHeader()
-						.SetIsOriginAllowed(origin => true)
-						.AllowCredentials()
-			// .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
-			));
-		services.AddAuth(configuration);
-
-		services.AddDatabase(configuration);
-
-		services.AddFluentValidation();
-
-		services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Course).Assembly, typeof(CourseService).Assembly);
-
-		services.AddProblemDetails();
-
-		services.AddHangfire(configuration);
-
-		services.AddOpenApiServices();
-
-		services.AddExceptionHandler<GlobalExceptionHandler>();
-
-		services.AddHttpContextAccessor();
-
-		services.AddDataProtection().SetApplicationName(nameof(Neura));
-
-		services.AddSingleton<IHashids>(_ => new Hashids(configuration["Hashids:Course"], 11));
+    public static IServiceCollection AddDependencies(this IServiceCollection services,
+        IConfiguration configuration, IWebHostEnvironment environment)
+    {
+        services.AddControllers();
 
-		services.AddOptions<MailSettings>()
-			.BindConfiguration(nameof(MailSettings))
-			.ValidateDataAnnotations()
-			.ValidateOnStart();
+        services.AddEndpoints(Assembly.GetExecutingAssembly());
 
-		services.AddOptions<CloudinarySettings>()
-			.BindConfiguration(CloudinarySettings.SectionName)
-			.ValidateDataAnnotations()
-			.ValidateOnStart();
+        services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
+            Assembly.GetExecutingAssembly(),
+            typeof(GradingService).Assembly));
 
-		services.AddSignalR(configuration, environment);
+        services.AddHybridCache();
 
-		#region AddInjection
-
-		services.AddScoped<ExamTimeoutJob>();
-		services.AddScoped<ITagService, TagService>();
-		services.AddScoped<IUserService, UserService>();
-		services.AddScoped<IAuthService, AuthService>();
-		services.AddScoped<IFileService, FileService>();
-		services.AddScoped<IExamService, ExamService>();
-		services.AddScoped<IEmailSender, EmailService>();
-		services.AddScoped<IVideoService, VideoService>();
-		services.AddScoped<ICourseService, CourseService>();
-		services.AddScoped<ILessonService, LessonService>();
-		services.AddScoped<IReviewService, ReviewService>();
-		services.AddScoped<IGradingService, GradingService>();
-		services.AddScoped<ISectionService, SectionService>();
-		services.AddScoped<IWebhookService, WebhookService>();
-		services.AddScoped<IServiceHelpers, ServiceHelpers>();
-		services.AddScoped<IQuestionService, QuestionService>();
-		services.AddScoped<IEnrollmentService, EnrollmentService>();
-		services.AddScoped<ICourseTeamService, CourseTeamService>();
-		services.AddScoped<IExamTimeoutService, ExamTimeoutService>();
-		services.AddScoped<IExamAttemptService, ExamAttemptService>();
-		services.AddScoped<IAnnouncementService, AnnouncementService>();
-		services.AddScoped<IExamAnalyticsService, ExamAnalyticsService>();
-		services.AddScoped<ILessonProgressService, LessonProgressService>();
-		services.AddScoped<ICoursePermissionService, CoursePermissionService>();
-		services.AddScoped<IInstructorApplicationService, InstructorApplicationService>();
+        services.AddHttpClient();
 
-		services.AddSingleton<HtmlSanitizer>(sp =>
-		{
-			var sanitizer = new HtmlSanitizer();
-			// Customize allowed tags/attributes if needed
-			// sanitizer.AllowedTags.Add("img");
-			return sanitizer;
-		});
-		services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddCors(options =>
+            options.AddDefaultPolicy(builder =>
+                    builder
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .SetIsOriginAllowed(origin => true)
+                        .AllowCredentials()
+            // .WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>()!)
+            ));
+        services.AddAuth(configuration);
 
-		#endregion
+        services.AddDatabase(configuration);
 
-		// Register Cloudinary
-		var cloudinarySettings = new CloudinarySettings();
-		configuration.GetSection(CloudinarySettings.SectionName).Bind(cloudinarySettings);
-
-		if (!cloudinarySettings.IsValid())
-			throw new InvalidOperationException("Cloudinary settings are not properly configured in appsettings.json");
-
-		var cloudinaryAccount = new Account(
-			cloudinarySettings.CloudName,
-			cloudinarySettings.ApiKey,
-			cloudinarySettings.ApiSecret);
-
-		var cloudinary = new Cloudinary(cloudinaryAccount);
-		services.AddSingleton(cloudinary);
-		services.AddSingleton(cloudinarySettings);
-
-
-		services.Configure<KestrelServerOptions>(options =>
-		{
-			// Remove limit on body size (for Uploads)
-			options.Limits.MaxRequestBodySize = 25 * 1024 * 1024;
-		});
-
-		services.AddNeuraAuthorization();
-
-		return services;
-	}
-
-	private static IServiceCollection AddOpenApiServices(this IServiceCollection services)
-	{
-		services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
-
-		services.AddEndpointsApiExplorer();
-		services.AddSwaggerGen(options =>
-		{
-			options.SwaggerDoc("v1", new OpenApiInfo { Title = "Neura API", Version = "v1" });
-
-			var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-			var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-			options.IncludeXmlComments(xmlPath);
-		});
-
-
-		return services;
-	}
-
-
-	private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
-	{
-		var connectionString = configuration.GetConnectionString("DefaultConnection") ??
-							   throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-		services.AddDbContext<ApplicationDbContext>(options =>
-			options.UseSqlServer(connectionString));
-
-		return services;
-	}
-
-	private static IServiceCollection AddFluentValidation(this IServiceCollection services)
-	{
-		services
-			.AddFluentValidationAutoValidation()
-			.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-
-		return services;
-	}
-
-	private static IServiceCollection AddMapster(this IServiceCollection services, params Assembly[] assembliesToScan)
-	{
-		var mappingConfiguration = TypeAdapterConfig.GlobalSettings;
-		mappingConfiguration.Scan(assembliesToScan);
-		services.AddSingleton<IMapper>(new Mapper(mappingConfiguration));
-		return services;
-	}
-
-
-	private static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
-	{
-		services.AddIdentity<ApplicationUser, ApplicationRole>()
-			.AddEntityFrameworkStores<ApplicationDbContext>()
-			.AddDefaultTokenProviders();
-
-		//services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
-		//services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
-
-
-		services.AddSingleton<IJwtProvider, JwtProvider>();
-
-		//services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
-		services.AddOptions<JwtOptions>()
-			.BindConfiguration(JwtOptions.SectionName)
-			.ValidateDataAnnotations()
-			.ValidateOnStart();
-
-		var jwtSettings = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
-
-		services.AddAuthentication(options =>
-			{
-				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-			})
-			.AddJwtBearer(o =>
-			{
-				o.SaveToken = true;
-				o.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidateIssuerSigningKey = true,
-					ValidateIssuer = true,
-					ValidateAudience = true,
-					ValidateLifetime = true,
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings?.Key!)),
-					ValidIssuer = jwtSettings?.Issuer,
-					ValidAudience = jwtSettings?.Audience
-				};
-				o.Events = new JwtBearerEvents
-				{
-					OnMessageReceived = context =>
-					{
-						// Only activate for SignalR hub paths
-						var path = context.HttpContext.Request.Path;
-
-						if (!path.StartsWithSegments("/hubs"))
-							return Task.CompletedTask;
-
-						// Pull token from query string (SignalR JS client convention)
-						var accessToken = context.Request.Query["access_token"];
-
-						if (!string.IsNullOrWhiteSpace(accessToken))
-							context.Token = accessToken;
-
-						return Task.CompletedTask;
-					},
-					OnAuthenticationFailed = context =>
-					{
-						var logger = context.HttpContext.RequestServices
-							.GetRequiredService<ILogger<JwtBearerEvents>>();
-
-						logger.LogWarning(
-							"JWT authentication failed: {Error}",
-							context.Exception.Message);
-
-						return Task.CompletedTask;
-					}
-				};
-			})
-
-			.AddGoogle(options =>
-			{
-				options.ClientId = configuration["Authentication:Google:ClientId"]!;
-				options.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
-				options.CallbackPath = "/signin-google";
-			}).AddGitHub(options =>
-			{
-				options.ClientId = configuration["Authentication:GitHub:ClientId"]!;
-				options.ClientSecret = configuration["Authentication:GitHub:ClientSecret"]!;
-
-				// This must match the URL you put in GitHub Developer Settings
-				options.CallbackPath = "/signin-github";
-
-				// Required to get the user's email address
-				options.Scope.Add("user:email");
-			});
-
-		services.Configure<IdentityOptions>(options =>
-		{
-			options.Password.RequiredLength = 8;
-			options.SignIn.RequireConfirmedEmail = true;
-			options.User.RequireUniqueEmail = true;
-		});
-
-		return services;
-	}
-
-	private static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration Configuration)
-	{
-		services.AddHangfire(configuration => configuration
-			.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-			.UseSimpleAssemblyNameTypeSerializer()
-			.UseRecommendedSerializerSettings()
-			.UseSqlServerStorage(Configuration.GetConnectionString("HangfireConnection")));
-
-		services.AddHangfireServer();
-
-		return services;
-	}
-	private static IServiceCollection AddSignalR(this IServiceCollection services,
-		IConfiguration configuration,
-		IWebHostEnvironment environment)
-	{
-		var signalRBuilder = services.AddSignalR(options =>
-		{
-			// Ping every 15s — client must respond within 30s.
-			// If the client misses 2 pings, OnDisconnectedAsync fires.
-			// This is how we detect silent disconnects (phone screen off,
-			// network drop, etc.) rather than waiting for a TCP RST.
-			options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-			options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
-
-			// Reject payloads > 32 KB.
-			// A message with 4,000 chars + sender metadata is ~6 KB.
-			// 32 KB gives comfortable headroom while preventing abuse.
-			options.MaximumReceiveMessageSize = 32 * 1024;
-
-			// Enable detailed errors in Development only.
-			// In Production, Hub exceptions return a generic message to
-			// the client — stack traces never leave the server.
-			options.EnableDetailedErrors = environment.IsDevelopment();
-		});
-
-		// ── Redis Backplane (Production / Staging only) ───────────────────────
-		var redisConnection = configuration.GetConnectionString("Redis");
-
-		if (!environment.IsDevelopment() && !string.IsNullOrWhiteSpace(redisConnection))
-		{
-			signalRBuilder.AddStackExchangeRedis(redisConnection, options =>
-			{
-				options.Configuration.ChannelPrefix =
-					RedisChannel.Literal("community-hub");
-
-				options.Configuration.ReconnectRetryPolicy =
-					new ExponentialRetry(deltaBackOffMilliseconds: 1_000);
-			});
-		}
-
-		// ── Presence Tracker DI ───────────────────────────────────────────────
-		// Phase 1 (Development + single server): in-memory
-		// Phase 2 (Production + multi-server):   Redis
-		//
-		// MUST be Singleton — presence state must survive across HTTP requests.
-		// A Scoped registration would create a fresh empty dictionary per request,
-		// destroying all tracked connections instantly.
-		if (environment.IsDevelopment())
-		{
-			services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
-		}
-		else
-		{
-			// Phase 2: swap this line when RedisPresenceTracker is ready
-			services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
-			// services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
-		}
-
-
-		// IPresenceTracker — MUST be Singleton.
-		// A Scoped or Transient registration would give each request a
-		// fresh empty dictionary, destroying all connection state.
-		services.AddScoped<IChatService, ChatService>();
-		services.AddScoped<IVoiceChannelService, VoiceChannelService>();
-		services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
-		return services;
-	}
-	private static IServiceCollection AddRedis(this IServiceCollection services,
-		IConfiguration configuration)
-	{
-		var redisConnection = configuration.GetConnectionString("Redis");
-		if (!string.IsNullOrWhiteSpace(redisConnection))
-		{
-			services.AddSingleton<IConnectionMultiplexer>(
-				ConnectionMultiplexer.Connect(redisConnection));
-		}
-		return services;
-	}
+        services.AddFluentValidation();
+
+        services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Course).Assembly, typeof(GradingService).Assembly);
+
+        services.AddProblemDetails();
+
+        services.AddHangfire(configuration);
+
+        services.AddOpenApiServices();
+
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+
+        services.AddHttpContextAccessor();
+
+        services.AddDataProtection().SetApplicationName(nameof(Neura));
+
+        services.AddSingleton<IHashids>(_ => new Hashids(configuration["Hashids:Course"], 11));
+
+        services.AddOptions<MailSettings>()
+            .BindConfiguration(nameof(MailSettings))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<CloudinarySettings>()
+            .BindConfiguration(CloudinarySettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddSignalR(configuration, environment);
+
+        #region AddInjection
+
+        services.AddScoped<ExamTimeoutJob>();
+
+
+        services.AddScoped<IFileService, FileService>();
+
+        services.AddScoped<IEmailSender, EmailService>();
+
+
+
+
+        services.AddScoped<IGradingService, GradingService>();
+
+        services.AddScoped<IServiceHelpers, ServiceHelpers>();
+
+
+
+        services.AddScoped<IExamTimeoutService, ExamTimeoutService>();
+
+
+
+        services.AddScoped<ICoursePermissionService, CoursePermissionService>();
+
+
+        services.AddSingleton<HtmlSanitizer>(sp =>
+        {
+            var sanitizer = new HtmlSanitizer();
+            // Customize allowed tags/attributes if needed
+            // sanitizer.AllowedTags.Add("img");
+            return sanitizer;
+        });
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+
+        #endregion
+
+        // Register Cloudinary
+        var cloudinarySettings = new CloudinarySettings();
+        configuration.GetSection(CloudinarySettings.SectionName).Bind(cloudinarySettings);
+
+        if (!cloudinarySettings.IsValid())
+            throw new InvalidOperationException("Cloudinary settings are not properly configured in appsettings.json");
+
+        var cloudinaryAccount = new Account(
+            cloudinarySettings.CloudName,
+            cloudinarySettings.ApiKey,
+            cloudinarySettings.ApiSecret);
+
+        var cloudinary = new Cloudinary(cloudinaryAccount);
+        services.AddSingleton(cloudinary);
+        services.AddSingleton(cloudinarySettings);
+
+
+        services.Configure<KestrelServerOptions>(options =>
+        {
+            // Remove limit on body size (for Uploads)
+            options.Limits.MaxRequestBodySize = 25 * 1024 * 1024;
+        });
+
+        services.AddNeuraAuthorization();
+
+        return services;
+    }
+
+    private static IServiceCollection AddOpenApiServices(this IServiceCollection services)
+    {
+        services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
+
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(options =>
+        {
+            options.SwaggerDoc("v1", new OpenApiInfo { Title = "Neura API", Version = "v1" });
+
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            options.IncludeXmlComments(xmlPath);
+        });
+
+
+        return services;
+    }
+
+
+    private static IServiceCollection AddDatabase(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection") ??
+                               throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+        services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
+
+        return services;
+    }
+
+    private static IServiceCollection AddFluentValidation(this IServiceCollection services)
+    {
+        services
+            .AddFluentValidationAutoValidation()
+            .AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+
+        return services;
+    }
+
+    private static IServiceCollection AddMapster(this IServiceCollection services, params Assembly[] assembliesToScan)
+    {
+        var mappingConfiguration = TypeAdapterConfig.GlobalSettings;
+        mappingConfiguration.Scan(assembliesToScan);
+        services.AddSingleton<IMapper>(new Mapper(mappingConfiguration));
+        return services;
+    }
+
+
+    private static IServiceCollection AddAuth(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddIdentity<ApplicationUser, ApplicationRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
+        //services.AddTransient<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        //services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
+
+
+        services.AddSingleton<IJwtProvider, JwtProvider>();
+
+        //services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddOptions<JwtOptions>()
+            .BindConfiguration(JwtOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        var jwtSettings = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>();
+
+        services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(o =>
+            {
+                o.SaveToken = true;
+                o.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings?.Key!)),
+                    ValidIssuer = jwtSettings?.Issuer,
+                    ValidAudience = jwtSettings?.Audience
+                };
+                o.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        // Only activate for SignalR hub paths
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!path.StartsWithSegments("/hubs"))
+                            return Task.CompletedTask;
+
+                        // Pull token from query string (SignalR JS client convention)
+                        var accessToken = context.Request.Query["access_token"];
+
+                        if (!string.IsNullOrWhiteSpace(accessToken))
+                            context.Token = accessToken;
+
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILogger<JwtBearerEvents>>();
+
+                        logger.LogWarning(
+                            "JWT authentication failed: {Error}",
+                            context.Exception.Message);
+
+                        return Task.CompletedTask;
+                    }
+                };
+            })
+
+            .AddGoogle(options =>
+            {
+                options.ClientId = configuration["Authentication:Google:ClientId"]!;
+                options.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
+                options.CallbackPath = "/signin-google";
+            }).AddGitHub(options =>
+            {
+                options.ClientId = configuration["Authentication:GitHub:ClientId"]!;
+                options.ClientSecret = configuration["Authentication:GitHub:ClientSecret"]!;
+
+                // This must match the URL you put in GitHub Developer Settings
+                options.CallbackPath = "/signin-github";
+
+                // Required to get the user's email address
+                options.Scope.Add("user:email");
+            });
+
+        services.Configure<IdentityOptions>(options =>
+        {
+            options.Password.RequiredLength = 8;
+            options.SignIn.RequireConfirmedEmail = true;
+            options.User.RequireUniqueEmail = true;
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddHangfire(this IServiceCollection services, IConfiguration Configuration)
+    {
+        services.AddHangfire(configuration => configuration
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(Configuration.GetConnectionString("HangfireConnection")));
+
+        services.AddHangfireServer();
+
+        return services;
+    }
+    private static IServiceCollection AddSignalR(this IServiceCollection services,
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
+    {
+        var signalRBuilder = services.AddSignalR(options =>
+        {
+            // Ping every 15s — client must respond within 30s.
+            // If the client misses 2 pings, OnDisconnectedAsync fires.
+            // This is how we detect silent disconnects (phone screen off,
+            // network drop, etc.) rather than waiting for a TCP RST.
+            options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+
+            // Reject payloads > 32 KB.
+            // A message with 4,000 chars + sender metadata is ~6 KB.
+            // 32 KB gives comfortable headroom while preventing abuse.
+            options.MaximumReceiveMessageSize = 32 * 1024;
+
+            // Enable detailed errors in Development only.
+            // In Production, Hub exceptions return a generic message to
+            // the client — stack traces never leave the server.
+            options.EnableDetailedErrors = environment.IsDevelopment();
+        });
+
+        // ── Redis Backplane (Production / Staging only) ───────────────────────
+        var redisConnection = configuration.GetConnectionString("Redis");
+
+        if (!environment.IsDevelopment() && !string.IsNullOrWhiteSpace(redisConnection))
+        {
+            signalRBuilder.AddStackExchangeRedis(redisConnection, options =>
+            {
+                options.Configuration.ChannelPrefix =
+                    RedisChannel.Literal("community-hub");
+
+                options.Configuration.ReconnectRetryPolicy =
+                    new ExponentialRetry(deltaBackOffMilliseconds: 1_000);
+            });
+        }
+
+        // ── Presence Tracker DI ───────────────────────────────────────────────
+        // Phase 1 (Development + single server): in-memory
+        // Phase 2 (Production + multi-server):   Redis
+        //
+        // MUST be Singleton — presence state must survive across HTTP requests.
+        // A Scoped registration would create a fresh empty dictionary per request,
+        // destroying all tracked connections instantly.
+        if (environment.IsDevelopment())
+        {
+            services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+        }
+        else
+        {
+            // Phase 2: swap this line when RedisPresenceTracker is ready
+            services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+            // services.AddSingleton<IPresenceTracker, RedisPresenceTracker>();
+        }
+
+
+        // IPresenceTracker — MUST be Singleton.
+        // A Scoped or Transient registration would give each request a
+        // fresh empty dictionary, destroying all connection state.
+        services.AddScoped<IChatService, ChatService>();
+        services.AddScoped<IVoiceChannelService, VoiceChannelService>();
+        services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+        return services;
+    }
+    private static IServiceCollection AddRedis(this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var redisConnection = configuration.GetConnectionString("Redis");
+        if (!string.IsNullOrWhiteSpace(redisConnection))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(
+                ConnectionMultiplexer.Connect(redisConnection));
+        }
+        return services;
+    }
 }
