@@ -1,10 +1,5 @@
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Review;
 using System.Security.Claims;
 
@@ -14,7 +9,7 @@ public sealed class AddReviewEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("api/courses/{courseId}/reviews", async (
+        app.MapPost("courses/{courseId}/reviews", async (
             string courseId,
             [FromBody] ReviewRequest request,
             ClaimsPrincipal user,
@@ -26,8 +21,8 @@ public sealed class AddReviewEndpoint : IEndpoint
             var command = new AddReviewCommand(courseId, request, userId);
             var result = await sender.Send(command, ct);
 
-            return result.IsSuccess 
-                ? Results.NoContent() 
+            return result.IsSuccess
+                ? Results.NoContent()
                 : result.ToProblemMinimal();
         })
         .RequireAuthorization()
