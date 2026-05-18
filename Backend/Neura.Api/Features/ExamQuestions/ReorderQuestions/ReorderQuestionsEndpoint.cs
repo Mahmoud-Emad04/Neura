@@ -14,7 +14,7 @@ public sealed class ReorderQuestionsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("exams/{lessonId:int}/questions/reorder", async (
+        app.MapPut("api/exams/{lessonId:int}/questions/reorder", async (
             int lessonId,
             [FromBody] ReorderQuestionsRequest request,
             ClaimsPrincipal user,

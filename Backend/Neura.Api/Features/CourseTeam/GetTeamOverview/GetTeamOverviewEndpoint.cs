@@ -14,7 +14,7 @@ public sealed class GetTeamOverviewEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/{courseId:int}/team", async (
+        app.MapGet("api/courses/{courseId:int}/team", async (
             int courseId,
             ClaimsPrincipal user,
             ISender sender,

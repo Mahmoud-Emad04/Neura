@@ -12,7 +12,7 @@ public sealed class GetArticleContentEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("lessons/{id:int}/article", async (
+        app.MapGet("api/lessons/{id:int}/article", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,

@@ -12,7 +12,7 @@ public sealed class GetSectionLessonsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("lessons/section/{sectionId:int}", async (
+        app.MapGet("api/lessons/section/{sectionId:int}", async (
             int sectionId,
             ClaimsPrincipal user,
             ISender sender,

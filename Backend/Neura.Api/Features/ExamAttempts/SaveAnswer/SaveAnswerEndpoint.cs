@@ -14,7 +14,7 @@ public sealed class SaveAnswerEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("exam-attempts/{attemptId:int}/answers/{questionId:int}", async (
+        app.MapPut("api/exam-attempts/{attemptId:int}/answers/{questionId:int}", async (
             int attemptId,
             int questionId,
             [FromBody] SaveAnswerRequest request,

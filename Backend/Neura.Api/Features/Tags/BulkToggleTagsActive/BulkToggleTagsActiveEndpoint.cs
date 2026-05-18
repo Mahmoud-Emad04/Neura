@@ -15,7 +15,7 @@ public sealed class BulkToggleTagsActiveEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPatch("tags/bulk/toggle-active", async (
+        app.MapPatch("api/tags/bulk/toggle-active", async (
             [FromBody] BulkToggleTagsActiveRequest request,
             ClaimsPrincipal user,
             ISender sender,

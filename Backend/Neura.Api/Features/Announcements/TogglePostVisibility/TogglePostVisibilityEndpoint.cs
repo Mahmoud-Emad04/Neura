@@ -11,7 +11,7 @@ public sealed class TogglePostVisibilityEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("announcements/posts/{postId:int}/visibility", async (
+        app.MapPut("api/announcements/posts/{postId:int}/visibility", async (
             int postId,
             ClaimsPrincipal user,
             ISender sender,

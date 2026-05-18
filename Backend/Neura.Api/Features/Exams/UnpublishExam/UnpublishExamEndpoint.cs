@@ -12,7 +12,7 @@ public sealed class UnpublishExamEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("exams/{lessonId:int}/unpublish", async (
+        app.MapPut("api/exams/{lessonId:int}/unpublish", async (
             int lessonId,
             ClaimsPrincipal user,
             ISender sender,

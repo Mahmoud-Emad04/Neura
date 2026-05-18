@@ -13,7 +13,7 @@ public sealed class GetTagsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("tags", async (
+        app.MapGet("api/tags", async (
             [AsParameters] TagFilters filters,
             ISender sender,
             CancellationToken ct) =>

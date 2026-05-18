@@ -12,7 +12,7 @@ public sealed class EditMessageEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPatch("community/messages/{messageId:long}", async (
+        app.MapPatch("api/community/messages/{messageId:long}", async (
             long messageId,
             [FromBody] EditMessageRequest request,
             ClaimsPrincipal user,

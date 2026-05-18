@@ -13,7 +13,7 @@ public sealed class UpdatePostCommentEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("announcements/comments/{commentId:int}", async (
+        app.MapPut("api/announcements/comments/{commentId:int}", async (
             int commentId,
             [FromBody] PostCommentUpdateRequest request,
             ClaimsPrincipal user,

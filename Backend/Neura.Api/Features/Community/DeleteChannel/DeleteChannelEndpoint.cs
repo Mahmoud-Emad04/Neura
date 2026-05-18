@@ -11,7 +11,7 @@ public sealed class DeleteChannelEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("community/channels/{channelId:int}", async (
+        app.MapDelete("api/community/channels/{channelId:int}", async (
             int channelId,
             ClaimsPrincipal user,
             ISender sender,

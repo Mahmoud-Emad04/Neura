@@ -15,7 +15,7 @@ public sealed class CreateTagEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("tags", async (
+        app.MapPost("api/tags", async (
             [FromBody] CreateTagRequest request,
             ClaimsPrincipal user,
             ISender sender,

@@ -14,7 +14,7 @@ public sealed class UpdateCourseDetailsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("courses/{courseId}", async (
+        app.MapPut("api/courses/{courseId}", async (
             string courseId,
             [FromForm] CourseUpdateRequest request,
             ClaimsPrincipal user,

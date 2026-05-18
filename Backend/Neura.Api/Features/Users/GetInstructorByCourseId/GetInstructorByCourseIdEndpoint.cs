@@ -10,7 +10,7 @@ public sealed class GetInstructorByCourseIdEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("users/course/{courseId}", async (
+        app.MapGet("api/users/course/{courseId}", async (
             string courseId,
             ISender sender,
             CancellationToken ct) =>

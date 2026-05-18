@@ -15,7 +15,7 @@ public sealed class BulkUpdateTagsOrderEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPatch("tags/bulk/order", async (
+        app.MapPatch("api/tags/bulk/order", async (
             [FromBody] BulkUpdateTagsOrderRequest request,
             ClaimsPrincipal user,
             ISender sender,

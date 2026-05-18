@@ -12,7 +12,7 @@ public sealed class GetAllPostsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("announcements/posts", async (
+        app.MapGet("api/announcements/posts", async (
             [FromQuery] int? pageNumber, 
             [FromQuery] int? pageSize,
             ClaimsPrincipal user,

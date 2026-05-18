@@ -10,7 +10,7 @@ public sealed class GetTagBySlugEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("tags/slug/{slug}", async (
+        app.MapGet("api/tags/slug/{slug}", async (
             string slug,
             ISender sender,
             CancellationToken ct) =>

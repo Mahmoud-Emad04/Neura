@@ -11,7 +11,7 @@ public sealed class DeleteMessageEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("community/messages/{messageId:long}", async (
+        app.MapDelete("api/community/messages/{messageId:long}", async (
             long messageId,
             ClaimsPrincipal user,
             ISender sender,

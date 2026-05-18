@@ -13,7 +13,7 @@ public sealed class ReorderChannelsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("community/courses/{courseId:int}/channels/reorder", async (
+        app.MapPut("api/community/courses/{courseId:int}/channels/reorder", async (
             int courseId,
             [FromBody] ReorderChannelsRequest request,
             ClaimsPrincipal user,

@@ -14,7 +14,7 @@ public sealed class UpdateSectionEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("sections/{sectionId:int}", async (
+        app.MapPut("api/sections/{sectionId:int}", async (
             int sectionId,
             [FromBody] SectionUpdateRequest request,
             ClaimsPrincipal user,

@@ -12,7 +12,7 @@ public sealed class SendMessageEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("community/channels/{channelId:int}/messages", async (
+        app.MapPost("api/community/channels/{channelId:int}/messages", async (
             int channelId,
             SendMessageRequest request,
             ClaimsPrincipal user,

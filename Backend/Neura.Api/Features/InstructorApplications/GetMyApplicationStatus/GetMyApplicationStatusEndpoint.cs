@@ -12,7 +12,7 @@ public sealed class GetMyApplicationStatusEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("instructor/application", async (
+        app.MapGet("api/instructor/application", async (
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken ct) =>

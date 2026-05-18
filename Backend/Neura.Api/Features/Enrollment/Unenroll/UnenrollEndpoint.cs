@@ -12,7 +12,7 @@ public sealed class UnenrollEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId:int}/unenroll", async (
+        app.MapPost("api/courses/{courseId:int}/unenroll", async (
             int courseId,
             ClaimsPrincipal user,
             ISender sender,

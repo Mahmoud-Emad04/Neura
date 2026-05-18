@@ -14,7 +14,7 @@ public sealed class UpdateApplicationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("instructor/application", async (
+        app.MapPut("api/instructor/application", async (
             [FromBody] UpdateApplicationRequest request,
             ClaimsPrincipal user,
             ISender sender,

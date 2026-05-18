@@ -12,7 +12,7 @@ public sealed class GetExamByLessonIdEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("exams/by-lesson/{lessonId:int}", async (
+        app.MapGet("api/exams/by-lesson/{lessonId:int}", async (
             int lessonId,
             ClaimsPrincipal user,
             ISender sender,

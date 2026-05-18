@@ -11,7 +11,7 @@ public sealed class GetPostByIdEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("announcements/posts/{postId:int}", async (
+        app.MapGet("api/announcements/posts/{postId:int}", async (
             int postId,
             ClaimsPrincipal user,
             ISender sender,

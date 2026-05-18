@@ -13,7 +13,7 @@ public sealed class ToggleTagActiveEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPatch("tags/{id:int}/toggle-active", async (
+        app.MapPatch("api/tags/{id:int}/toggle-active", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,

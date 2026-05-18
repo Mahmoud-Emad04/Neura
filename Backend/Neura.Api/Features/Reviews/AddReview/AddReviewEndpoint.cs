@@ -14,7 +14,7 @@ public sealed class AddReviewEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId}/reviews", async (
+        app.MapPost("api/courses/{courseId}/reviews", async (
             string courseId,
             [FromBody] ReviewRequest request,
             ClaimsPrincipal user,

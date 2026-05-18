@@ -14,7 +14,7 @@ public sealed class UpdateQuestionEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("exams/{lessonId:int}/questions/{questionId:int}", async (
+        app.MapPut("api/exams/{lessonId:int}/questions/{questionId:int}", async (
             int questionId,
             [FromBody] UpdateQuestionRequest request,
             ClaimsPrincipal user,

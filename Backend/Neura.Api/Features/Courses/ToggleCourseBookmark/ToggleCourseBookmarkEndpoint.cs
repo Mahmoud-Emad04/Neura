@@ -12,7 +12,7 @@ public sealed class ToggleCourseBookmarkEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId}/bookmark", async (
+        app.MapPost("api/courses/{courseId}/bookmark", async (
             string courseId,
             ClaimsPrincipal user,
             ISender sender,

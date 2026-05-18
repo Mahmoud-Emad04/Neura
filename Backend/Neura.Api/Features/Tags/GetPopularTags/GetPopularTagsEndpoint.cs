@@ -11,7 +11,7 @@ public sealed class GetPopularTagsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("tags/popular", async (
+        app.MapGet("api/tags/popular", async (
             [FromQuery] int count,
             ISender sender,
             CancellationToken ct) =>

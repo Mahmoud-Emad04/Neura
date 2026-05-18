@@ -12,7 +12,7 @@ public sealed class GetCurrentUserPostsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("announcements/posts/my", async (
+        app.MapGet("api/announcements/posts/my", async (
             [FromQuery] bool? isPublic,
             [FromQuery] int? pageNumber, 
             [FromQuery] int? pageSize,

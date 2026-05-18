@@ -13,7 +13,7 @@ public sealed class CancelInvitationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("courses/{courseId:int}/team/invitations/{invitationId:int}", async (
+        app.MapDelete("api/courses/{courseId:int}/team/invitations/{invitationId:int}", async (
             int courseId,
             int invitationId,
             ClaimsPrincipal user,

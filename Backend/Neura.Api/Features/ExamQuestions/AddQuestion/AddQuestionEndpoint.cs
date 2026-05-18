@@ -14,7 +14,7 @@ public sealed class AddQuestionEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("exams/{lessonId:int}/questions", async (
+        app.MapPost("api/exams/{lessonId:int}/questions", async (
             int lessonId,
             [FromBody] CreateQuestionRequest request,
             ClaimsPrincipal user,

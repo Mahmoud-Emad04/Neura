@@ -13,7 +13,7 @@ public sealed class CreateChannelEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("community/courses/{courseId:int}/channels", async (
+        app.MapPost("api/community/courses/{courseId:int}/channels", async (
             int courseId,
             [FromBody] CreateChannelRequest request,
             ClaimsPrincipal user,

@@ -15,7 +15,7 @@ public sealed class BulkDeleteTagsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("tags/bulk", async (
+        app.MapDelete("api/tags/bulk", async (
             [FromBody] BulkDeleteTagsRequest request,
             [FromQuery] bool force,
             ClaimsPrincipal user,

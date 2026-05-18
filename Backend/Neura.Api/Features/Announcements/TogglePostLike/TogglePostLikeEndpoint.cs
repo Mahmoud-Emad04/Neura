@@ -11,7 +11,7 @@ public sealed class TogglePostLikeEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("announcements/posts/{postId:int}/likes", async (
+        app.MapPost("api/announcements/posts/{postId:int}/likes", async (
             int postId,
             ClaimsPrincipal user,
             ISender sender,

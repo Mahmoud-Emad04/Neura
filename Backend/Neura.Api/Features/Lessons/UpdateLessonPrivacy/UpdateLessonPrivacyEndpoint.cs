@@ -14,7 +14,7 @@ public sealed class UpdateLessonPrivacyEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("lessons/{id:int}/privacy", async (
+        app.MapPut("api/lessons/{id:int}/privacy", async (
             int id,
             [FromBody] UpdateLessonPrivacyRequest request,
             ClaimsPrincipal user,

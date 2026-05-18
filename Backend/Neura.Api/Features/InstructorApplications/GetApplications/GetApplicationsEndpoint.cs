@@ -14,7 +14,7 @@ public sealed class GetApplicationsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("instructor/applications", async (
+        app.MapGet("api/instructor/applications", async (
             [FromQuery] ApplicationStatus? status,
             [FromQuery] int page,
             [FromQuery] int pageSize,

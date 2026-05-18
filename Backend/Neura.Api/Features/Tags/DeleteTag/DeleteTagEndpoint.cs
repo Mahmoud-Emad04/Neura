@@ -14,7 +14,7 @@ public sealed class DeleteTagEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("tags/{id:int}", async (
+        app.MapDelete("api/tags/{id:int}", async (
             int id,
             [FromQuery] bool force,
             ClaimsPrincipal user,

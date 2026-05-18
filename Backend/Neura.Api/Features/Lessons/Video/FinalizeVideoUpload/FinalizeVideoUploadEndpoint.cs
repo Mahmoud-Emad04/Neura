@@ -14,7 +14,7 @@ public sealed class FinalizeVideoUploadEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("lessons/{id:int}/video/finalize", async (
+        app.MapPost("api/lessons/{id:int}/video/finalize", async (
             int id,
             [FromBody] FinalizeVideoUploadRequest request,
             ClaimsPrincipal user,

@@ -14,7 +14,7 @@ public sealed class UpdateLessonPositionEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("lessons/{id:int}/position", async (
+        app.MapPut("api/lessons/{id:int}/position", async (
             int id,
             [FromBody] UpdateLessonPositionRequest request,
             ClaimsPrincipal user,

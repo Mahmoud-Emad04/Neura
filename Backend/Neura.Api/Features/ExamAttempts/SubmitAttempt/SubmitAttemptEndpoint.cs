@@ -12,7 +12,7 @@ public sealed class SubmitAttemptEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("exam-attempts/{attemptId:int}/submit", async (
+        app.MapPost("api/exam-attempts/{attemptId:int}/submit", async (
             int attemptId,
             ClaimsPrincipal user,
             ISender sender,

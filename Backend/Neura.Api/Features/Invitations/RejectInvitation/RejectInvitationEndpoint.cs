@@ -11,7 +11,7 @@ public sealed class RejectInvitationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("invitations/{token}/reject", async (
+        app.MapPost("api/invitations/{token}/reject", async (
             string token,
             ClaimsPrincipal user,
             ISender sender,

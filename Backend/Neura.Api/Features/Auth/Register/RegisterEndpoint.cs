@@ -1,7 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Neura.Api.Infrastructure;
 using Neura.Core.Contracts.Authentication;
 
@@ -24,8 +21,8 @@ public sealed class RegisterEndpoint : IEndpoint
             var command = new RegisterCommand(request, origin);
             var result = await sender.Send(command, ct);
 
-            return result.IsSuccess 
-                ? Results.Ok() 
+            return result.IsSuccess
+                ? Results.Ok()
                 : result.ToProblemMinimal();
         })
         .AllowAnonymous()

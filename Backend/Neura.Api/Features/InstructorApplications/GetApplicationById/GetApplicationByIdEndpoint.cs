@@ -11,7 +11,7 @@ public sealed class GetApplicationByIdEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("instructor/applications/{id:int}", async (
+        app.MapGet("api/instructor/applications/{id:int}", async (
             int id,
             ISender sender,
             CancellationToken ct) =>

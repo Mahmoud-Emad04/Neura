@@ -13,7 +13,7 @@ public sealed class UpdateChannelEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("community/channels/{channelId:int}", async (
+        app.MapPut("api/community/channels/{channelId:int}", async (
             int channelId,
             [FromBody] UpdateChannelRequest request,
             ClaimsPrincipal user,

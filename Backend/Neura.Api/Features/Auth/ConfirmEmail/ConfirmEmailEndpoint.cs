@@ -1,7 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Neura.Api.Infrastructure;
 using Neura.Core.Contracts.Authentication;
 
@@ -19,8 +16,8 @@ public sealed class ConfirmEmailEndpoint : IEndpoint
             var command = new ConfirmEmailCommand(request);
             var result = await sender.Send(command, ct);
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
                 : result.ToProblemMinimal();
         })
         .AllowAnonymous()

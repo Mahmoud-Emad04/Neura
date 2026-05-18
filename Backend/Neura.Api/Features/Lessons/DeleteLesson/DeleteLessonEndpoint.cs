@@ -12,7 +12,7 @@ public sealed class DeleteLessonEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("lessons/{id:int}", async (
+        app.MapDelete("api/lessons/{id:int}", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,

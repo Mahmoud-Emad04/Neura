@@ -11,7 +11,7 @@ public sealed class GetVoiceParticipantsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("community/channels/{channelId:int}/voice-participants", async (
+        app.MapGet("api/community/channels/{channelId:int}/voice-participants", async (
             int channelId,
             ClaimsPrincipal user,
             ISender sender,

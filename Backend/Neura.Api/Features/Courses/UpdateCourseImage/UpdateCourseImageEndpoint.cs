@@ -14,7 +14,7 @@ public sealed class UpdateCourseImageEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("courses/{courseId}/cover-image", async (
+        app.MapPut("api/courses/{courseId}/cover-image", async (
             string courseId,
             [FromForm] UploadImageRequest request,
             ClaimsPrincipal user,

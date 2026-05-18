@@ -12,7 +12,7 @@ public sealed class MarkLessonCompletedEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("lessons/{lessonId:int}/complete", async (
+        app.MapPost("api/lessons/{lessonId:int}/complete", async (
             int lessonId,
             ClaimsPrincipal user,
             ISender sender,

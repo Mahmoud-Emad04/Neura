@@ -13,7 +13,7 @@ public sealed class GetReviewsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("reviews/course/{courseId}", async (
+        app.MapGet("api/reviews/course/{courseId}", async (
             string courseId,
             [FromQuery] int page,
             [FromQuery] int pageSize,

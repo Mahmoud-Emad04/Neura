@@ -12,7 +12,7 @@ public sealed class PublishExamEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("exams/{lessonId:int}/publish", async (
+        app.MapPut("api/exams/{lessonId:int}/publish", async (
             int lessonId,
             ClaimsPrincipal user,
             ISender sender,

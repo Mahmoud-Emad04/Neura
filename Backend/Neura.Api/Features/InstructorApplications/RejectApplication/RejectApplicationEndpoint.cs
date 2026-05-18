@@ -15,7 +15,7 @@ public sealed class RejectApplicationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("instructor/applications/{id:int}/reject", async (
+        app.MapPost("api/instructor/applications/{id:int}/reject", async (
             int id,
             [FromBody] ReviewApplicationRequest request,
             ClaimsPrincipal user,

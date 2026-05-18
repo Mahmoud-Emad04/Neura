@@ -12,7 +12,7 @@ public sealed class GetVideoLinkEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("lessons/{id:int}/video/link", async (
+        app.MapGet("api/lessons/{id:int}/video/link", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,

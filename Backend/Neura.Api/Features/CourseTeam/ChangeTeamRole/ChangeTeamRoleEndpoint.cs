@@ -15,7 +15,7 @@ public sealed class ChangeTeamRoleEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPatch("courses/{courseId:int}/team/members/{userId}/role", async (
+        app.MapPatch("api/courses/{courseId:int}/team/members/{userId}/role", async (
             int courseId,
             string userId,
             [FromBody] ChangeTeamRoleRequest request,

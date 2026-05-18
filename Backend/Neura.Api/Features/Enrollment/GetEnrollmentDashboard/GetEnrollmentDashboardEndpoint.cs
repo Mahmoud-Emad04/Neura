@@ -12,7 +12,7 @@ public sealed class GetEnrollmentDashboardEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/enrollment-dashboard", async (
+        app.MapGet("api/courses/enrollment-dashboard", async (
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken ct) =>

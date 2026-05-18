@@ -13,7 +13,7 @@ public sealed class ResendInvitationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId:int}/team/invitations/{invitationId:int}/resend", async (
+        app.MapPost("api/courses/{courseId:int}/team/invitations/{invitationId:int}/resend", async (
             int courseId,
             int invitationId,
             ClaimsPrincipal user,

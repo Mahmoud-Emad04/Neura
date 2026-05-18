@@ -13,7 +13,7 @@ public sealed class GetBookmarkedCoursesEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/bookmarked", async (
+        app.MapGet("api/courses/bookmarked", async (
             int? pageNumber,
             int? pageSize,
             string? searchValue,

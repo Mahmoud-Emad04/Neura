@@ -11,7 +11,7 @@ public sealed class GetTagByIdEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("tags/{id:int}", async (
+        app.MapGet("api/tags/{id:int}", async (
             int id,
             ISender sender,
             CancellationToken ct) =>

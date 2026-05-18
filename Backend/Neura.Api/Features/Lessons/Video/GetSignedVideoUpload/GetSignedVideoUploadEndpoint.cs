@@ -12,7 +12,7 @@ public sealed class GetSignedVideoUploadEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("lessons/{id:int}/video/signed-upload", async (
+        app.MapPost("api/lessons/{id:int}/video/signed-upload", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,

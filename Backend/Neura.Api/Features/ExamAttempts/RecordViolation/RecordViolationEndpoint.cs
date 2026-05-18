@@ -14,7 +14,7 @@ public sealed class RecordViolationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("exam-attempts/{attemptId:int}/violations", async (
+        app.MapPost("api/exam-attempts/{attemptId:int}/violations", async (
             int attemptId,
             [FromBody] ViolationRequest request,
             ClaimsPrincipal user,

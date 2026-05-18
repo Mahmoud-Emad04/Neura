@@ -14,7 +14,7 @@ public sealed class GetEditableCoursesEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/my/editable", async (
+        app.MapGet("api/courses/my/editable", async (
             int? pageNumber,
             int? pageSize,
             string? searchTerm,

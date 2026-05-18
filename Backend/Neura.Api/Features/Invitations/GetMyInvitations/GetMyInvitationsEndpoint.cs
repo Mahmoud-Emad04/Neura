@@ -12,7 +12,7 @@ public sealed class GetMyInvitationsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("invitations/my", async (
+        app.MapGet("api/invitations/my", async (
             ClaimsPrincipal user,
             ISender sender,
             CancellationToken ct) =>

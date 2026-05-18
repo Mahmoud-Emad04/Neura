@@ -11,7 +11,7 @@ public sealed class HandleCheatingAlertEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("webhooks/cheating_alert", async (
+        app.MapPost("api/webhooks/cheating_alert", async (
             CheatingAlertRequest request,
             ISender sender,
             CancellationToken ct) =>

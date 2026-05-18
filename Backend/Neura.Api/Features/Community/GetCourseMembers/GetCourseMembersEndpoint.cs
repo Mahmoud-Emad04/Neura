@@ -11,7 +11,7 @@ public sealed class GetCourseMembersEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("community/courses/{courseId:int}/members", async (
+        app.MapGet("api/community/courses/{courseId:int}/members", async (
             int courseId,
             ClaimsPrincipal user,
             ISender sender,

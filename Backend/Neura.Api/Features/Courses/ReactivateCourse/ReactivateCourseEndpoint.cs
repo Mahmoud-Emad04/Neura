@@ -12,7 +12,7 @@ public sealed class ReactivateCourseEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId}/reactivate", async (
+        app.MapPost("api/courses/{courseId}/reactivate", async (
             string courseId,
             ClaimsPrincipal user,
             ISender sender,

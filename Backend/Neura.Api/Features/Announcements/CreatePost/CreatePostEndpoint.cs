@@ -13,7 +13,7 @@ public sealed class CreatePostEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("announcements/posts", async (
+        app.MapPost("api/announcements/posts", async (
             [FromForm] PostRequest request,
             ClaimsPrincipal user,
             ISender sender,

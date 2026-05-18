@@ -15,7 +15,7 @@ public sealed class InviteTeamMemberEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId:int}/team/invite", async (
+        app.MapPost("api/courses/{courseId:int}/team/invite", async (
             int courseId,
             [FromBody] InviteTeamMemberRequest request,
             ClaimsPrincipal user,

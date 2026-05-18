@@ -12,7 +12,7 @@ public sealed class GetTeamMemberEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/{courseId:int}/team/members/{userId}", async (
+        app.MapGet("api/courses/{courseId:int}/team/members/{userId}", async (
             int courseId,
             string userId,
             ISender sender,

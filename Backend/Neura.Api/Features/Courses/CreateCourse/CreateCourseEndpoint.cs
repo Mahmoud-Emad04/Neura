@@ -14,7 +14,7 @@ public sealed class CreateCourseEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses", async (
+        app.MapPost("api/courses", async (
             [FromForm] CourseRequest request,
             ClaimsPrincipal user,
             ISender sender,

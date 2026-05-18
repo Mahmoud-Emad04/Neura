@@ -14,7 +14,7 @@ public sealed class UpdateExamSettingsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("exams/{lessonId:int}/settings", async (
+        app.MapPut("api/exams/{lessonId:int}/settings", async (
             int lessonId,
             [FromBody] UpdateExamSettingsRequest request,
             ClaimsPrincipal user,

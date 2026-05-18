@@ -14,7 +14,7 @@ public sealed class CreateSectionEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId}/sections", async (
+        app.MapPost("api/courses/{courseId}/sections", async (
             string courseId,
             [FromBody] SectionRequest request,
             ClaimsPrincipal user,

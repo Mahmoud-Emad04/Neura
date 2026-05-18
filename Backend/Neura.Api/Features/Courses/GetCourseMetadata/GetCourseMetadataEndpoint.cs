@@ -12,7 +12,7 @@ public sealed class GetCourseMetadataEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/{courseId}/metadata", async (
+        app.MapGet("api/courses/{courseId}/metadata", async (
             string courseId,
             HttpContext httpContext,
             ISender sender,

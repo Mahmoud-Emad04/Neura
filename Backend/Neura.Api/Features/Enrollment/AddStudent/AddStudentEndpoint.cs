@@ -13,7 +13,7 @@ public sealed class AddStudentEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId:int}/students", async (
+        app.MapPost("api/courses/{courseId:int}/students", async (
             int courseId,
             AddStudentRequest request,
             ClaimsPrincipal user,

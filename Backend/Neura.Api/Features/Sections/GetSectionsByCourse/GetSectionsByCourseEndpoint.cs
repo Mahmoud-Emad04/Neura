@@ -11,7 +11,7 @@ public sealed class GetSectionsByCourseEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/{courseId}/sections", async (
+        app.MapGet("api/courses/{courseId}/sections", async (
             string courseId,
             ISender sender,
             CancellationToken ct) =>

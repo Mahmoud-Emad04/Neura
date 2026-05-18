@@ -10,7 +10,7 @@ public sealed class GetActiveTagsEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("tags/active", async (
+        app.MapGet("api/tags/active", async (
             ISender sender,
             CancellationToken ct) =>
         {

@@ -13,7 +13,7 @@ public sealed class ApproveApplicationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("instructor/applications/{id:int}/approve", async (
+        app.MapPost("api/instructor/applications/{id:int}/approve", async (
             int id,
             ClaimsPrincipal user,
             ISender sender,

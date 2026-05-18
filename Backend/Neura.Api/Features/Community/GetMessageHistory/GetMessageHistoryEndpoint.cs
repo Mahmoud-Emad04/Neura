@@ -12,7 +12,7 @@ public sealed class GetMessageHistoryEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("community/channels/{channelId:int}/messages", async (
+        app.MapGet("api/community/channels/{channelId:int}/messages", async (
             int channelId,
             [AsParameters] GetMessageHistoryRequest request,
             ClaimsPrincipal user,

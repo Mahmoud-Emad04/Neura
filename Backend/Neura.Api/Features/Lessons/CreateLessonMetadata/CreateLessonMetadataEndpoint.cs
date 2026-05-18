@@ -14,7 +14,7 @@ public sealed class CreateLessonMetadataEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("lessons/{sectionId:int}/init", async (
+        app.MapPost("api/lessons/{sectionId:int}/init", async (
             int sectionId,
             [FromBody] CreateLessonRequest request,
             ClaimsPrincipal user,

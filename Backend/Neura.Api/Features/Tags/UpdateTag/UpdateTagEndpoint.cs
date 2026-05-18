@@ -15,7 +15,7 @@ public sealed class UpdateTagEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("tags/{id:int}", async (
+        app.MapPut("api/tags/{id:int}", async (
             int id,
             [FromBody] UpdateTagRequest request,
             ClaimsPrincipal user,

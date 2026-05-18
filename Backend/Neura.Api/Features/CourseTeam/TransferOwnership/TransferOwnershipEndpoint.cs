@@ -15,7 +15,7 @@ public sealed class TransferOwnershipEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("courses/{courseId:int}/team/transfer", async (
+        app.MapPost("api/courses/{courseId:int}/team/transfer", async (
             int courseId,
             [FromBody] TransferOwnershipRequest request,
             ClaimsPrincipal user,

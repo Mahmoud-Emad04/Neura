@@ -1,11 +1,5 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using Neura.Api.Infrastructure;
-using Neura.Core.Entities;
 
 namespace Neura.Api.Features.Auth.ExternalLogin;
 

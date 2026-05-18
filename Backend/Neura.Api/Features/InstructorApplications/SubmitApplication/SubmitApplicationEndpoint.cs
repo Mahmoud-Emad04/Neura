@@ -14,7 +14,7 @@ public sealed class SubmitApplicationEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("instructor/apply", async (
+        app.MapPost("api/instructor/apply", async (
             [FromBody] SubmitApplicationRequest request,
             ClaimsPrincipal user,
             ISender sender,

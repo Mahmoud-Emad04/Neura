@@ -13,7 +13,7 @@ public sealed class UpdatePostImageEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("announcements/posts/{postId:int}/image", async (
+        app.MapPut("api/announcements/posts/{postId:int}/image", async (
             int postId,
             [FromForm] UploadImageRequest request,
             ClaimsPrincipal user,

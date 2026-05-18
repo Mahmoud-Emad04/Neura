@@ -13,7 +13,7 @@ public sealed class RemoveTeamMemberEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapDelete("courses/{courseId:int}/team/members/{userId}", async (
+        app.MapDelete("api/courses/{courseId:int}/team/members/{userId}", async (
             int courseId,
             string userId,
             ClaimsPrincipal user,

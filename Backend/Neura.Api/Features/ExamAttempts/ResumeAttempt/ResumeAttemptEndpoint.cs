@@ -12,7 +12,7 @@ public sealed class ResumeAttemptEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("exam-attempts/{attemptId:int}/resume", async (
+        app.MapGet("api/exam-attempts/{attemptId:int}/resume", async (
             int attemptId,
             ClaimsPrincipal user,
             ISender sender,

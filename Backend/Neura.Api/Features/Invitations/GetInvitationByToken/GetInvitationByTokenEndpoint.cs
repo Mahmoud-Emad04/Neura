@@ -10,7 +10,7 @@ public sealed class GetInvitationByTokenEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("invitations/{token}", async (
+        app.MapGet("api/invitations/{token}", async (
             string token,
             ISender sender,
             CancellationToken ct) =>

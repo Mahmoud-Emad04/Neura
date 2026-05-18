@@ -1,8 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
 using Neura.Api.Extensions;
 using Neura.Api.Infrastructure;
 using Neura.Core.Contracts.Users;
@@ -24,8 +20,8 @@ public sealed class ChangePasswordEndpoint : IEndpoint
             var command = new ChangePasswordCommand(userId, request);
             var result = await sender.Send(command, ct);
 
-            return result.IsSuccess 
-                ? Results.NoContent() 
+            return result.IsSuccess
+                ? Results.NoContent()
                 : result.ToProblemMinimal();
         })
         .RequireAuthorization()

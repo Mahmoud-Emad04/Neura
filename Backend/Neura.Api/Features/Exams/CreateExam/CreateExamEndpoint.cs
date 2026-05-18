@@ -13,7 +13,7 @@ public sealed class CreateExamEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPost("exams", async (
+        app.MapPost("api/exams", async (
             [FromBody] CreateExamRequest request,
             ClaimsPrincipal user,
             ISender sender,

@@ -12,7 +12,7 @@ public sealed class ToggleSectionStatusEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapPut("sections/{sectionId:int}/status", async (
+        app.MapPut("api/sections/{sectionId:int}/status", async (
             int sectionId,
             ClaimsPrincipal user,
             ISender sender,

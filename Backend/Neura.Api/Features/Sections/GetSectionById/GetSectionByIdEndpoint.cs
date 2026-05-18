@@ -11,7 +11,7 @@ public sealed class GetSectionByIdEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("sections/{sectionId:int}", async (
+        app.MapGet("api/sections/{sectionId:int}", async (
             int sectionId,
             ISender sender,
             CancellationToken ct) =>

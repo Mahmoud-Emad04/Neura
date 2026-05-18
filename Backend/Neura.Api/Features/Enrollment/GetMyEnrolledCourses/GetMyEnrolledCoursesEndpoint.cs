@@ -13,7 +13,7 @@ public sealed class GetMyEnrolledCoursesEndpoint : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("courses/enrolled", async (
+        app.MapGet("api/courses/enrolled", async (
             int? pageNumber,
             int? pageSize,
             string? searchValue,
