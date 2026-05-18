@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace Neura.Api.Infrastructure;
@@ -25,8 +22,7 @@ public static class EndpointExtensions
         using var scope = app.Services.CreateScope();
         var endpoints = scope.ServiceProvider.GetRequiredService<IEnumerable<IEndpoint>>();
 
-        var routeGroup = app.MapGroup("api")
-                            .WithOpenApi()
+        var routeGroup = app.MapGroup("").WithOpenApi()
                             .AddEndpointFilter<ValidationFilter>();
 
         foreach (var endpoint in endpoints)
