@@ -1,42 +1,48 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Community.DeleteChannel;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using System.Security.Claims;
 
-public sealed class DeleteChannelEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapDelete("api/community/channels/{channelId:int}", async (
-            int channelId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Community.DeleteChannel;
 
-            try
-            {
-                var command = new DeleteChannelCommand(channelId, userId);
-                await sender.Send(command, ct);
-                
-                return Results.NoContent();
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Results.Forbid();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return Results.NotFound(ex.Message);
-            }
-        })
-        .RequireAuthorization()
-        .WithTags("Community")
-        .WithName("DeleteChannel");
-    }
-}
+//public sealed class DeleteChannelEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapDelete("api/community/channels/{channelId:int}", async (
+//            int channelId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+//            try
+//            {
+//                var command = new DeleteChannelCommand(channelId, userId);
+//                await sender.Send(command, ct);
+
+//                return Results.NoContent();
+//            }
+//            catch (UnauthorizedAccessException ex)
+//            {
+//                return Results.Forbid();
+//            }
+//            catch (KeyNotFoundException ex)
+//            {
+//                return Results.NotFound(ex.Message);
+//            }
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Community")
+//        .WithName("DeleteChannel");
+//    }
+//}

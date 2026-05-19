@@ -1,34 +1,40 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using System.Security.Claims;
+// ═══════════════════════════════════════════════════════════════════════════
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by CoursesController (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ═══════════════════════════════════════════════════════════════════════════
 
-namespace Neura.Api.Features.Courses.CompleteCourse;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using System.Security.Claims;
 
-public sealed class CompleteCourseEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPost("api/courses/{courseId}/complete", async (
-            string courseId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Courses.CompleteCourse;
 
-            var command = new CompleteCourseCommand(courseId, userId);
-            var result = await sender.Send(command, ct);
+//public sealed class CompleteCourseEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPost("api/courses/{courseId}/complete", async (
+//            string courseId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization("CoursePermission_ManageSettings")
-        .WithTags("Courses")
-        .WithName("CompleteCourse");
-    }
-}
+//            var command = new CompleteCourseCommand(courseId, userId);
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess
+//                ? Results.Ok(result.Value)
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization("CoursePermission_ManageSettings")
+//        .WithTags("Courses")
+//        .WithName("CompleteCourse");
+//    }
+//}

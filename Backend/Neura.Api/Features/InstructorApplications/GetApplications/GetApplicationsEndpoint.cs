@@ -1,38 +1,44 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Enums;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.InstructorApplications.GetApplications;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using Neura.Core.Authorization.Attributes;
+//using Neura.Core.Enums;
 
-public sealed class GetApplicationsEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/instructor/applications", async (
-            [FromQuery] ApplicationStatus? status,
-            [FromQuery] int page,
-            [FromQuery] int pageSize,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            page = page <= 0 ? 1 : page;
-            pageSize = pageSize <= 0 ? 10 : pageSize;
+//namespace Neura.Api.Features.InstructorApplications.GetApplications;
 
-            var query = new GetApplicationsQuery(status, page, pageSize);
-            var result = await sender.Send(query, ct);
+//public sealed class GetApplicationsEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/instructor/applications", async (
+//            [FromQuery] ApplicationStatus? status,
+//            [FromQuery] int page,
+//            [FromQuery] int pageSize,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            page = page <= 0 ? 1 : page;
+//            pageSize = pageSize <= 0 ? 10 : pageSize;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .WithMetadata(new AdminOnlyAttribute())
-        .WithTags("InstructorApplication")
-        .WithName("GetApplications");
-    }
-}
+//            var query = new GetApplicationsQuery(status, page, pageSize);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok(result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .WithMetadata(new AdminOnlyAttribute())
+//        .WithTags("InstructorApplication")
+//        .WithName("GetApplications");
+//    }
+//}

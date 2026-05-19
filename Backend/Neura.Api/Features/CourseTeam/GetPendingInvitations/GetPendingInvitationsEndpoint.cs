@@ -1,32 +1,38 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Enums;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.CourseTeam.GetPendingInvitations;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Authorization.Attributes;
+//using Neura.Core.Enums;
 
-public sealed class GetPendingInvitationsEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/courses/{courseId:int}/team/invitations", async (
-            int courseId,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var query = new GetPendingInvitationsQuery(courseId);
-            var result = await sender.Send(query, ct);
+//namespace Neura.Api.Features.CourseTeam.GetPendingInvitations;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithMetadata(new HasCoursePermissionAttribute(CoursePermission.ManageTeam))
-        .WithTags("CourseTeam")
-        .WithName("GetPendingInvitations");
-    }
-}
+//public sealed class GetPendingInvitationsEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/courses/{courseId:int}/team/invitations", async (
+//            int courseId,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var query = new GetPendingInvitationsQuery(courseId);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok(result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithMetadata(new HasCoursePermissionAttribute(CoursePermission.ManageTeam))
+//        .WithTags("CourseTeam")
+//        .WithName("GetPendingInvitations");
+//    }
+//}

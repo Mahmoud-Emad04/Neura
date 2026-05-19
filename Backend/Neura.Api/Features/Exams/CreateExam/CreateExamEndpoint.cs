@@ -1,35 +1,41 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Contracts.Exam;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Exams.CreateExam;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Contracts.Exam;
+//using System.Security.Claims;
 
-public sealed class CreateExamEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPost("api/exams", async (
-            [FromBody] CreateExamRequest request,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Exams.CreateExam;
 
-            var command = new CreateExamCommand(request, userId);
-            var result = await sender.Send(command, ct);
+//public sealed class CreateExamEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPost("api/exams", async (
+//            [FromBody] CreateExamRequest request,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.CreatedAtRoute("GetExamById", new { lessonId = result.Value.LessonId }, result.Value)
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("Exams")
-        .WithName("CreateExam");
-    }
-}
+//            var command = new CreateExamCommand(request, userId);
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess 
+//                ? Results.CreatedAtRoute("GetExamById", new { lessonId = result.Value.LessonId }, result.Value)
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Exams")
+//        .WithName("CreateExam");
+//    }
+//}

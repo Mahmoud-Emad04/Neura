@@ -1,29 +1,35 @@
-using MediatR;
-using Neura.Api.Extensions;
-using Neura.Api.Infrastructure;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Account.GetProfile;
+//using MediatR;
+//using Neura.Api.Extensions;
+//using Neura.Api.Infrastructure;
 
-public sealed class GetProfileEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("me", async (
-            HttpContext context,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = context.User.GetUserId()!;
+//namespace Neura.Api.Features.Account.GetProfile;
 
-            var query = new GetProfileQuery(userId);
-            var result = await sender.Send(query, ct);
+//public sealed class GetProfileEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("me", async (
+//            HttpContext context,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = context.User.GetUserId()!;
 
-            return result.IsSuccess
-                ? Results.Ok(result.Value)
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("Account")
-        .WithName("GetProfile");
-    }
-}
+//            var query = new GetProfileQuery(userId);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess
+//                ? Results.Ok(result.Value)
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Account")
+//        .WithName("GetProfile");
+//    }
+//}

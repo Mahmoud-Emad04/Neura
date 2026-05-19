@@ -1,33 +1,39 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Announcements.GetPostById;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using System.Security.Claims;
 
-public sealed class GetPostByIdEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/announcements/posts/{postId:int}", async (
-            int postId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            
-            var query = new GetPostByIdQuery(postId, userId);
-            var result = await sender.Send(query, ct);
+//namespace Neura.Api.Features.Announcements.GetPostById;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .AllowAnonymous()
-        .WithTags("Announcements")
-        .WithName("GetPostById");
-    }
-}
+//public sealed class GetPostByIdEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/announcements/posts/{postId:int}", async (
+//            int postId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+//            var query = new GetPostByIdQuery(postId, userId);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok(result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .AllowAnonymous()
+//        .WithTags("Announcements")
+//        .WithName("GetPostById");
+//    }
+//}

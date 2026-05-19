@@ -1,39 +1,45 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Community.SendMessage;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using System.Security.Claims;
 
-public sealed class SendMessageEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPost("api/community/channels/{channelId:int}/messages", async (
-            int channelId,
-            SendMessageRequest request,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Community.SendMessage;
 
-            var command = new SendMessageCommand(
-                channelId, userId, request.Content, request.ReplyToMessageId);
+//public sealed class SendMessageEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPost("api/community/channels/{channelId:int}/messages", async (
+//            int channelId,
+//            SendMessageRequest request,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            var result = await sender.Send(command, ct);
+//            var command = new SendMessageCommand(
+//                channelId, userId, request.Content, request.ReplyToMessageId);
 
-            return result.IsSuccess 
-                ? Results.CreatedAtRoute(
-                    routeName: "GetMessageHistory",
-                    routeValues: new { channelId },
-                    value: new SendMessageResponse(result.Value.Id, result.Value.SentAt))
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("Community");
-    }
-}
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess 
+//                ? Results.CreatedAtRoute(
+//                    routeName: "GetMessageHistory",
+//                    routeValues: new { channelId },
+//                    value: new SendMessageResponse(result.Value.Id, result.Value.SentAt))
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Community");
+//    }
+//}

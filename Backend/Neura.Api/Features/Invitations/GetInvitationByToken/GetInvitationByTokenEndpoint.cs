@@ -1,29 +1,35 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Invitations.GetInvitationByToken;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
 
-public sealed class GetInvitationByTokenEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/invitations/{token}", async (
-            string token,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var query = new GetInvitationByTokenQuery(token);
-            var result = await sender.Send(query, ct);
+//namespace Neura.Api.Features.Invitations.GetInvitationByToken;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .AllowAnonymous()
-        .WithTags("Invitations")
-        .WithName("GetInvitationByToken");
-    }
-}
+//public sealed class GetInvitationByTokenEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/invitations/{token}", async (
+//            string token,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var query = new GetInvitationByTokenQuery(token);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok(result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .AllowAnonymous()
+//        .WithTags("Invitations")
+//        .WithName("GetInvitationByToken");
+//    }
+//}

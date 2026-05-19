@@ -1,33 +1,39 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Enrollment.GetMyTeachingCourses;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using System.Security.Claims;
 
-public sealed class GetMyTeachingCoursesEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/courses/teaching", async (
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Enrollment.GetMyTeachingCourses;
 
-            var query = new GetMyTeachingCoursesQuery(userId);
-            var result = await sender.Send(query, ct);
+//public sealed class GetMyTeachingCoursesEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/courses/teaching", async (
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("Enrollment")
-        .WithName("GetMyTeachingCourses");
-    }
-}
+//            var query = new GetMyTeachingCoursesQuery(userId);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok(result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Enrollment")
+//        .WithName("GetMyTeachingCourses");
+//    }
+//}

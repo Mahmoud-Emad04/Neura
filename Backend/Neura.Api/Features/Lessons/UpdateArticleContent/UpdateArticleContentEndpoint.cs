@@ -1,37 +1,43 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Lessons;
-using System.Security.Claims;
+// ═══════════════════════════════════════════════════════════════════════════
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by LessonsController (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ═══════════════════════════════════════════════════════════════════════════
 
-namespace Neura.Api.Features.Lessons.UpdateArticleContent;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using Neura.Core.Contracts.Lessons;
+//using System.Security.Claims;
 
-public sealed class UpdateArticleContentEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPut("api/lessons/{id:int}/article", async (
-            int id,
-            [FromBody] UpdateArticleRequest request,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Lessons.UpdateArticleContent;
 
-            var command = new UpdateArticleContentCommand(id, request, userId);
-            var result = await sender.Send(command, ct);
+//public sealed class UpdateArticleContentEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPut("api/lessons/{id:int}/article", async (
+//            int id,
+//            [FromBody] UpdateArticleRequest request,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.Ok() 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization("LessonPermission_EditContent")
-        .WithTags("Lessons")
-        .WithName("UpdateArticleContent");
-    }
-}
+//            var command = new UpdateArticleContentCommand(id, request, userId);
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok() 
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization("LessonPermission_EditContent")
+//        .WithTags("Lessons")
+//        .WithName("UpdateArticleContent");
+//    }
+//}

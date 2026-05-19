@@ -1,40 +1,46 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Contracts.CourseTeam;
-using Neura.Core.Enums;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.CourseTeam.ChangeTeamRole;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Authorization.Attributes;
+//using Neura.Core.Contracts.CourseTeam;
+//using Neura.Core.Enums;
+//using System.Security.Claims;
 
-public sealed class ChangeTeamRoleEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPatch("api/courses/{courseId:int}/team/members/{userId}/role", async (
-            int courseId,
-            string userId,
-            [FromBody] ChangeTeamRoleRequest request,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var requesterId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.CourseTeam.ChangeTeamRole;
 
-            var command = new ChangeTeamRoleCommand(courseId, userId, request, requesterId);
-            var result = await sender.Send(command, ct);
+//public sealed class ChangeTeamRoleEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPatch("api/courses/{courseId:int}/team/members/{userId}/role", async (
+//            int courseId,
+//            string userId,
+//            [FromBody] ChangeTeamRoleRequest request,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var requesterId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.Ok(result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithMetadata(new HasCoursePermissionAttribute(CoursePermission.ManageTeam))
-        .WithTags("CourseTeam")
-        .WithName("ChangeTeamRole");
-    }
-}
+//            var command = new ChangeTeamRoleCommand(courseId, userId, request, requesterId);
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess 
+//                ? Results.Ok(result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithMetadata(new HasCoursePermissionAttribute(CoursePermission.ManageTeam))
+//        .WithTags("CourseTeam")
+//        .WithName("ChangeTeamRole");
+//    }
+//}

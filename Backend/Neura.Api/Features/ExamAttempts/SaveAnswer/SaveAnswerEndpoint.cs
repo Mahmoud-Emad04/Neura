@@ -1,38 +1,44 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.ExamAttempt;
-using System.Security.Claims;
+// ═══════════════════════════════════════════════════════════════════════════
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by ExamAttemptsController (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ═══════════════════════════════════════════════════════════════════════════
 
-namespace Neura.Api.Features.ExamAttempts.SaveAnswer;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using Neura.Core.Contracts.ExamAttempt;
+//using System.Security.Claims;
 
-public sealed class SaveAnswerEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPut("api/exam-attempts/{attemptId:int}/answers/{questionId:int}", async (
-            int attemptId,
-            int questionId,
-            [FromBody] SaveAnswerRequest request,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.ExamAttempts.SaveAnswer;
 
-            var command = new SaveAnswerCommand(attemptId, questionId, request, userId);
-            var result = await sender.Send(command, ct);
+//public sealed class SaveAnswerEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPut("api/exam-attempts/{attemptId:int}/answers/{questionId:int}", async (
+//            int attemptId,
+//            int questionId,
+//            [FromBody] SaveAnswerRequest request,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.Ok() 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("ExamAttempts")
-        .WithName("SaveAnswer");
-    }
-}
+//            var command = new SaveAnswerCommand(attemptId, questionId, request, userId);
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess
+//                ? Results.Ok()
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("ExamAttempts")
+//        .WithName("SaveAnswer");
+//    }
+//}

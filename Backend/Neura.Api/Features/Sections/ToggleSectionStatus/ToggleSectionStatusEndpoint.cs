@@ -1,34 +1,40 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using System.Security.Claims;
+// ═══════════════════════════════════════════════════════════════════════════
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by SectionsController (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ═══════════════════════════════════════════════════════════════════════════
 
-namespace Neura.Api.Features.Sections.ToggleSectionStatus;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using System.Security.Claims;
 
-public sealed class ToggleSectionStatusEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPut("api/sections/{sectionId:int}/status", async (
-            int sectionId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Sections.ToggleSectionStatus;
 
-            var command = new ToggleSectionStatusCommand(sectionId, userId);
-            var result = await sender.Send(command, ct);
+//public sealed class ToggleSectionStatusEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPut("api/sections/{sectionId:int}/status", async (
+//            int sectionId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            return result.IsSuccess 
-                ? Results.NoContent() 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization("SectionPermission_EditContent")
-        .WithTags("Sections")
-        .WithName("ToggleSectionStatus");
-    }
-}
+//            var command = new ToggleSectionStatusCommand(sectionId, userId);
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess 
+//                ? Results.NoContent() 
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization("SectionPermission_EditContent")
+//        .WithTags("Sections")
+//        .WithName("ToggleSectionStatus");
+//    }
+//}

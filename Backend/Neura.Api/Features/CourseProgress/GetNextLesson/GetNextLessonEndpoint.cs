@@ -1,37 +1,43 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.CourseProgress.GetNextLesson;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using System.Security.Claims;
 
-public sealed class GetNextLessonEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/courses/{keyId}/progress/next-lesson", async (
-            string keyId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.CourseProgress.GetNextLesson;
 
-            var query = new GetNextLessonQuery(keyId, userId);
-            var result = await sender.Send(query, ct);
+//public sealed class GetNextLessonEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/courses/{keyId}/progress/next-lesson", async (
+//            string keyId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            if (result.IsFailure)
-                return result.ToProblemMinimal();
+//            var query = new GetNextLessonQuery(keyId, userId);
+//            var result = await sender.Send(query, ct);
 
-            return result.Value is null
-                ? Results.NoContent()
-                : Results.Ok(result.Value);
-        })
-        .RequireAuthorization()
-        .WithTags("CourseProgress")
-        .WithName("GetNextLesson");
-    }
-}
+//            if (result.IsFailure)
+//                return result.ToProblemMinimal();
+
+//            return result.Value is null
+//                ? Results.NoContent()
+//                : Results.Ok(result.Value);
+//        })
+//        .RequireAuthorization()
+//        .WithTags("CourseProgress")
+//        .WithName("GetNextLesson");
+//    }
+//}

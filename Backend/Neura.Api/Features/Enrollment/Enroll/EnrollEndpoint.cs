@@ -1,38 +1,44 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Infrastructure;
-using Neura.Core.Abstractions;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.Enrollment.Enroll;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Infrastructure;
+//using Neura.Core.Abstractions;
+//using System.Security.Claims;
 
-public sealed class EnrollEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapPost("api/courses/{courseId}/enroll", async (
-            string courseId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
+//namespace Neura.Api.Features.Enrollment.Enroll;
 
-            var command = new EnrollCommand(courseId, userId);
+//public sealed class EnrollEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapPost("api/courses/{courseId}/enroll", async (
+//            string courseId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-            var result = await sender.Send(command, ct);
+//            var command = new EnrollCommand(courseId, userId);
 
-            return result.IsSuccess 
-                ? Results.CreatedAtRoute(
-                    routeName: "GetEnrollmentStatus",
-                    routeValues: new { courseId },
-                    value: result.Value) 
-                : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("Enrollment")
-        .WithName("Enroll");
-    }
-}
+//            var result = await sender.Send(command, ct);
+
+//            return result.IsSuccess 
+//                ? Results.CreatedAtRoute(
+//                    routeName: "GetEnrollmentStatus",
+//                    routeValues: new { courseId },
+//                    value: result.Value) 
+//                : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Enrollment")
+//        .WithName("Enroll");
+//    }
+//}

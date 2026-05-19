@@ -1,29 +1,35 @@
-using MediatR;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Neura.Api.Extensions;
-using Neura.Api.Infrastructure;
-using System.Security.Claims;
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
 
-namespace Neura.Api.Features.ExamAnalytics.GetScoreDistribution;
+//using MediatR;
+//using Microsoft.AspNetCore.Builder;
+//using Microsoft.AspNetCore.Http;
+//using Microsoft.AspNetCore.Routing;
+//using Neura.Api.Extensions;
+//using Neura.Api.Infrastructure;
+//using System.Security.Claims;
 
-public sealed class GetScoreDistributionEndpoint : IEndpoint
-{
-    public void MapEndpoint(IEndpointRouteBuilder app)
-    {
-        app.MapGet("api/exams/{examId:int}/analytics/score-distribution", async (
-            int examId,
-            ClaimsPrincipal user,
-            ISender sender,
-            CancellationToken ct) =>
-        {
-            var userId = user.GetUserId()!;
-            var result = await sender.Send(new GetScoreDistributionQuery(examId, userId), ct);
-            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemMinimal();
-        })
-        .RequireAuthorization()
-        .WithTags("Exam Analytics")
-        .WithName("GetScoreDistribution");
-    }
-}
+//namespace Neura.Api.Features.ExamAnalytics.GetScoreDistribution;
+
+//public sealed class GetScoreDistributionEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("api/exams/{examId:int}/analytics/score-distribution", async (
+//            int examId,
+//            ClaimsPrincipal user,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            var userId = user.GetUserId()!;
+//            var result = await sender.Send(new GetScoreDistributionQuery(examId, userId), ct);
+//            return result.IsSuccess ? Results.Ok(result.Value) : result.ToProblemMinimal();
+//        })
+//        .RequireAuthorization()
+//        .WithTags("Exam Analytics")
+//        .WithName("GetScoreDistribution");
+//    }
+//}
