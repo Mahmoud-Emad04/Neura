@@ -85,7 +85,7 @@ app.MapEndpoints();
 
 app.MapHub<CommunityHub>("/hubs/community");
 
-app.MapStaticAssets();
+app.UseStaticFiles();
 
 app.UseStaticFiles(new StaticFileOptions
 {

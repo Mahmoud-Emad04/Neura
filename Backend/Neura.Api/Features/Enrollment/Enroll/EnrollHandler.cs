@@ -57,7 +57,7 @@ internal sealed class EnrollHandler(
         }
 
         if (course.Price > 0)
-            logger.LogWarning("User {UserId} enrolling in paid course {CourseId} without payment", request.UserId, courseId);
+            return Result.Failure<EnrollmentResponse>(EnrollmentErrors.CourseRequiresPayment);
 
         var studentRole = await context.CourseRoles
             .FirstAsync(r => r.Level == (int)CourseRoleType.Student, ct);

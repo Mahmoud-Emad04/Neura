@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neura — Stripe Payment Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0f0f13;
+            --surface: #1a1a24;
+            --surface-hover: #22222e;
+            --border: #2a2a3a;
+            --text: #e4e4ed;
+            --text-muted: #8888a0;
+            --primary: #7c5cfc;
+            --primary-hover: #6a4ae8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #ef4444;
+            --info: #38bdf8;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: rgba(15,15,19,0.8);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo span { font-weight: 400; color: var(--text-muted); -webkit-text-fill-color: var(--text-muted); }
+
+        #user-badge {
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #user-badge .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+        #user-badge .dot.online { background: var(--success); }
+
+        main {
+            width: 100%;
+            max-width: 680px;
+            padding: 32px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            transition: border-color .2s;
+        }
+        .card:hover { border-color: var(--primary); }
+
+        .card h2 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card h2 .step {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px; height: 26px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .card p.desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+        }
+        .form-group input {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color .2s;
+        }
+        .form-group input:focus { border-color: var(--primary); }
+        .form-group input::placeholder { color: var(--text-muted); }
+
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+        .row .form-group { flex: 1; }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+
+        .btn-success {
+            background: var(--success);
+            color: #0f0f13;
+        }
+        .btn-success:hover { filter: brightness(1.1); }
+
+        .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+        .response-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 14px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            display: none;
+        }
+        .response-box.show { display: block; }
+        .response-box.success { border-color: var(--success); color: var(--success); }
+        .response-box.error { border-color: var(--danger); color: var(--danger); }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .badge-free { background: rgba(52,211,153,.15); color: var(--success); }
+        .badge-paid { background: rgba(251,191,36,.15); color: var(--warning); }
+        .badge-enrolled { background: rgba(124,92,252,.15); color: var(--primary); }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .status-item {
+            background: var(--bg);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .status-item .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+        .status-item .value { font-size: 14px; font-weight: 600; margin-top: 2px; }
+        .status-item .value.true { color: var(--success); }
+        .status-item .value.false { color: var(--danger); }
+
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 8px 0;
+        }
+
+        .info-banner {
+            background: rgba(56,189,248,.08);
+            border: 1px solid rgba(56,189,248,.2);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--info);
+        }
+        .info-banner code {
+            background: rgba(56,189,248,.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">Neura <span>Stripe Demo</span></div>
+    <div id="user-badge">
+        <div class="dot" id="auth-dot"></div>
+        <span id="auth-label">Not logged in</span>
+    </div>
+</header>
+
+<main>
+    <!-- Info -->
+    <div class="info-banner">
+        <strong>⚡ Local Testing Guide</strong><br>
+        1. Start the API: <code>dotnet run</code> from <code>Neura.Api</code><br>
+        2. Use <strong>Stripe test card</strong>: <code>4242 4242 4242 4242</code> | any future date | any CVC<br>
+        3. For webhooks install Stripe CLI: <code>stripe listen --forward-to https://localhost:7001/api/payments/webhook</code>
+    </div>
+
+    <!-- Step 1: Login -->
+    <div class="card" id="step-login">
+        <h2><span class="step">1</span> Login</h2>
+        <p class="desc">Authenticate with an existing Neura account to get a JWT token.</p>
+        <div class="row">
+            <div class="form-group">
+                <label>Email / Username</label>
+                <input type="text" id="login-email" placeholder="user@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="••••••••">
+            </div>
+        </div>
+        <button class="btn-primary" onclick="doLogin()">
+            <span class="spinner" id="login-spinner"></span>
+            Sign In
+        </button>
+        <div class="response-box" id="login-response"></div>
+    </div>
+
+    <!-- Step 2: Check Enrollment Status -->
+    <div class="card" id="step-status">
+        <h2><span class="step">2</span> Check Enrollment Status</h2>
+        <p class="desc">Enter a Course ID (hashid) to check if it requires payment.</p>
+        <div class="form-group">
+            <label>Course ID (hashid)</label>
+            <input type="text" id="course-id" placeholder="e.g. aXb9kLm2Qp1">
+        </div>
+        <button class="btn-outline btn-sm" onclick="checkStatus()">
+            <span class="spinner" id="status-spinner"></span>
+            Check Status
+        </button>
+        <div id="status-result" style="display:none;">
+            <div class="status-grid" id="status-grid"></div>
+        </div>
+        <div class="response-box" id="status-response"></div>
+    </div>
+
+    <!-- Step 3: Enroll (Free) or Checkout (Paid) -->
+    <div class="card" id="step-action">
+        <h2><span class="step">3</span> Enroll or Pay</h2>
+        <p class="desc">Based on the enrollment status, either enroll for free or create a Stripe checkout session.</p>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="btn-success btn-sm" id="btn-enroll" onclick="doEnroll()" disabled>
+                <span class="spinner" id="enroll-spinner"></span>
+                Enroll (Free)
+            </button>
+            <button class="btn-primary btn-sm" id="btn-checkout" onclick="doCheckout()" disabled>
+                <span class="spinner" id="checkout-spinner"></span>
+                💳 Pay with Stripe
+            </button>
+            <button class="btn-outline btn-sm" id="btn-verify" onclick="doVerify()" disabled>
+                <span class="spinner" id="verify-spinner"></span>
+                ✅ Verify Payment
+            </button>
+        </div>
+        <div class="response-box" id="action-response"></div>
+    </div>
+
+    <!-- Step 4: Result -->
+    <div class="card" id="step-result" style="display:none;">
+        <h2><span class="step">4</span> Payment Result</h2>
+        <p class="desc" id="result-desc"></p>
+    </div>
+</main>
+
+<footer>
+    Neura LMS — Stripe Integration Demo &middot; Use Stripe test cards only
+</footer>
+
+<script>
+    const API = window.location.origin;
+    let JWT = '';
+    let currentCourseId = '';
+    let currentStatus = null;
+
+    // --- Check URL params for payment result ---
+    (function checkPaymentResult() {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('session_id')) {
+            const el = document.getElementById('step-result');
+            el.style.display = 'block';
+            document.getElementById('result-desc').innerHTML =
+                `<span class="badge badge-enrolled">✓ Payment Successful</span><br><br>` +
+                `Stripe session: <code>${params.get('session_id')}</code><br>` +
+                `The webhook will auto-enroll you. Re-check enrollment status to verify.`;
+        }
+        if (params.has('cancelled')) {
+            const el = document.getElementById('step-result');
+            el.style.display = 'block';
+            document.getElementById('result-desc').innerHTML =
+                `<span class="badge badge-paid">✗ Payment Cancelled</span><br><br>` +
+                `You cancelled the Stripe checkout. No charges were made.`;
+        }
+    })();
+
+    // --- Helpers ---
+    function showResponse(id, data, isError) {
+        const el = document.getElementById(id);
+        el.className = 'response-box show ' + (isError ? 'error' : 'success');
+        el.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    function showSpinner(id, show) {
+        document.getElementById(id).style.display = show ? 'inline-block' : 'none';
+    }
+
+    async function apiFetch(url, options = {}) {
+        const headers = { 'Content-Type': 'application/json', ...options.headers };
+        if (JWT) headers['Authorization'] = `Bearer ${JWT}`;
+        const res = await fetch(API + url, { ...options, headers });
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); } catch { json = text; }
+        return { ok: res.ok, status: res.status, data: json };
+    }
+
+    // --- Step 1: Login ---
+    async function doLogin() {
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+        if (!email || !password) return alert('Please enter email and password');
+
+        showSpinner('login-spinner', true);
+
+        const res = await apiFetch('/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ userNameOrEmail: email, password })
+        });
+
+        showSpinner('login-spinner', false);
+
+        if (res.ok) {
+            JWT = res.data.token;
+            document.getElementById('auth-dot').classList.add('online');
+            document.getElementById('auth-label').textContent = `Logged in as ${email}`;
+            showResponse('login-response', { message: 'Login successful!', tokenPreview: JWT.substring(0, 40) + '...' }, false);
+        } else {
+            showResponse('login-response', res.data, true);
+        }
+    }
+
+    // --- Step 2: Check Enrollment Status ---
+    async function checkStatus() {
+        if (!JWT) return alert('Please login first');
+        currentCourseId = document.getElementById('course-id').value.trim();
+        if (!currentCourseId) return alert('Please enter a course ID');
+
+        showSpinner('status-spinner', true);
+
+        const res = await apiFetch(`/api/courses/${currentCourseId}/enrollment-status`);
+
+        showSpinner('status-spinner', false);
+
+        if (res.ok) {
+            currentStatus = res.data;
+            renderStatusGrid(res.data);
+            showResponse('status-response', res.data, false);
+            updateActionButtons(res.data);
+        } else {
+            showResponse('status-response', res.data, true);
+            document.getElementById('status-result').style.display = 'none';
+        }
+    }
+
+    function renderStatusGrid(s) {
+        const grid = document.getElementById('status-grid');
+        const boolClass = v => v ? 'true' : 'false';
+        grid.innerHTML = `
+            <div class="status-item">
+                <div class="label">Course</div>
+                <div class="value">${s.courseName || '—'}</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Price</div>
+                <div class="value">${s.isFree
+                    ? '<span class="badge badge-free">Free</span>'
+                    : `<span class="badge badge-paid">$${s.price} ${s.currency}</span>`}
+                </div>
+            </div>
+            <div class="status-item">
+                <div class="label">Enrolled</div>
+                <div class="value ${boolClass(s.isEnrolled)}">${s.isEnrolled ? '✓ Yes' : '✗ No'}</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Can Enroll</div>
+                <div class="value ${boolClass(s.canEnroll)}">${s.canEnroll ? '✓ Yes' : '✗ No'}</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Requires Payment</div>
+                <div class="value ${boolClass(s.requiresPayment)}">${s.requiresPayment ? '💳 Yes' : '—'}</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Pending Payment</div>
+                <div class="value ${boolClass(s.hasPendingPayment)}">${s.hasPendingPayment ? '⏳ Yes' : '—'}</div>
+            </div>
+        `;
+        document.getElementById('status-result').style.display = 'block';
+    }
+
+    function updateActionButtons(s) {
+        const enrollBtn = document.getElementById('btn-enroll');
+        const checkoutBtn = document.getElementById('btn-checkout');
+        const verifyBtn = document.getElementById('btn-verify');
+
+        enrollBtn.disabled = true;
+        checkoutBtn.disabled = true;
+        verifyBtn.disabled = true;
+
+        if (s.isEnrolled) return; // Already enrolled
+
+        if (s.canEnroll && s.isFree) {
+            enrollBtn.disabled = false;
+        }
+        if (s.requiresPayment) {
+            checkoutBtn.disabled = false;
+        }
+        if (s.hasPendingPayment) {
+            verifyBtn.disabled = false;
+        }
+    }
+
+    // --- Step 3a: Free Enroll ---
+    async function doEnroll() {
+        if (!JWT || !currentCourseId) return;
+
+        showSpinner('enroll-spinner', true);
+
+        const res = await apiFetch(`/api/courses/${currentCourseId}/enroll`, { method: 'POST' });
+
+        showSpinner('enroll-spinner', false);
+
+        if (res.ok) {
+            showResponse('action-response', { message: '🎉 Enrolled successfully!', ...res.data }, false);
+            checkStatus(); // Refresh status
+        } else {
+            showResponse('action-response', res.data, true);
+        }
+    }
+
+    // --- Step 3b: Stripe Checkout ---
+    async function doCheckout() {
+        if (!JWT || !currentCourseId) return;
+
+        showSpinner('checkout-spinner', true);
+
+        const res = await apiFetch(`/api/payments/checkout/${currentCourseId}`, { method: 'POST' });
+
+        showSpinner('checkout-spinner', false);
+
+        if (res.ok) {
+            showResponse('action-response', {
+                message: '🔄 Redirecting to Stripe Checkout...',
+                sessionId: res.data.sessionId,
+                sessionUrl: res.data.sessionUrl
+            }, false);
+
+            // Redirect to Stripe checkout after a brief delay
+            setTimeout(() => {
+                window.location.href = res.data.sessionUrl;
+            }, 1500);
+        } else {
+            showResponse('action-response', res.data, true);
+        }
+    }
+
+    // --- Step 3c: Verify Payment (polls Stripe directly) ---
+    async function doVerify() {
+        if (!JWT || !currentCourseId) return;
+
+        showSpinner('verify-spinner', true);
+
+        const res = await apiFetch(`/api/payments/verify/${currentCourseId}`, { method: 'POST' });
+
+        showSpinner('verify-spinner', false);
+
+        if (res.ok) {
+            showResponse('action-response', { message: '🎉 Payment verified & enrolled!', ...res.data }, false);
+            const el = document.getElementById('step-result');
+            el.style.display = 'block';
+            document.getElementById('result-desc').innerHTML =
+                `<span class="badge badge-enrolled">✓ Enrolled Successfully</span><br><br>` +
+                `You are now enrolled in <strong>${res.data.courseName}</strong> as <strong>${res.data.roleName}</strong>.`;
+            checkStatus(); // Refresh
+        } else {
+            showResponse('action-response', res.data, true);
+        }
+    }
+</script>
+</body>
+</html>

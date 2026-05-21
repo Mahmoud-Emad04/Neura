@@ -55,6 +55,18 @@ internal sealed class GetEnrollmentStatusHandler(
             cannotEnrollReason = "Please verify your email before enrolling";
         }
 
+        // Check for pending payment (only for paid courses with non-enrolled users)
+        var requiresPayment = !isEnrolled && course.Price > 0 && canEnroll;
+        var hasPendingPayment = false;
+
+        if (requiresPayment && !string.IsNullOrEmpty(request.UserId))
+        {
+            hasPendingPayment = await context.Payments
+                .AnyAsync(p => p.CourseId == courseId
+                               && p.UserId == request.UserId
+                               && p.Status == PaymentStatus.Pending, ct);
+        }
+
         return Result.Success(new EnrollmentStatusResponse
         {
             IsEnrolled = isEnrolled,
@@ -65,6 +77,8 @@ internal sealed class GetEnrollmentStatusHandler(
             IsFree = course.Price == 0,
             Price = course.Price,
             Currency = "USD",
+            RequiresPayment = requiresPayment,
+            HasPendingPayment = hasPendingPayment,
             CurrentRole = courseUser is not null ? (CourseRoleType)courseUser.CourseRole.Level : null,
             CurrentRoleName = courseUser?.CourseRole.Name,
             EnrolledOn = courseUser?.EnrolledOn
