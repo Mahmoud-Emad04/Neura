@@ -11,7 +11,7 @@ using Neura.Core.Contracts.ExamAttempt;
 
 namespace Neura.Api.Controllers;
 
-[Route("api/exam-attempts")]
+[Route("api/ExamAttempts")]
 [ApiController]
 [Authorize]
 public class ExamAttemptsController(ISender sender) : ControllerBase

@@ -19,7 +19,7 @@ internal sealed class GetExamInfoHandler(ApplicationDbContext context, UserManag
         var exam = await context.Exams
             .AsNoTracking()
             .Include(e => e.Lesson)
-                .ThenInclude(l => l.Section)
+            .ThenInclude(l => l.Section)
             .Include(e => e.Questions)
             .FirstOrDefaultAsync(e => e.LessonId == lessonId, ct);
 
