@@ -1,6 +1,5 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
+using Microsoft.AspNetCore.Identity;
 using Neura.Core.Contracts.ExamAttempt;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -8,7 +7,7 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.ExamAttempts.GetExamInfo;
 
-internal sealed class GetExamInfoHandler(ApplicationDbContext context) 
+internal sealed class GetExamInfoHandler(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     : IRequestHandler<GetExamInfoQuery, Result<ExamInfoResponse>>
 {
     public async Task<Result<ExamInfoResponse>> Handle(
@@ -31,7 +30,7 @@ internal sealed class GetExamInfoHandler(ApplicationDbContext context)
             return Result.Failure<ExamInfoResponse>(ExamAttemptErrors.ExamNotPublished);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await ExamAttemptHelpers.IsEnrolledStudentAsync(context, courseId, userId))
+        if (!await ExamAttemptHelpers.IsEnrolledStudentAsync(context, userManager, courseId, userId))
             return Result.Failure<ExamInfoResponse>(ExamAttemptErrors.NotEnrolled);
 
         var attemptsTaken = await context.ExamAttempts

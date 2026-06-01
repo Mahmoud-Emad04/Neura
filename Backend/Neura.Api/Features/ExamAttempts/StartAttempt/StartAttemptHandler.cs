@@ -1,16 +1,14 @@
-using System.Text.Json;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
+using Microsoft.AspNetCore.Identity;
 using Neura.Core.Contracts.ExamAttempt;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
+using System.Text.Json;
 
 namespace Neura.Api.Features.ExamAttempts.StartAttempt;
 
-internal sealed class StartAttemptHandler(ApplicationDbContext context) 
+internal sealed class StartAttemptHandler(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     : IRequestHandler<StartAttemptCommand, Result<StartAttemptResponse>>
 {
     public async Task<Result<StartAttemptResponse>> Handle(
@@ -34,7 +32,7 @@ internal sealed class StartAttemptHandler(ApplicationDbContext context)
             return Result.Failure<StartAttemptResponse>(ExamAttemptErrors.ExamNotPublished);
 
         var courseId = exam.Lesson.Section.CourseId;
-        if (!await ExamAttemptHelpers.IsEnrolledStudentAsync(context, courseId, userId))
+        if (!await ExamAttemptHelpers.IsEnrolledStudentAsync(context, userManager, courseId, userId))
             return Result.Failure<StartAttemptResponse>(ExamAttemptErrors.NotEnrolled);
 
         var existingInProgress = await context.ExamAttempts

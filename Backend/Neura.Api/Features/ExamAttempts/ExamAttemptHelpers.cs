@@ -1,21 +1,25 @@
-using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.ExamAttempt;
-using Neura.Core.Entities;
-using Neura.Core.Enums;
 using Neura.Repository.Persistence;
+using System.Text.Json;
 
 namespace Neura.Api.Features.ExamAttempts;
 
 internal static class ExamAttemptHelpers
 {
-    public static async Task<bool> IsEnrolledStudentAsync(ApplicationDbContext context, int courseId, string userId)
+    public static async Task<bool> IsEnrolledStudentAsync(ApplicationDbContext context, UserManager<ApplicationUser> userManager, int courseId, string userId)
     {
+        var user = context.Users.FirstOrDefault(u => u.Id == userId);
+
+        if (user == null) return false;
+
+        if (await userManager.IsInRoleAsync(user, DefaultRoles.SuperAdmin) || await userManager.IsInRoleAsync(user, DefaultRoles.Admin))
+            return true;
+
         var courseUser = await context.CourseUsers
             .AsNoTracking()
             .FirstOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId);
-
         if (courseUser is null)
             return false;
 

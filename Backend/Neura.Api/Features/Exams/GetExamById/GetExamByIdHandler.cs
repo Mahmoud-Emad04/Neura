@@ -1,7 +1,4 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Exam;
 using Neura.Core.Contracts.Question;
 using Neura.Core.Errors;
@@ -9,7 +6,7 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Exams.GetExamById;
 
-internal sealed class GetExamByIdHandler(ApplicationDbContext context) 
+internal sealed class GetExamByIdHandler(ApplicationDbContext context)
     : IRequestHandler<GetExamByIdQuery, Result<ExamDetailResponse>>
 {
     public async Task<Result<ExamDetailResponse>> Handle(
@@ -18,10 +15,10 @@ internal sealed class GetExamByIdHandler(ApplicationDbContext context)
         var exam = await context.Exams
             .AsNoTracking()
             .Include(e => e.Questions.OrderBy(q => q.Order))
-                .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.Order))
+            .ThenInclude(q => q.AnswerOptions.OrderBy(a => a.Order))
             .Include(e => e.Attempts)
             .Include(e => e.Lesson)
-                .ThenInclude(l => l.Section)
+            .ThenInclude(l => l.Section)
             .FirstOrDefaultAsync(e => e.LessonId == query.LessonId, ct);
 
         if (exam is null)
