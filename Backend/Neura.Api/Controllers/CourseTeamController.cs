@@ -1,22 +1,30 @@
-﻿using System.Security.Claims;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Neura.Api.Extensions;
+using Neura.Api.Features.CourseTeam.CancelInvitation;
+using Neura.Api.Features.CourseTeam.ChangeTeamRole;
+using Neura.Api.Features.CourseTeam.GetPendingInvitations;
+using Neura.Api.Features.CourseTeam.GetTeamMember;
+using Neura.Api.Features.CourseTeam.GetTeamMembers;
+using Neura.Api.Features.CourseTeam.GetTeamOverview;
+using Neura.Api.Features.CourseTeam.InviteTeamMember;
+using Neura.Api.Features.CourseTeam.RemoveTeamMember;
+using Neura.Api.Features.CourseTeam.ResendInvitation;
+using Neura.Api.Features.CourseTeam.TransferOwnership;
 
 namespace Neura.Api.Controllers;
 
 [ApiController]
 [Route("api/courses/{courseId:int}/team")]
 [Authorize]
-public class CourseTeamController : ControllerBase
+public class CourseTeamController(ISender sender) : ControllerBase
 {
-    private readonly ICourseTeamService _teamService;
-
-    public CourseTeamController(ICourseTeamService teamService)
-    {
-        _teamService = teamService;
-    }
-
     /// <summary>
     ///     Get team overview including members and pending invitations
     /// </summary>
@@ -24,14 +32,13 @@ public class CourseTeamController : ControllerBase
     [HasCoursePermission(CoursePermission.ViewAnalytics)]
     [ProducesResponseType(typeof(TeamOverviewResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetTeamOverview(int courseId)
+    public async Task<IActionResult> GetTeamOverview(int courseId, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.GetTeamOverviewAsync(courseId, userId);
+        var query = new GetTeamOverviewQuery(courseId, userId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -41,13 +48,12 @@ public class CourseTeamController : ControllerBase
     [HasCoursePermission(CoursePermission.ViewContent)]
     [ProducesResponseType(typeof(List<TeamMemberResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetTeamMembers(int courseId)
+    public async Task<IActionResult> GetTeamMembers(int courseId, CancellationToken ct)
     {
-        var result = await _teamService.GetTeamMembersAsync(courseId);
+        var query = new GetTeamMembersQuery(courseId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -57,13 +63,12 @@ public class CourseTeamController : ControllerBase
     [HasCoursePermission(CoursePermission.ViewAnalytics)]
     [ProducesResponseType(typeof(TeamMemberResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetTeamMember(int courseId, string userId)
+    public async Task<IActionResult> GetTeamMember(int courseId, string userId, CancellationToken ct)
     {
-        var result = await _teamService.GetTeamMemberAsync(courseId, userId);
+        var query = new GetTeamMemberQuery(courseId, userId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -74,10 +79,11 @@ public class CourseTeamController : ControllerBase
     [ProducesResponseType(typeof(CourseInvitationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> InviteTeamMember(int courseId, [FromBody] InviteTeamMemberRequest request)
+    public async Task<IActionResult> InviteTeamMember(int courseId, [FromBody] InviteTeamMemberRequest request, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.InviteTeamMemberAsync(courseId, request, userId);
+        var command = new InviteTeamMemberCommand(courseId, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetPendingInvitations), new { courseId }, result.Value)
@@ -92,14 +98,13 @@ public class CourseTeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RemoveTeamMember(int courseId, string userId)
+    public async Task<IActionResult> RemoveTeamMember(int courseId, string userId, CancellationToken ct)
     {
         var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.RemoveTeamMemberAsync(courseId, userId, requesterId);
+        var command = new RemoveTeamMemberCommand(courseId, userId, requesterId);
+        var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? NoContent()
-            : result.ToProblem();
+        return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
     /// <summary>
@@ -113,14 +118,14 @@ public class CourseTeamController : ControllerBase
     public async Task<IActionResult> ChangeTeamRole(
         int courseId,
         string userId,
-        [FromBody] ChangeTeamRoleRequest request)
+        [FromBody] ChangeTeamRoleRequest request,
+        CancellationToken ct)
     {
         var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.ChangeTeamRoleAsync(courseId, userId, request, requesterId);
+        var command = new ChangeTeamRoleCommand(courseId, userId, request, requesterId);
+        var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -131,10 +136,11 @@ public class CourseTeamController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> TransferOwnership(int courseId, [FromBody] TransferOwnershipRequest request)
+    public async Task<IActionResult> TransferOwnership(int courseId, [FromBody] TransferOwnershipRequest request, CancellationToken ct)
     {
         var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.TransferOwnershipAsync(courseId, request, requesterId);
+        var command = new TransferOwnershipCommand(courseId, request, requesterId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(new { message = "Ownership transferred successfully" })
@@ -148,13 +154,12 @@ public class CourseTeamController : ControllerBase
     [HasCoursePermission(CoursePermission.ManageTeam)]
     [ProducesResponseType(typeof(List<CourseInvitationResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPendingInvitations(int courseId)
+    public async Task<IActionResult> GetPendingInvitations(int courseId, CancellationToken ct)
     {
-        var result = await _teamService.GetPendingInvitationsAsync(courseId);
+        var query = new GetPendingInvitationsQuery(courseId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -164,14 +169,13 @@ public class CourseTeamController : ControllerBase
     [HasCoursePermission(CoursePermission.ManageTeam)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CancelInvitation(int courseId, int invitationId)
+    public async Task<IActionResult> CancelInvitation(int courseId, int invitationId, CancellationToken ct)
     {
         var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.CancelInvitationAsync(courseId, invitationId, requesterId);
+        var command = new CancelInvitationCommand(courseId, invitationId, requesterId);
+        var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? NoContent()
-            : result.ToProblem();
+        return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
     /// <summary>
@@ -181,13 +185,12 @@ public class CourseTeamController : ControllerBase
     [HasCoursePermission(CoursePermission.ManageTeam)]
     [ProducesResponseType(typeof(CourseInvitationResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ResendInvitation(int courseId, int invitationId)
+    public async Task<IActionResult> ResendInvitation(int courseId, int invitationId, CancellationToken ct)
     {
         var requesterId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.ResendInvitationAsync(courseId, invitationId, requesterId);
+        var command = new ResendInvitationCommand(courseId, invitationId, requesterId);
+        var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 }

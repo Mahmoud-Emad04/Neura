@@ -1,22 +1,23 @@
-﻿using Neura.Api.Extensions;
+using MediatR;
+using Neura.Api.Extensions;
+using Neura.Api.Features.ExamAttempts.GetExamInfo;
+using Neura.Api.Features.ExamAttempts.GetResults;
+using Neura.Api.Features.ExamAttempts.RecordViolation;
+using Neura.Api.Features.ExamAttempts.ResumeAttempt;
+using Neura.Api.Features.ExamAttempts.SaveAnswer;
+using Neura.Api.Features.ExamAttempts.StartAttempt;
+using Neura.Api.Features.ExamAttempts.SubmitAttempt;
 using Neura.Core.Contracts.ExamAttempt;
 
 namespace Neura.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/ExamAttempts")]
 [ApiController]
 [Authorize]
-public class ExamAttemptsController : ControllerBase
+public class ExamAttemptsController(ISender sender) : ControllerBase
 {
-    private readonly IExamAttemptService _attemptService;
-
-    public ExamAttemptsController(IExamAttemptService attemptService)
-    {
-        _attemptService = attemptService;
-    }
-
     // ══════════════════════════════════════════
-    //  GET /api/exam-attempts/exam/{examId}/info
+    //  GET /api/exam-attempts/exam/{lessonId}/info
     //  Student landing page — exam info + attempt status
     // ══════════════════════════════════════════
     [HttpGet("exam/{lessonId:int}/info")]
@@ -24,10 +25,13 @@ public class ExamAttemptsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetExamInfo([FromRoute] int lessonId)
+    public async Task<IActionResult> GetExamInfo(
+        [FromRoute] int lessonId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.GetExamInfoAsync(lessonId, userId);
+        var query = new GetExamInfoQuery(lessonId, userId);
+        var result = await sender.Send(query, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -35,24 +39,24 @@ public class ExamAttemptsController : ControllerBase
     }
 
     // ══════════════════════════════════════════
-    //  POST /api/exam-attempts/exam/{examId}/start
+    //  POST /api/exam-attempts/exam/{lessonId}/start
     //  Start a new attempt
     // ══════════════════════════════════════════
     [HttpPost("exam/{lessonId:int}/start")]
-    [ProducesResponseType(typeof(StartAttemptResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(StartAttemptResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> StartAttempt([FromRoute] int lessonId)
+    public async Task<IActionResult> StartAttempt(
+        [FromRoute] int lessonId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.StartAttemptAsync(lessonId, userId);
-
-        if (result.IsSuccess)
-            return StatusCode(StatusCodes.Status201Created, result.Value);
+        var command = new StartAttemptCommand(lessonId, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
-            ? Ok(result.Value)
+            ? StatusCode(StatusCodes.Status201Created, result.Value)
             : result.ToProblem();
     }
 
@@ -65,10 +69,13 @@ public class ExamAttemptsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ResumeAttempt([FromRoute] int attemptId)
+    public async Task<IActionResult> ResumeAttempt(
+        [FromRoute] int attemptId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.ResumeAttemptAsync(attemptId, userId);
+        var command = new ResumeAttemptCommand(attemptId, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -87,10 +94,12 @@ public class ExamAttemptsController : ControllerBase
     public async Task<IActionResult> SaveAnswer(
         [FromRoute] int attemptId,
         [FromRoute] int questionId,
-        [FromBody] SaveAnswerRequest request)
+        [FromBody] SaveAnswerRequest request,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.SaveAnswerAsync(attemptId, questionId, request, userId);
+        var command = new SaveAnswerCommand(attemptId, questionId, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok()
@@ -106,10 +115,13 @@ public class ExamAttemptsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Submit([FromRoute] int attemptId)
+    public async Task<IActionResult> Submit(
+        [FromRoute] int attemptId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.SubmitAsync(attemptId, userId);
+        var command = new SubmitAttemptCommand(attemptId, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -125,10 +137,13 @@ public class ExamAttemptsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetResults([FromRoute] int attemptId)
+    public async Task<IActionResult> GetResults(
+        [FromRoute] int attemptId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.GetResultsAsync(attemptId, userId);
+        var query = new GetResultsQuery(attemptId, userId);
+        var result = await sender.Send(query, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)
@@ -146,10 +161,12 @@ public class ExamAttemptsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RecordViolation(
         [FromRoute] int attemptId,
-        [FromBody] ViolationRequest request)
+        [FromBody] ViolationRequest request,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _attemptService.RecordViolationAsync(attemptId, request, userId);
+        var command = new RecordViolationCommand(attemptId, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)

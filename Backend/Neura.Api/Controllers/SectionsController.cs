@@ -1,32 +1,43 @@
+using MediatR;
+using Neura.Api.Extensions;
+using Neura.Api.Features.Sections.CreateSection;
+using Neura.Api.Features.Sections.DeleteSection;
+using Neura.Api.Features.Sections.GetSectionById;
+using Neura.Api.Features.Sections.GetSectionsByCourse;
+using Neura.Api.Features.Sections.ToggleSectionStatus;
+using Neura.Api.Features.Sections.UpdateSection;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Section;
-using System.Security.Claims;
+using Neura.Core.Enums;
 
 namespace Neura.Api.Controllers;
 
 [Route("api/sections")]
 [ApiController]
 [Authorize]
-public class SectionsController(ISectionService sectionService) : ControllerBase
+public class SectionsController(ISender sender) : ControllerBase
 {
-    private readonly ISectionService _sectionService = sectionService;
-
     /// <summary>
     ///     Retrieves a list of sections for a specific course with optional filters.
     ///     Route: GET /api/courses/{courseId}/sections
     /// </summary>
     /// <param name="courseId">The hashed string ID of the course.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>A list of sections belonging to the course.</returns>
     [HttpGet("~/api/courses/{courseId}/sections")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<SectionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetAllByCourse([FromRoute] string courseId,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> GetAllByCourse(
+        [FromRoute] string courseId,
+        CancellationToken ct)
     {
-        var result = await _sectionService.GetAllByCourseAsync(courseId, cancellationToken);
-        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+        var query = new GetSectionsByCourseQuery(courseId);
+        var result = await sender.Send(query, ct);
+        
+        return result.IsSuccess 
+            ? Ok(result.Value) 
+            : result.ToProblem();
     }
 
     /// <summary>
@@ -34,16 +45,22 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     ///     Route: GET /api/sections/{sectionId}
     /// </summary>
     /// <param name="sectionId">The ID of the section.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>The details of the requested section.</returns>
     [HttpGet("{sectionId}")]
     [ProducesResponseType(typeof(SectionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HasSectionPermission(Core.Enums.CoursePermission.ViewContent)]
-    public async Task<IActionResult> GetById([FromRoute] int sectionId, CancellationToken cancellationToken)
+    [HasSectionPermission(CoursePermission.ViewContent)]
+    public async Task<IActionResult> GetById(
+        [FromRoute] int sectionId, 
+        CancellationToken ct)
     {
-        var result = await _sectionService.GetByIdAsync(sectionId, cancellationToken);
-        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+        var query = new GetSectionByIdQuery(sectionId);
+        var result = await sender.Send(query, ct);
+        
+        return result.IsSuccess 
+            ? Ok(result.Value) 
+            : result.ToProblem();
     }
 
     /// <summary>
@@ -52,18 +69,21 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     /// </summary>
     /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="request">The section creation payload (Title, Description, etc.).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>The newly created section location.</returns>
     [HttpPost("~/api/courses/{courseId}/sections")]
     [ProducesResponseType(typeof(SectionResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HasCoursePermission(Core.Enums.CoursePermission.EditContent)]
-    public async Task<IActionResult> Create([FromRoute] string courseId, [FromBody] SectionRequest request,
-        CancellationToken cancellationToken)
+    [HasCoursePermission(CoursePermission.EditContent)]
+    public async Task<IActionResult> Create(
+        [FromRoute] string courseId, 
+        [FromBody] SectionRequest request,
+        CancellationToken ct)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _sectionService.CreateAsync(courseId, request, userId, cancellationToken);
+        var userId = User.GetUserId()!;
+        var command = new CreateSectionCommand(courseId, request, userId);
+        var result = await sender.Send(command, ct);
 
         // This ensures the Location header returns the correct standard URL: /api/sections/{id}
         return result.IsSuccess
@@ -77,19 +97,25 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     /// </summary>
     /// <param name="sectionId">The ID of the section to update.</param>
     /// <param name="request">The update payload.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>NoContent on success.</returns>
     [HttpPut("{sectionId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
-    public async Task<IActionResult> Update([FromRoute] int sectionId, [FromBody] SectionUpdateRequest request,
-        CancellationToken cancellationToken)
+    [HasSectionPermission(CoursePermission.EditContent)]
+    public async Task<IActionResult> Update(
+        [FromRoute] int sectionId, 
+        [FromBody] SectionUpdateRequest request,
+        CancellationToken ct)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _sectionService.UpdateAsync(sectionId, request, userId, cancellationToken);
-        return result.IsSuccess ? NoContent() : result.ToProblem();
+        var userId = User.GetUserId()!;
+        var command = new UpdateSectionCommand(sectionId, request, userId);
+        var result = await sender.Send(command, ct);
+        
+        return result.IsSuccess 
+            ? NoContent() 
+            : result.ToProblem();
     }
 
     /// <summary>
@@ -97,16 +123,23 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     ///     Route: PUT /api/sections/{sectionId}/status
     /// </summary>
     /// <param name="sectionId">The ID of the section.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>NoContent on success.</returns>
     [HttpPut("{sectionId}/status")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
-    public async Task<IActionResult> ToggleStatus([FromRoute] int sectionId, CancellationToken cancellationToken)
+    [HasSectionPermission(CoursePermission.EditContent)]
+    public async Task<IActionResult> ToggleStatus(
+        [FromRoute] int sectionId, 
+        CancellationToken ct)
     {
-        var result = await _sectionService.ToggleStatusAsync(sectionId, cancellationToken);
-        return result.IsSuccess ? NoContent() : result.ToProblem();
+        var userId = User.GetUserId()!;
+        var command = new ToggleSectionStatusCommand(sectionId, userId);
+        var result = await sender.Send(command, ct);
+        
+        return result.IsSuccess 
+            ? NoContent() 
+            : result.ToProblem();
     }
 
     /// <summary>
@@ -114,17 +147,23 @@ public class SectionsController(ISectionService sectionService) : ControllerBase
     ///     Route: DELETE /api/sections/{sectionId}
     /// </summary>
     /// <param name="sectionId">The ID of the section.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>NoContent on success.</returns>
     [HttpDelete("{sectionId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status409Conflict)]
-    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
-    public async Task<IActionResult> Delete([FromRoute] int sectionId, CancellationToken cancellationToken)
+    [HasSectionPermission(CoursePermission.EditContent)]
+    public async Task<IActionResult> Delete(
+        [FromRoute] int sectionId, 
+        CancellationToken ct)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _sectionService.DeleteAsync(sectionId, userId, cancellationToken);
-        return result.IsSuccess ? NoContent() : result.ToProblem();
+        var userId = User.GetUserId()!;
+        var command = new DeleteSectionCommand(sectionId, userId);
+        var result = await sender.Send(command, ct);
+        
+        return result.IsSuccess 
+            ? NoContent() 
+            : result.ToProblem();
     }
 }

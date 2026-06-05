@@ -1,23 +1,30 @@
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.common;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
 using System.Security.Claims;
+using Neura.Api.Extensions;
+using Neura.Api.Features.Enrollment.AddStudent;
+using Neura.Api.Features.Enrollment.Enroll;
+using Neura.Api.Features.Enrollment.GetCourseStudents;
+using Neura.Api.Features.Enrollment.GetEnrollmentDashboard;
+using Neura.Api.Features.Enrollment.GetEnrollmentStatus;
+using Neura.Api.Features.Enrollment.GetMyEnrolledCourses;
+using Neura.Api.Features.Enrollment.GetMyTeachingCourses;
+using Neura.Api.Features.Enrollment.RemoveStudent;
+using Neura.Api.Features.Enrollment.Unenroll;
 
 namespace Neura.Api.Controllers;
 
 [ApiController]
 [Route("api/courses")]
 [Authorize]
-public class EnrollmentController : ControllerBase
+public class EnrollmentController(ISender sender) : ControllerBase
 {
-    private readonly IEnrollmentService _enrollmentService;
-
-    public EnrollmentController(IEnrollmentService enrollmentService)
-    {
-        _enrollmentService = enrollmentService;
-    }
-
     /// <summary>
     ///     Enroll in a course
     /// </summary>
@@ -26,10 +33,11 @@ public class EnrollmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Enroll(string courseId)
+    public async Task<IActionResult> Enroll(string courseId, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.EnrollAsync(courseId, userId);
+        var command = new EnrollCommand(courseId, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetEnrollmentStatus), new { courseId }, result.Value)
@@ -43,10 +51,11 @@ public class EnrollmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Unenroll(int courseId)
+    public async Task<IActionResult> Unenroll(int courseId, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.UnenrollAsync(courseId, userId);
+        var command = new UnenrollCommand(courseId, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(new { message = "Successfully unenrolled from course" })
@@ -60,7 +69,7 @@ public class EnrollmentController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(EnrollmentStatusResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetEnrollmentStatus(string courseId)
+    public async Task<IActionResult> GetEnrollmentStatus(string courseId, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -74,11 +83,10 @@ public class EnrollmentController : ControllerBase
                 CourseId = courseId
             });
 
-        var result = await _enrollmentService.GetEnrollmentStatusAsync(courseId, userId);
+        var query = new GetEnrollmentStatusQuery(courseId, userId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -86,14 +94,13 @@ public class EnrollmentController : ControllerBase
     /// </summary>
     [HttpGet("/api/courses/enrolled")]
     [ProducesResponseType(typeof(PaginatedList<MyEnrolledCourseResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMyEnrolledCourses([FromQuery] RequestFilters requestFilters, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetMyEnrolledCourses([FromQuery] RequestFilters requestFilters, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.GetMyEnrolledCoursesAsync(userId, requestFilters, cancellationToken);
+        var query = new GetMyEnrolledCoursesQuery(userId, requestFilters);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -101,14 +108,13 @@ public class EnrollmentController : ControllerBase
     /// </summary>
     [HttpGet("/api/courses/teaching")]
     [ProducesResponseType(typeof(List<MyEnrolledCourseResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMyTeachingCourses()
+    public async Task<IActionResult> GetMyTeachingCourses(CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.GetMyTeachingCoursesAsync(userId);
+        var query = new GetMyTeachingCoursesQuery(userId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -122,14 +128,14 @@ public class EnrollmentController : ControllerBase
     public async Task<IActionResult> GetCourseStudents(
         int courseId,
         [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 20)
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.GetCourseStudentsAsync(courseId, userId, pageNumber, pageSize);
+        var query = new GetCourseStudentsQuery(courseId, userId, pageNumber, pageSize);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -141,10 +147,11 @@ public class EnrollmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> AddStudent(int courseId, [FromBody] AddStudentRequest request)
+    public async Task<IActionResult> AddStudent(int courseId, [FromBody] AddStudentRequest request, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.AddStudentAsync(courseId, request, userId);
+        var command = new AddStudentCommand(courseId, userId, request.Email);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetCourseStudents), new { courseId }, result.Value)
@@ -159,27 +166,25 @@ public class EnrollmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RemoveStudent(int courseId, string studentId)
+    public async Task<IActionResult> RemoveStudent(int courseId, string studentId, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.RemoveStudentAsync(courseId, studentId, userId);
+        var command = new RemoveStudentCommand(courseId, studentId, userId);
+        var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? NoContent()
-            : result.ToProblem();
+        return result.IsSuccess ? NoContent() : result.ToProblem();
     }
     /// <summary>
     ///     Get enrollment dashboard summary (total, completed, in-progress, hours)
     /// </summary>
     [HttpGet("/api/courses/enrollment-dashboard")]
     [ProducesResponseType(typeof(EnrollmentDashboardResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetEnrollmentDashboard(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetEnrollmentDashboard(CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _enrollmentService.GetEnrollmentDashboardAsync(userId, cancellationToken);
+        var query = new GetEnrollmentDashboardQuery(userId);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 }

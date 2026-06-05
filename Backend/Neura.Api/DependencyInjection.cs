@@ -1,4 +1,4 @@
-﻿using CloudinaryDotNet;
+using CloudinaryDotNet;
 using Ganss.Xss;
 using Hangfire;
 using HashidsNet;
@@ -11,8 +11,10 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Neura.Api.Errors;
+using Neura.Api.Infrastructure;
 using Neura.Api.OpenApiTransformers;
 using Neura.Core.Authentication;
+using Neura.Core.Services;
 using Neura.Core.Settings;
 using Neura.Repository.Persistence;
 using Neura.Services.Authentication;
@@ -33,6 +35,12 @@ public static class DependencyInjection
 	{
 		services.AddControllers();
 
+		services.AddEndpoints(Assembly.GetExecutingAssembly());
+
+		services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(
+			Assembly.GetExecutingAssembly(),
+			typeof(GradingService).Assembly));
+
 		services.AddHybridCache();
 
 		services.AddHttpClient();
@@ -52,7 +60,7 @@ public static class DependencyInjection
 
 		services.AddFluentValidation();
 
-		services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Course).Assembly, typeof(CourseService).Assembly);
+		services.AddMapster(Assembly.GetExecutingAssembly(), typeof(Course).Assembly, typeof(GradingService).Assembly);
 
 		services.AddProblemDetails();
 
@@ -78,35 +86,37 @@ public static class DependencyInjection
 			.ValidateDataAnnotations()
 			.ValidateOnStart();
 
+		services.AddOptions<StripeSettings>()
+			.BindConfiguration(StripeSettings.SectionName)
+			.ValidateDataAnnotations()
+			.ValidateOnStart();
+
 		services.AddSignalR(configuration, environment);
 
 		#region AddInjection
 
 		services.AddScoped<ExamTimeoutJob>();
-		services.AddScoped<ITagService, TagService>();
-		services.AddScoped<IUserService, UserService>();
-		services.AddScoped<IAuthService, AuthService>();
+
+
 		services.AddScoped<IFileService, FileService>();
-		services.AddScoped<IExamService, ExamService>();
+
 		services.AddScoped<IEmailSender, EmailService>();
-		services.AddScoped<IVideoService, VideoService>();
-		services.AddScoped<ICourseService, CourseService>();
-		services.AddScoped<ILessonService, LessonService>();
-		services.AddScoped<IReviewService, ReviewService>();
+
+
+
+
 		services.AddScoped<IGradingService, GradingService>();
-		services.AddScoped<ISectionService, SectionService>();
-		services.AddScoped<IWebhookService, WebhookService>();
+
 		services.AddScoped<IServiceHelpers, ServiceHelpers>();
-		services.AddScoped<IQuestionService, QuestionService>();
-		services.AddScoped<IEnrollmentService, EnrollmentService>();
-		services.AddScoped<ICourseTeamService, CourseTeamService>();
+
+
+
 		services.AddScoped<IExamTimeoutService, ExamTimeoutService>();
-		services.AddScoped<IExamAttemptService, ExamAttemptService>();
-		services.AddScoped<IAnnouncementService, AnnouncementService>();
-		services.AddScoped<IExamAnalyticsService, ExamAnalyticsService>();
-		services.AddScoped<ILessonProgressService, LessonProgressService>();
+
+		services.AddScoped<IStripeService, StripeService>();
+
 		services.AddScoped<ICoursePermissionService, CoursePermissionService>();
-		services.AddScoped<IInstructorApplicationService, InstructorApplicationService>();
+
 
 		services.AddSingleton<HtmlSanitizer>(sp =>
 		{
@@ -172,7 +182,7 @@ public static class DependencyInjection
 							   throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 		services.AddDbContext<ApplicationDbContext>(options =>
-			options.UseSqlServer(connectionString));
+			options.UseSqlServer(connectionString, sql => sql.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)));
 
 		return services;
 	}

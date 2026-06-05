@@ -1,20 +1,26 @@
-﻿using Neura.Api.Extensions;
+using MediatR;
+using Neura.Api.Extensions;
+using Neura.Api.Features.Auth.ConfirmEmail;
+using Neura.Api.Features.Auth.ExternalLoginCallback;
+using Neura.Api.Features.Auth.ForgotPassword;
+using Neura.Api.Features.Auth.Login;
+using Neura.Api.Features.Auth.Refresh;
+using Neura.Api.Features.Auth.Register;
+using Neura.Api.Features.Auth.ResendConfirmation;
+using Neura.Api.Features.Auth.ResetPassword;
+using Neura.Api.Features.Auth.RevokeToken;
+using Neura.Api.Features.Auth.UpdateImage;
 using Neura.Core.Contracts.Authentication;
 using Neura.Core.Contracts.Files;
+using Neura.Core.Contracts.Users;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Neura.Api.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-public class AuthController(
-    IAuthService authService,
-    ILogger<AuthController> logger,
-    IConfiguration configuration) : ControllerBase
+public class AuthController(ISender sender, IConfiguration configuration) : ControllerBase
 {
-    private readonly IAuthService _authService = authService;
-    private readonly IConfiguration _configuration = configuration;
-    private readonly ILogger<AuthController> _logger = logger;
-
     /// <summary>
     ///     Logs in a user and returns a JWT token.
     ///     Route: POST /auth/login
@@ -22,14 +28,12 @@ public class AuthController(
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Login(LoginRequest loginRequest, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login(LoginRequest loginRequest, CancellationToken ct)
     {
-        var authResponse =
-            await _authService.GetTokenAsync(loginRequest.UserNameOrEmail, loginRequest.Password, cancellationToken);
+        var command = new LoginCommand(loginRequest);
+        var result = await sender.Send(command, ct);
 
-        return authResponse.IsSuccess
-            ? Ok(authResponse.Value)
-            : authResponse.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -37,32 +41,33 @@ public class AuthController(
     ///     Route: POST /auth/register
     /// </summary>
     [HttpPost("register")]
-    public async Task<IActionResult> Register(RegisterRequest registerRequest, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register(RegisterRequest registerRequest, CancellationToken ct)
     {
-        var result = await _authService.RegisterAsync(registerRequest, cancellationToken);
+        var command = new RegisterCommand(registerRequest, Request.Headers.Origin.FirstOrDefault());
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
     [HttpPut("image")]
     [Authorize]
-    public async Task<IActionResult> UpdateImage([FromForm] UploadImageRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateImage([FromForm] UploadImageRequest request, CancellationToken ct)
     {
-        var result = await _authService.UpdateImageAsync(request, User.GetUserId()!, cancellationToken);
+        var command = new UpdateImageCommand(request, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
-
 
     /// <summary>
     ///     Refreshes an expired JWT token.
     ///     Route: POST /auth/refresh
     /// </summary>
     [HttpPost("refresh")]
-    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
-        var result = await _authService.GetRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
+        var command = new RefreshCommand(request);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
@@ -72,10 +77,10 @@ public class AuthController(
     ///     Route: POST /auth/revoke
     /// </summary>
     [HttpPost("revoke")]
-    public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
     {
-        var result = await _authService.RevokeRefreshTokenAsync(request.Token, request.RefreshToken, cancellationToken);
+        var command = new RevokeTokenCommand(request);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
@@ -85,10 +90,10 @@ public class AuthController(
     ///     Route: POST /auth/confirm-email
     /// </summary>
     [HttpPost("confirm-email")]
-    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request, CancellationToken ct)
     {
-        var result = await _authService.ConfirmEmailAsync(request, cancellationToken);
+        var command = new ConfirmEmailCommand(request);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
@@ -98,9 +103,10 @@ public class AuthController(
     ///     Route: POST /auth/resend-confirmation
     /// </summary>
     [HttpPost("resend-confirmation")]
-    public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationEmailRequest request)
+    public async Task<IActionResult> ResendConfirmation([FromBody] ResendConfirmationEmailRequest request, CancellationToken ct)
     {
-        var result = await _authService.ResendConfirmationEmailAsync(request);
+        var command = new ResendConfirmationCommand(request, Request.Headers.Origin.FirstOrDefault());
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
@@ -110,9 +116,10 @@ public class AuthController(
     ///     Route: POST /auth/forgot-password
     /// </summary>
     [HttpPost("forgot-password")]
-    public async Task<IActionResult> ForgotPassword([FromBody] ForgetPasswordRequest request)
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgetPasswordRequest request, CancellationToken ct)
     {
-        var result = await _authService.SendResetPasswordCodeAsync(request.Email);
+        var command = new ForgotPasswordCommand(request, Request.Headers.Origin.FirstOrDefault());
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
@@ -122,13 +129,13 @@ public class AuthController(
     ///     Route: POST /auth/reset-password
     /// </summary>
     [HttpPost("reset-password")]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
-        var result = await _authService.ResetPasswordAsync(request);
+        var command = new ResetPasswordCommand(request);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
-
 
     // ===============================
     // EXTERNAL AUTH (Google/GitHub)
@@ -147,23 +154,27 @@ public class AuthController(
             protocol: Request.Scheme,
             host: Request.Host.Value);
 
-        var properties = _authService.GetExternalAuthProperties(provider, redirectUrl!);
+        // Keep the AuthenticationProperties manually as it's purely framework level.
+        var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
+        properties.Items["LoginProvider"] = provider;
+        
         return Challenge(properties, provider);
     }
 
     [HttpGet("external-callback")]
-    public async Task<IActionResult> ExternalLoginCallback()
+    public async Task<IActionResult> ExternalLoginCallback(CancellationToken ct)
     {
-        var result = await _authService.HandleExternalLoginAsync();
-        var frontendUrl = _configuration["FrontendUrl"];
+        var command = new ExternalLoginCallbackCommand();
+        var result = await sender.Send(command, ct);
+        
+        var frontendUrl = configuration["FrontendUrl"];
 
         if (!result.IsSuccess)
         {
-            var safeError = Uri.EscapeDataString(result.ErrorMessage ?? "unknown");
+            var safeError = Uri.EscapeDataString(result.Error?.Message ?? "unknown");
             return Redirect($"{frontendUrl}/login?error={safeError}");
         }
 
-        return Redirect(
-            $"{frontendUrl}/callback#token={result.Token}&refreshToken={result.RefreshToken}");
+        return Redirect($"{frontendUrl}/callback#token={result.Value.Token}&refreshToken={result.Value.RefreshToken}");
     }
 }

@@ -1,0 +1,37 @@
+// ---------------------------------------------------------------------------
+//  Minimal API endpoint — COMMENTED OUT
+//  Routing is now handled by the Controller (CQRS via MediatR).
+//  Keep this file for reference; delete when the controller is stable.
+// ---------------------------------------------------------------------------
+
+//using MediatR;
+//using Neura.Api.Infrastructure;
+
+//namespace Neura.Api.Features.Reviews.GetReviews;
+
+//public sealed class GetReviewsEndpoint : IEndpoint
+//{
+//    public void MapEndpoint(IEndpointRouteBuilder app)
+//    {
+//        app.MapGet("reviews/course/{courseId}", async (
+//            string courseId,
+//            [FromQuery] int page,
+//            [FromQuery] int pageSize,
+//            ISender sender,
+//            CancellationToken ct) =>
+//        {
+//            page = page <= 0 ? 1 : page;
+//            pageSize = pageSize <= 0 ? 5 : pageSize;
+
+//            var query = new GetReviewsQuery(courseId, page, pageSize);
+//            var result = await sender.Send(query, ct);
+
+//            return result.IsSuccess
+//                ? Results.Ok(result.Value)
+//                : result.ToProblemMinimal();
+//        })
+//        .AllowAnonymous()
+//        .WithTags("Reviews")
+//        .WithName("GetReviews");
+//    }
+//}

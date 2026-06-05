@@ -1,26 +1,33 @@
-﻿using Neura.Api.Extensions;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Neura.Api.Extensions;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Tags;
+using Neura.Api.Features.Tags.BulkDeleteTags;
+using Neura.Api.Features.Tags.BulkToggleTagsActive;
+using Neura.Api.Features.Tags.BulkUpdateTagsOrder;
+using Neura.Api.Features.Tags.CreateTag;
+using Neura.Api.Features.Tags.DeleteTag;
+using Neura.Api.Features.Tags.GetActiveTags;
+using Neura.Api.Features.Tags.GetPopularTags;
+using Neura.Api.Features.Tags.GetTagById;
+using Neura.Api.Features.Tags.GetTagBySlug;
+using Neura.Api.Features.Tags.GetTags;
+using Neura.Api.Features.Tags.ToggleTagActive;
+using Neura.Api.Features.Tags.UpdateTag;
 
 namespace Neura.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class TagsController : ControllerBase
+public class TagsController(ISender sender) : ControllerBase
 {
-    private readonly ITagService _tagService;
-
-    public TagsController(
-        ITagService tagService
-    )
-    {
-        _tagService = tagService;
-    }
-
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
     // Public Queries (No Auth Required)
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
 
     /// <summary>
     ///     Gets all active tags for selection/filtering (Public)
@@ -28,9 +35,10 @@ public class TagsController : ControllerBase
     [HttpGet("active")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<TagSummaryResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetActiveTags(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetActiveTags(CancellationToken ct)
     {
-        var result = await _tagService.GetActiveTagsAsync(cancellationToken);
+        var query = new GetActiveTagsQuery();
+        var result = await sender.Send(query, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -42,9 +50,10 @@ public class TagsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<TagSummaryResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPopularTags(
         [FromQuery] int count = 10,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
-        var result = await _tagService.GetPopularTagsAsync(count, cancellationToken);
+        var query = new GetPopularTagsQuery(count);
+        var result = await sender.Send(query, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -57,15 +66,16 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBySlug(
         string slug,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.GetBySlugAsync(slug, cancellationToken);
+        var query = new GetTagBySlugQuery(slug);
+        var result = await sender.Send(query, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
     // Admin Queries (Auth Required)
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
 
     /// <summary>
     ///     Gets all tags with pagination and filtering (Admin)
@@ -77,9 +87,10 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll(
         [FromQuery] TagFilters filters,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.GetAllAsync(filters, cancellationToken);
+        var query = new GetTagsQuery(filters);
+        var result = await sender.Send(query, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -92,15 +103,16 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         int id,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.GetByIdAsync(id, cancellationToken);
+        var query = new GetTagByIdQuery(id);
+        var result = await sender.Send(query, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
     // Admin Commands (Auth Required)
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
 
     /// <summary>
     ///     Creates a new tag (Admin)
@@ -112,9 +124,10 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreateTagRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.CreateAsync(request, User.GetUserId()!, cancellationToken);
+        var command = new CreateTagCommand(request, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetById), new { result.Value.Id }, result.Value)
             : result.ToProblem();
@@ -132,9 +145,10 @@ public class TagsController : ControllerBase
     public async Task<IActionResult> Update(
         int id,
         [FromBody] UpdateTagRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.UpdateAsync(id, request, User.GetUserId()!, cancellationToken);
+        var command = new UpdateTagCommand(id, request, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
@@ -151,9 +165,10 @@ public class TagsController : ControllerBase
     public async Task<IActionResult> Delete(
         int id,
         [FromQuery] bool force = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
-        var result = await _tagService.DeleteAsync(id, force, User.GetUserId()!, cancellationToken);
+        var command = new DeleteTagCommand(id, force, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
@@ -166,15 +181,16 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ToggleActive(
         int id,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.ToggleActiveAsync(id, User.GetUserId()!, cancellationToken);
+        var command = new ToggleTagActiveCommand(id, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
     // Bulk Operations (Admin)
-    // ══════════════════════════════════════════════════════════════
+    // ==========================================
 
     /// <summary>
     ///     Updates display order for multiple tags (Admin)
@@ -185,9 +201,10 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> BulkUpdateOrder(
         [FromBody] BulkUpdateTagsOrderRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.BulkUpdateOrderAsync(request, User.GetUserId()!, cancellationToken);
+        var command = new BulkUpdateTagsOrderCommand(request, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
@@ -200,9 +217,10 @@ public class TagsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> BulkToggleActive(
         [FromBody] BulkToggleTagsActiveRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var result = await _tagService.BulkToggleActiveAsync(request, User.GetUserId()!, cancellationToken);
+        var command = new BulkToggleTagsActiveCommand(request, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
@@ -217,9 +235,10 @@ public class TagsController : ControllerBase
     public async Task<IActionResult> BulkDelete(
         [FromBody] BulkDeleteTagsRequest request,
         [FromQuery] bool force = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken ct = default)
     {
-        var result = await _tagService.BulkDeleteAsync(request, force, User.GetUserId()!, cancellationToken);
+        var command = new BulkDeleteTagsCommand(request, force, User.GetUserId()!);
+        var result = await sender.Send(command, ct);
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 }

@@ -16,15 +16,6 @@ public class CourseRequestValidator : AbstractValidator<CourseRequest>
             .GreaterThanOrEqualTo(0)
             .WithMessage("Price must be zero or a positive value.");
 
-        //RuleFor(c => c.StartDate)
-        //    .NotEmpty()
-        //    .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow));
-
-        //RuleFor(c => c.EndDate)
-        //    .NotEmpty()
-        //    .GreaterThanOrEqualTo(DateOnly.FromDateTime(DateTime.UtcNow))
-        //    .GreaterThan(c => c.StartDate);
-
         RuleFor(c => c.Tags).NotEmpty();
 
         RuleFor(c => c.Tags)

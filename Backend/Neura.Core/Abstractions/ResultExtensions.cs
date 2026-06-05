@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Neura.Core.Abstractions;
 
@@ -25,5 +25,26 @@ public static class ResultExtensions
         };
 
         return new ObjectResult(problemDetails);
+    }
+
+    public static Microsoft.AspNetCore.Http.IResult ToProblemMinimal(this Result result)
+    {
+        if (result.IsSuccess)
+            throw new InvalidOperationException("Cannot to covert success result to problem!");
+
+        var extensions = new Dictionary<string, object?>
+        {
+            {
+                "errors", new[]
+                {
+                    result.Error.Code,
+                    result.Error.Message
+                }
+            }
+        };
+
+        return Microsoft.AspNetCore.Http.Results.Problem(
+            statusCode: result.Error.StatusCode,
+            extensions: extensions);
     }
 }

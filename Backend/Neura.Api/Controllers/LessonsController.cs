@@ -1,4 +1,17 @@
-﻿using Neura.Api.Extensions;
+using MediatR;
+using Neura.Api.Extensions;
+using Neura.Api.Features.Lessons.CreateLessonMetadata;
+using Neura.Api.Features.Lessons.DeleteLesson;
+using Neura.Api.Features.Lessons.GetArticleContent;
+using Neura.Api.Features.Lessons.GetSectionLessons;
+using Neura.Api.Features.Lessons.MarkCompleted;
+using Neura.Api.Features.Lessons.UpdateArticleContent;
+using Neura.Api.Features.Lessons.UpdateLesson;
+using Neura.Api.Features.Lessons.UpdateLessonPosition;
+using Neura.Api.Features.Lessons.UpdateLessonPrivacy;
+using Neura.Api.Features.Lessons.Video.FinalizeVideoUpload;
+using Neura.Api.Features.Lessons.Video.GetSignedVideoUpload;
+using Neura.Api.Features.Lessons.Video.GetVideoLink;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Enums;
@@ -8,26 +21,23 @@ namespace Neura.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class LessonsController(
-    ILessonService lessonService,
-    ILessonProgressService lessonProgressService,
-    IVideoService videoService) : ControllerBase
+public class LessonsController(ISender sender) : ControllerBase
 {
-    private readonly ILessonService _lessonService = lessonService;
-    private readonly ILessonProgressService _lessonProgressService = lessonProgressService;
-    private readonly IVideoService _videoService = videoService;
-
     /// <summary>
     ///     PAGE 1: Initialize the lesson shell with basic metadata.
     /// </summary>
     [HttpPost("{sectionId}/init")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [HasSectionPermission(Core.Enums.CoursePermission.EditContent)]
-    public async Task<IActionResult> Initialize([FromRoute] int sectionId, [FromBody] CreateLessonRequest request,
-        CancellationToken cancellationToken)
+    [HasSectionPermission(CoursePermission.EditContent)]
+    public async Task<IActionResult> Initialize(
+        [FromRoute] int sectionId,
+        [FromBody] CreateLessonRequest request,
+        CancellationToken ct)
     {
-        var result = await _lessonService.CreateLessonMetadataAsync(sectionId, request, User.GetUserId()!, cancellationToken);
+        var userId = User.GetUserId()!;
+        var command = new CreateLessonMetadataCommand(sectionId, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(new { LessonId = result.Value })
@@ -44,11 +54,14 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdatePosition(int id, [FromBody] UpdateLessonPositionRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdatePosition(
+        [FromRoute] int id,
+        [FromBody] UpdateLessonPositionRequest request,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _lessonService.UpdateLessonPositionAsync(id, request.NewPosition, userId, cancellationToken);
+        var command = new UpdateLessonPositionCommand(id, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
@@ -63,11 +76,14 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasLessonPermission(CoursePermission.EditContent)]
-    public async Task<IActionResult> UpdatePrivacy(int id, [FromBody] UpdateLessonPrivacyRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdatePrivacy(
+        [FromRoute] int id,
+        [FromBody] UpdateLessonPrivacyRequest request,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _lessonService.UpdateLessonPrivacyAsync(id, request, userId!, cancellationToken);
+        var command = new UpdateLessonPrivacyCommand(id, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
@@ -82,11 +98,14 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasLessonPermission(CoursePermission.EditContent)]
-    public async Task<IActionResult> UpdateLesson(int id, [FromBody] UpdateLessonRequest request,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateLesson(
+        [FromRoute] int id,
+        [FromBody] UpdateLessonRequest request,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _lessonService.UpdateLessonAsync(id, request, userId, cancellationToken);
+        var command = new UpdateLessonCommand(id, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
@@ -98,10 +117,13 @@ public class LessonsController(
     [HttpGet("section/{sectionId}")]
     [ProducesResponseType(typeof(List<LessonWithPositionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetSectionLessons(int sectionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSectionLessons(
+        [FromRoute] int sectionId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var result = await _lessonService.GetSectionLessonsAsync(sectionId, userId, cancellationToken);
+        var query = new GetSectionLessonsQuery(sectionId, userId);
+        var result = await sender.Send(query, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
@@ -114,16 +136,16 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [HasLessonPermission(CoursePermission.EditContent)]
-    public async Task<IActionResult> UpdateArticle(int id, [FromBody] UpdateArticleRequest request,
+    public async Task<IActionResult> UpdateArticle(
+        [FromRoute] int id,
+        [FromBody] UpdateArticleRequest request,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
+        var command = new UpdateArticleContentCommand(id, request, userId);
+        var result = await sender.Send(command, ct);
 
-        var result = await _lessonService.UpdateArticleContentAsync(id, request, userId, ct);
-
-        return result.IsSuccess
-            ? Ok()
-            : result.ToProblem();
+        return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
     /// <summary>
@@ -134,15 +156,15 @@ public class LessonsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetArticle(int id, CancellationToken ct)
+    public async Task<IActionResult> GetArticle(
+        [FromRoute] int id,
+        CancellationToken ct)
     {
-        var userId = User.GetUserId();
+        var userId = User.GetUserId()!;
+        var query = new GetArticleContentQuery(id, userId);
+        var result = await sender.Send(query, ct);
 
-        var result = await _lessonService.GetArticleContentAsync(id, userId!, ct);
-
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -150,17 +172,20 @@ public class LessonsController(
     ///     Route: GET /api/lessons/{id}/video/link
     /// </summary>
     /// <param name="id">The lesson ID to get video link for.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>Video URL, duration, and privacy status if user is authorized.</returns>
     [HttpGet("{id}/video/link")]
     [ProducesResponseType(typeof(VideoLinkResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetVideoLink(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetVideoLink(
+        [FromRoute] int id,
+        CancellationToken ct)
     {
-        var userId = User.GetUserId();
-        var result = await _videoService.GetVideoLinkAsync(id, userId!, cancellationToken);
+        var userId = User.GetUserId()!;
+        var query = new GetVideoLinkQuery(id, userId);
+        var result = await sender.Send(query, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
@@ -170,7 +195,7 @@ public class LessonsController(
     ///     Route: POST /api/lessons/{id}/video/signed-upload
     /// </summary>
     /// <param name="id">The lesson ID to upload video for.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>Signed upload credentials for client to use with Cloudinary.</returns>
     [HttpPost("{id}/video/signed-upload")]
     [ProducesResponseType(typeof(SignedVideoUploadResponse), StatusCodes.Status200OK)]
@@ -178,10 +203,13 @@ public class LessonsController(
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
     [HasLessonPermission(CoursePermission.EditContent)]
-    public async Task<IActionResult> GetSignedVideoUploadCredentials(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetSignedVideoUploadCredentials(
+        [FromRoute] int id,
+        CancellationToken ct)
     {
-        var userId = User.GetUserId();
-        var result = await _videoService.GetSignedUploadCredentialsAsync(id, userId!, cancellationToken);
+        var userId = User.GetUserId()!;
+        var command = new GetSignedVideoUploadCommand(id, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
@@ -192,7 +220,7 @@ public class LessonsController(
     /// </summary>
     /// <param name="id">The lesson ID to link video to.</param>
     /// <param name="request">Finalization details (public ID, URL, duration).</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>Confirmation with linked video details.</returns>
     [HttpPost("{id}/video/finalize")]
     [ProducesResponseType(typeof(FinalizeVideoUploadResponse), StatusCodes.Status200OK)]
@@ -202,12 +230,13 @@ public class LessonsController(
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
     [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> FinalizeVideoUpload(
-        int id,
+        [FromRoute] int id,
         [FromBody] FinalizeVideoUploadRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var userId = User.GetUserId();
-        var result = await _videoService.FinalizeUploadAsync(id, request, userId!, cancellationToken);
+        var userId = User.GetUserId()!;
+        var command = new FinalizeVideoUploadCommand(id, request, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
@@ -217,7 +246,7 @@ public class LessonsController(
     ///     Route: DELETE /api/lessons/{id}
     /// </summary>
     /// <param name="id">The lesson ID.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>NoContent on success.</returns>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -225,30 +254,31 @@ public class LessonsController(
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
     [HasLessonPermission(CoursePermission.EditContent)]
-    public async Task<IActionResult> DeleteVideo(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteVideo(
+        [FromRoute] int id,
+        CancellationToken ct)
     {
-        var userId = User.GetUserId();
-        var result = await _lessonService.DeleteLesson(id, userId!, cancellationToken);
+        var userId = User.GetUserId()!;
+        var command = new DeleteLessonCommand(id, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
-    [HttpPost("{lessonId:int}/complete")]
+    [HttpPost("~/api/LessonProgres/lessons/{lessonId:int}/complete")]
     [ProducesResponseType(typeof(LessonCompletionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkCompleted(
-    [FromRoute] int lessonId,
-    CancellationToken cancellationToken)
+        [FromRoute] int lessonId,
+        CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-
-        var result = await _lessonProgressService
-            .MarkLessonCompletedAsync(lessonId, userId, cancellationToken);
+        var command = new MarkLessonCompletedCommand(lessonId, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)
             : result.ToProblem();
     }
-
 }

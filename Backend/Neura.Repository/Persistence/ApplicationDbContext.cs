@@ -40,6 +40,7 @@ public class ApplicationDbContext(
     public DbSet<CourseLearningOutcome> CourseLearningOutcomes { get; set; }
     public DbSet<InstructorApplication> InstructorApplications { get; set; }
     public DbSet<UploadedFile> UploadedFiles { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

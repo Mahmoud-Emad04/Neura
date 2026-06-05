@@ -1,19 +1,21 @@
-﻿using System.Security.Claims;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Neura.Core.Contracts.CourseTeam;
+using Neura.Api.Extensions;
+using Neura.Api.Features.Invitations.AcceptInvitation;
+using Neura.Api.Features.Invitations.GetInvitationByToken;
+using Neura.Api.Features.Invitations.GetMyInvitations;
+using Neura.Api.Features.Invitations.RejectInvitation;
 
 namespace Neura.Api.Controllers;
 
 [ApiController]
 [Route("api/invitations")]
-public class InvitationsController : ControllerBase
+public class InvitationsController(ISender sender) : ControllerBase
 {
-    private readonly ICourseTeamService _teamService;
-
-    public InvitationsController(ICourseTeamService teamService)
-    {
-        _teamService = teamService;
-    }
-
     /// <summary>
     ///     Get invitation details by token (public - for viewing invitation before login)
     /// </summary>
@@ -21,9 +23,10 @@ public class InvitationsController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(InvitationDetailsResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetInvitationByToken(string token)
+    public async Task<IActionResult> GetInvitationByToken(string token, CancellationToken ct)
     {
-        var result = await _teamService.GetInvitationByTokenAsync(token);
+        var query = new GetInvitationByTokenQuery(token);
+        var result = await sender.Send(query, ct);
 
         if (result.IsFailure) return NotFound(result.Error);
 
@@ -39,14 +42,13 @@ public class InvitationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> AcceptInvitation(string token)
+    public async Task<IActionResult> AcceptInvitation(string token, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var result = await _teamService.AcceptInvitationAsync(token, userId);
+        var command = new AcceptInvitationCommand(token, userId);
+        var result = await sender.Send(command, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 
     /// <summary>
@@ -57,10 +59,11 @@ public class InvitationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RejectInvitation(string token)
+    public async Task<IActionResult> RejectInvitation(string token, CancellationToken ct)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var result = await _teamService.RejectInvitationAsync(token, userId);
+        var command = new RejectInvitationCommand(token, userId);
+        var result = await sender.Send(command, ct);
 
         return result.IsSuccess
             ? Ok(new { message = "Invitation rejected successfully" })
@@ -73,16 +76,15 @@ public class InvitationsController : ControllerBase
     [HttpGet("my")]
     [Authorize]
     [ProducesResponseType(typeof(MyInvitationsResponse), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMyInvitations()
+    public async Task<IActionResult> GetMyInvitations(CancellationToken ct)
     {
         var userEmail = User.FindFirstValue(ClaimTypes.Email);
 
         if (string.IsNullOrEmpty(userEmail)) return Ok(new MyInvitationsResponse());
 
-        var result = await _teamService.GetMyInvitationsAsync(userEmail);
+        var query = new GetMyInvitationsQuery(userEmail);
+        var result = await sender.Send(query, ct);
 
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : result.ToProblem();
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
     }
 }
