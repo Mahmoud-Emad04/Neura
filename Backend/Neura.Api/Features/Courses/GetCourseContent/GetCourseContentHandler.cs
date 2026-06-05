@@ -72,7 +72,7 @@ internal sealed class GetCourseContentHandler(
         {
             completedLessonIds = await context.LessonCompletions
                 .AsNoTracking()
-                .Where(lc => lc.UserId == request.UserId && lc.Lesson.Section.CourseId == courseId)
+                .Where(lc => lc.UserId == request.UserId && lc.Lesson.Section.CourseId == courseId && !lc.IsDeleted)
                 .Select(lc => lc.LessonId)
                 .ToHashSetAsync(ct);
         }

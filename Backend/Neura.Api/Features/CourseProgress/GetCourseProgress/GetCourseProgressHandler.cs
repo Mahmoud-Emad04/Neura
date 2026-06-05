@@ -35,7 +35,7 @@ internal sealed class GetCourseProgressHandler(
 
         var completedIds = await context.LessonCompletions
             .AsNoTracking()
-            .Where(lc => lc.UserId == userId && lessonIds.Contains(lc.LessonId))
+            .Where(lc => lc.UserId == userId && lessonIds.Contains(lc.LessonId) && !lc.IsDeleted)
             .Select(lc => lc.LessonId)
             .ToHashSetAsync(ct);
 

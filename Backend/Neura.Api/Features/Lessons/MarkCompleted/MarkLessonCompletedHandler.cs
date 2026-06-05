@@ -1,9 +1,5 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Lessons;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
@@ -11,7 +7,7 @@ namespace Neura.Api.Features.Lessons.MarkCompleted;
 
 internal sealed class MarkLessonCompletedHandler(
     ApplicationDbContext context,
-    ILogger<MarkLessonCompletedHandler> logger) 
+    ILogger<MarkLessonCompletedHandler> logger)
     : IRequestHandler<MarkLessonCompletedCommand, Result<LessonCompletionResponse>>
 {
     public async Task<Result<LessonCompletionResponse>> Handle(
@@ -41,20 +37,41 @@ internal sealed class MarkLessonCompletedHandler(
         if (!isEnrolled && !lesson.IsPreview)
             return Result.Failure<LessonCompletionResponse>(LessonProgressErrors.NotEnrolled);
 
-        var existing = await context.LessonCompletions
+        var existing = await context.LessonCompletions.IgnoreQueryFilters()
             .FirstOrDefaultAsync(lc => lc.LessonId == lessonId && lc.UserId == userId, ct);
 
+        bool isCompletedNow;
+        DateTime? completedOn = null;
+
         if (existing is not null)
-            return Result.Success(new LessonCompletionResponse(lessonId, true, existing.CompletedOn));
-
-        var completion = new LessonCompletion
         {
-            UserId = userId,
-            LessonId = lessonId,
-            CompletedOn = DateTime.UtcNow
-        };
+            existing.IsDeleted = !existing.IsDeleted;
+            existing.CompletedOn = DateTime.UtcNow;
+            isCompletedNow = !existing.IsDeleted;
+            completedOn = isCompletedNow ? existing.CompletedOn : null;
 
-        await context.LessonCompletions.AddAsync(completion, ct);
+            logger.LogInformation(
+                "User {UserId} {Action} completion for lesson {LessonId} ('{Title}')",
+                userId, isCompletedNow ? "completed" : "unmarked completion for", lessonId, lesson.Title);
+        }
+        else
+        {
+            var completion = new LessonCompletion
+            {
+                UserId = userId,
+                LessonId = lessonId,
+                CompletedOn = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            await context.LessonCompletions.AddAsync(completion, ct);
+            isCompletedNow = true;
+            completedOn = completion.CompletedOn;
+
+            logger.LogInformation(
+                "User {UserId} completed lesson {LessonId} ('{Title}')",
+                userId, lessonId, lesson.Title);
+        }
 
         if (isEnrolled)
         {
@@ -70,10 +87,6 @@ internal sealed class MarkLessonCompletedHandler(
 
         await context.SaveChangesAsync(ct);
 
-        logger.LogInformation(
-            "User {UserId} completed lesson {LessonId} ('{Title}')",
-            userId, lessonId, lesson.Title);
-
-        return Result.Success(new LessonCompletionResponse(lessonId, true, completion.CompletedOn));
+        return Result.Success(new LessonCompletionResponse(lessonId, isCompletedNow, completedOn));
     }
 }

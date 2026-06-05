@@ -42,7 +42,7 @@ internal sealed class GetEnrollmentDashboardHandler(ApplicationDbContext context
 
         var completedLessonsByCourse = await context.LessonCompletions
             .AsNoTracking()
-            .Where(lc => lc.UserId == request.UserId && enrolledCourseIds.Contains(lc.Lesson.Section.CourseId) && !lc.Lesson.IsDeleted && !lc.Lesson.Section.IsDeleted)
+            .Where(lc => lc.UserId == request.UserId && enrolledCourseIds.Contains(lc.Lesson.Section.CourseId) && !lc.IsDeleted && !lc.Lesson.IsDeleted && !lc.Lesson.Section.IsDeleted)
             .GroupBy(lc => lc.Lesson.Section.CourseId)
             .Select(g => new { CourseId = g.Key, Count = g.Count() })
             .ToListAsync(ct);

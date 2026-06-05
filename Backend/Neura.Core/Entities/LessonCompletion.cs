@@ -1,4 +1,4 @@
-﻿namespace Neura.Core.Entities;
+namespace Neura.Core.Entities;
 
 public class LessonCompletion
 {
@@ -9,4 +9,5 @@ public class LessonCompletion
     public Lesson Lesson { get; set; } = default!;
 
     public DateTime CompletedOn { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; } = false;
 }

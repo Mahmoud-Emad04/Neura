@@ -31,7 +31,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [HasSectionPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> Initialize(
-        [FromRoute] int sectionId, 
+        [FromRoute] int sectionId,
         [FromBody] CreateLessonRequest request,
         CancellationToken ct)
     {
@@ -55,7 +55,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdatePosition(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         [FromBody] UpdateLessonPositionRequest request,
         CancellationToken ct)
     {
@@ -77,7 +77,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdatePrivacy(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         [FromBody] UpdateLessonPrivacyRequest request,
         CancellationToken ct)
     {
@@ -99,7 +99,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdateLesson(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         [FromBody] UpdateLessonRequest request,
         CancellationToken ct)
     {
@@ -118,7 +118,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(List<LessonWithPositionResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSectionLessons(
-        [FromRoute] int sectionId, 
+        [FromRoute] int sectionId,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
@@ -137,7 +137,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> UpdateArticle(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         [FromBody] UpdateArticleRequest request,
         CancellationToken ct)
     {
@@ -157,7 +157,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetArticle(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
@@ -180,7 +180,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetVideoLink(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
@@ -204,7 +204,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
     [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> GetSignedVideoUploadCredentials(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
@@ -255,7 +255,7 @@ public class LessonsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status500InternalServerError)]
     [HasLessonPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> DeleteVideo(
-        [FromRoute] int id, 
+        [FromRoute] int id,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
@@ -265,7 +265,7 @@ public class LessonsController(ISender sender) : ControllerBase
         return result.IsSuccess ? NoContent() : result.ToProblem();
     }
 
-    [HttpPost("{lessonId:int}/complete")]
+    [HttpPost("~/api/LessonProgres/lessons/{lessonId:int}/complete")]
     [ProducesResponseType(typeof(LessonCompletionResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

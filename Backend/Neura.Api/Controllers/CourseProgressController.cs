@@ -1,12 +1,8 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Neura.Api.Extensions;
-using Neura.Core.Contracts.Lessons;
 using Neura.Api.Features.CourseProgress.GetCourseProgress;
 using Neura.Api.Features.CourseProgress.GetNextLesson;
+using Neura.Core.Contracts.Lessons;
 
 namespace Neura.Api.Controllers;
 
@@ -37,7 +33,7 @@ public class CourseProgressController(ISender sender) : ControllerBase
     ///     GET api/CourseProgress/{keyId}/next-lesson
     ///     Returns the next lesson the user should view.
     /// </summary>
-    [HttpGet("{keyId}/next-lesson")]
+    [HttpGet("~/api/LessonProgres/courses/{keyId}/next-lesson")]
     [ProducesResponseType(typeof(NextLessonResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

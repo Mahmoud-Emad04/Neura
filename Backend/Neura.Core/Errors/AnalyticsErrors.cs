@@ -1,4 +1,4 @@
-﻿using Neura.Core.Abstractions;
+using Neura.Core.Abstractions;
 
 namespace Neura.Core.Errors;
 
@@ -6,6 +6,9 @@ public static class AnalyticsErrors
 {
     public static readonly Error ExamNotFound =
         new("Analytics.ExamNotFound", "The specified exam was not found.", StatusCodes.Status404NotFound);
+
+    public static readonly Error CourseNotFound =
+        new("Analytics.CourseNotFound", "The specified course was not found.", StatusCodes.Status404NotFound);
 
     public static readonly Error Forbidden =
         new("Analytics.Forbidden", "You do not have permission to view analytics for this exam.", StatusCodes.Status403Forbidden);
