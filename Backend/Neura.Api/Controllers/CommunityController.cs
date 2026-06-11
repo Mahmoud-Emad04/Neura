@@ -11,19 +11,24 @@ using Neura.Api.Features.Community.GetVoiceParticipants;
 using Neura.Api.Features.Community.ReorderChannels;
 using Neura.Api.Features.Community.UpdateChannel;
 using Neura.Core.Contracts.Community;
+using Neura.Services.Helpers;
 
 namespace Neura.Api.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("api/community")]
-public sealed class CommunityController(ISender sender) : ControllerBase
+public sealed class CommunityController(ISender sender, IServiceHelpers helpers) : ControllerBase
 {
-    [HttpGet("courses/{courseId:int}/channels")]
+    [HttpGet("courses/{keyId}/channels")]
     [ProducesResponseType(typeof(IReadOnlyList<ChannelDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetChannels(int courseId, CancellationToken ct = default)
+    public async Task<IActionResult> GetChannels(string keyId, CancellationToken ct = default)
     {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return BadRequest("Invalid course key.");
+
         try
         {
             var query = new GetChannelsQuery(courseId, User.GetUserId()!);
@@ -36,18 +41,21 @@ public sealed class CommunityController(ISender sender) : ControllerBase
         }
     }
 
-    [HttpPost("courses/{courseId:int}/channels")]
+    [HttpPost("courses/{keyId}/channels")]
     [ProducesResponseType(typeof(ChannelDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreateChannel(int courseId, [FromBody] CreateChannelRequest request, CancellationToken ct = default)
+    public async Task<IActionResult> CreateChannel(string keyId, [FromBody] CreateChannelRequest request, CancellationToken ct = default)
     {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return BadRequest("Invalid course key.");
+
         try
         {
             var command = new CreateChannelCommand(courseId, request, User.GetUserId()!);
             var channelDto = await sender.Send(command, ct);
-            return CreatedAtAction(nameof(GetChannels), new { courseId }, channelDto);
+            return CreatedAtAction(nameof(GetChannels), new { keyId }, channelDto);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -104,12 +112,15 @@ public sealed class CommunityController(ISender sender) : ControllerBase
         }
     }
 
-    [HttpPut("courses/{courseId:int}/channels/reorder")]
+    [HttpPut("courses/{keyId}/channels/reorder")]
     [ProducesResponseType(typeof(IReadOnlyList<ChannelDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> ReorderChannels(int courseId, [FromBody] ReorderChannelsRequest request, CancellationToken ct = default)
+    public async Task<IActionResult> ReorderChannels(string keyId, [FromBody] ReorderChannelsRequest request, CancellationToken ct = default)
     {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return BadRequest("Invalid course key.");
+
         try
         {
             var command = new ReorderChannelsCommand(courseId, request, User.GetUserId()!);
@@ -217,11 +228,15 @@ public sealed class CommunityController(ISender sender) : ControllerBase
         }
     }
 
-    [HttpGet("courses/{courseId:int}/members")]
+    [HttpGet("courses/{keyId}/members")]
     [ProducesResponseType(typeof(IReadOnlyList<CourseMemberDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetCourseMembers(int courseId, CancellationToken ct = default)
+    public async Task<IActionResult> GetCourseMembers(string keyId, CancellationToken ct = default)
     {
+        if (!TryDecodeCourseId(keyId, out var courseId))
+            return BadRequest("Invalid course key.");
+
         try
         {
             var query = new GetCourseMembersQuery(courseId, User.GetUserId()!);
@@ -232,5 +247,17 @@ public sealed class CommunityController(ISender sender) : ControllerBase
         {
             return Forbid(ex.Message);
         }
+    }
+
+    private bool TryDecodeCourseId(string keyId, out int courseId)
+    {
+        var numbers = helpers.DecodeHash(keyId);
+        if (numbers.Length == 0)
+        {
+            courseId = 0;
+            return false;
+        }
+        courseId = numbers[0];
+        return true;
     }
 }
