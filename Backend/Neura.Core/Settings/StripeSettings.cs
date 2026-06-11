@@ -38,6 +38,13 @@ public class StripeSettings
 	public string CancelUrl { get; set; } = string.Empty;
 
 	/// <summary>
+	/// Production server base URL for webhook confirmation callback.
+	/// The webhook will call POST {ProductionBaseUrl}/api/payments/webhook-confirm
+	/// after a successful payment to double-confirm enrollment.
+	/// </summary>
+	public string ProductionBaseUrl { get; set; } = string.Empty;
+
+	/// <summary>
 	/// Validate settings have required values.
 	/// </summary>
 	public bool IsValid() =>

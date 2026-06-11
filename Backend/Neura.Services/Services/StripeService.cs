@@ -8,8 +8,10 @@ using Neura.Core.Enums;
 using Neura.Core.Services;
 using Neura.Core.Settings;
 using Neura.Repository.Persistence;
+using Neura.Services.Helpers;
 using Stripe;
 using Stripe.Checkout;
+using System.Net.Http.Json;
 
 namespace Neura.Services.Services;
 
@@ -18,15 +20,21 @@ public class StripeService : IStripeService
     private readonly ApplicationDbContext _context;
     private readonly StripeSettings _settings;
     private readonly ILogger<StripeService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IServiceHelpers _helpers;
 
     public StripeService(
         ApplicationDbContext context,
         IOptions<StripeSettings> settings,
-        ILogger<StripeService> logger)
+        ILogger<StripeService> logger,
+        IHttpClientFactory httpClientFactory,
+        IServiceHelpers helpers)
     {
         _context = context;
         _settings = settings.Value;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
+        _helpers = helpers;
 
         StripeConfiguration.ApiKey = _settings.SecretKey;
     }
@@ -233,6 +241,9 @@ public class StripeService : IStripeService
         _logger.LogInformation(
             "✅ Payment completed and user {UserId} enrolled in course {CourseId} via session {SessionId}",
             payment.UserId, payment.CourseId, session.Id);
+
+        // Fire-and-forget: call production webhook-confirm endpoint to double-confirm enrollment
+        await CallProductionWebhookConfirmAsync(payment.CourseId, payment.UserId, ct);
     }
 
     private async Task HandleCheckoutSessionExpired(Event stripeEvent, CancellationToken ct)
@@ -250,5 +261,50 @@ public class StripeService : IStripeService
 
         _logger.LogInformation("Checkout session {SessionId} expired", session.Id);
     }
-}
 
+    /// <summary>
+    ///     Calls the production server's webhook-confirm endpoint
+    ///     to double-confirm enrollment after a successful payment.
+    /// </summary>
+    private async Task CallProductionWebhookConfirmAsync(int courseId, string userId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.ProductionBaseUrl))
+        {
+            _logger.LogWarning("ProductionBaseUrl is not configured — skipping webhook-confirm callback");
+            return;
+        }
+
+        try
+        {
+            var courseKeyId = _helpers.Encode(courseId);
+            var url = $"{_settings.ProductionBaseUrl.TrimEnd('/')}/api/payments/webhook-confirm";
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Webhook-Secret", _settings.WebhookSecret);
+
+            var body = new WebhookConfirmRequest(courseKeyId, userId);
+            var response = await client.PostAsJsonAsync(url, body, ct);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation(
+                    "✅ Production webhook-confirm succeeded for user {UserId}, course {CourseId}",
+                    userId, courseId);
+            }
+            else
+            {
+                var responseBody = await response.Content.ReadAsStringAsync(ct);
+                _logger.LogWarning(
+                    "⚠️ Production webhook-confirm returned {StatusCode} for user {UserId}, course {CourseId}: {Body}",
+                    response.StatusCode, userId, courseId, responseBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Don't let a callback failure break the webhook response to Stripe
+            _logger.LogError(ex,
+                "❌ Failed to call production webhook-confirm for user {UserId}, course {CourseId}",
+                userId, courseId);
+        }
+    }
+}
