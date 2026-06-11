@@ -51,6 +51,36 @@ public class StripeService : IStripeService
         {
             var sessionService = new SessionService();
 
+            // Check if there is an existing pending payment
+            var existingPayment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.CourseId == courseId
+                                          && p.UserId == userId
+                                          && p.Status == PaymentStatus.Pending, ct);
+
+            if (existingPayment != null)
+            {
+                var existingSession = await sessionService.GetAsync(existingPayment.StripeSessionId, cancellationToken: ct);
+                
+                if (existingSession.Status == "open")
+                {
+                    _logger.LogInformation("Reusing existing open Stripe session {SessionId} for user {UserId}, course {CourseId}",
+                        existingSession.Id, userId, courseId);
+                    
+                    return Result.Success(new CreateCheckoutSessionResponse
+                    {
+                        SessionId = existingSession.Id,
+                        SessionUrl = existingSession.Url,
+                        PublishableKey = _settings.PublishableKey
+                    });
+                }
+                else
+                {
+                    // Update status if it's expired or completed so we don't pick it up again
+                    existingPayment.Status = existingSession.Status == "complete" ? PaymentStatus.Completed : PaymentStatus.Failed;
+                    await _context.SaveChangesAsync(ct);
+                }
+            }
+
             var options = new SessionCreateOptions
             {
                 PaymentMethodTypes = ["card"],

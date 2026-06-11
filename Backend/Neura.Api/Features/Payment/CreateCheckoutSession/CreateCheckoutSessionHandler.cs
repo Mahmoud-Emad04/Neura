@@ -54,15 +54,6 @@ internal sealed class CreateCheckoutSessionHandler(
         if (existingEnrollment is not null)
             return Result.Failure<CreateCheckoutSessionResponse>(PaymentErrors.AlreadyEnrolled);
 
-        // Check for existing pending payment
-        var pendingPayment = await context.Payments
-            .FirstOrDefaultAsync(p => p.CourseId == courseId
-                                      && p.UserId == request.UserId
-                                      && p.Status == PaymentStatus.Pending, ct);
-
-        if (pendingPayment is not null)
-            return Result.Failure<CreateCheckoutSessionResponse>(PaymentErrors.PaymentPending);
-
         // Price is stored as whole number (e.g., 50 = $50),
         // Stripe expects amount in cents (e.g., 5000 = $50.00)
         var priceInCents = course.Price * 100;
