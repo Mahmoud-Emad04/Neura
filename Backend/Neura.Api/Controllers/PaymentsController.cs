@@ -1,18 +1,16 @@
 using MediatR;
-using Microsoft.Extensions.Options;
 using Neura.Api.Features.Payment.CreateCheckoutSession;
 using Neura.Api.Features.Payment.HandleStripeWebhook;
 using Neura.Api.Features.Payment.VerifyPayment;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Contracts.Payment;
-using Neura.Core.Settings;
 using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 
 [ApiController]
 [Route("api/payments")]
-public class PaymentsController(ISender sender, IOptions<StripeSettings> stripeOptions) : ControllerBase
+public class PaymentsController(ISender sender) : ControllerBase
 {
     /// <summary>
     ///     Create a Stripe Checkout Session for a paid course.
@@ -74,29 +72,5 @@ public class PaymentsController(ISender sender, IOptions<StripeSettings> stripeO
 
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
-
-    /// <summary>
-    ///     Internal webhook confirmation endpoint.
-    ///     Called by the Stripe webhook handler after successful payment
-    ///     to double-confirm enrollment on the production server.
-    ///     Secured via X-Webhook-Secret header.
-    /// </summary>
-    [HttpPost("webhook-confirm")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(EnrollmentResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> WebhookConfirm([FromBody] WebhookConfirmRequest request, CancellationToken ct)
-    {
-        // Validate the shared webhook secret
-        var secret = Request.Headers["X-Webhook-Secret"].ToString();
-        if (string.IsNullOrEmpty(secret) || secret != stripeOptions.Value.WebhookSecret)
-            return Unauthorized("Invalid webhook secret");
-
-        var command = new VerifyPaymentCommand(request.CourseId, request.UserId);
-        var result = await sender.Send(command, ct);
-
-        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
-    }
 }
+
