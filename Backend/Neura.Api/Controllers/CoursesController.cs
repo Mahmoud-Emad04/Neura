@@ -7,6 +7,7 @@ using Neura.Api.Features.Courses.DeleteCourse;
 using Neura.Api.Features.Courses.GetAllCourses;
 using Neura.Api.Features.Courses.GetBookmarkedCourses;
 using Neura.Api.Features.Courses.GetCourseContent;
+using Neura.Api.Features.Courses.GetCourseFullContent;
 using Neura.Api.Features.Courses.GetCourseMetadata;
 using Neura.Api.Features.Courses.GetCourseStatus;
 using Neura.Api.Features.Courses.GetEditableCourses;
@@ -17,6 +18,7 @@ using Neura.Api.Features.Courses.UpdateCourseDetails;
 using Neura.Api.Features.Courses.UpdateCourseImage;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.common;
+using Neura.Core.Contracts.Course;
 using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
 using Neura.Core.Enums;
@@ -79,6 +81,36 @@ public class CoursesController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var query = new GetCourseContentQuery(courseId, User.GetUserId());
+        var result = await sender.Send(query, ct);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
+
+    /// <summary>
+    ///     Retrieves the full content of a course including learning outcomes, prerequisites,
+    ///     sections with their lessons, and article text for article-type lessons.
+    /// </summary>
+    /// <remarks>
+    ///     Returns the complete course hierarchy with lesson text only for article-type lessons.
+    ///     Non-article lessons will have null for LessonText.
+    ///     Provide the public HashId (e.g., "Xy7zK"), not the integer database ID.
+    /// </remarks>
+    /// <param name="courseId">The hashed string ID of the course.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list containing the full course content.</returns>
+    /// <response code="200">Returns the full course content.</response>
+    /// <response code="404">Course not found or HashId is invalid.</response>
+    [ProducesResponseType(typeof(List<CourseFullContentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
+    [HttpGet("{courseId}/full-content")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetFullContent(
+        [FromRoute] string courseId,
+        CancellationToken ct)
+    {
+        var query = new GetCourseFullContentQuery(courseId);
         var result = await sender.Send(query, ct);
 
         return result.IsSuccess
