@@ -1,7 +1,9 @@
 using System.Text.Json;
 using MediatR;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Neura.Core.Abstractions;
+using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.ExamAttempt;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -9,7 +11,9 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.ExamAttempts.GetResults;
 
-internal sealed class GetResultsHandler(ApplicationDbContext context) 
+internal sealed class GetResultsHandler(
+    ApplicationDbContext context,
+    UserManager<ApplicationUser> userManager) 
     : IRequestHandler<GetResultsQuery, Result<AttemptResultResponse>>
 {
     public async Task<Result<AttemptResultResponse>> Handle(
@@ -21,6 +25,8 @@ internal sealed class GetResultsHandler(ApplicationDbContext context)
         var attempt = await context.ExamAttempts
             .AsNoTracking()
             .Include(a => a.Exam)
+                .ThenInclude(e => e.Lesson)
+                    .ThenInclude(l => l.Section)
             .Include(a => a.AttemptAnswers)
                 .ThenInclude(aa => aa.SelectedOptions)
             .Include(a => a.Violations)
@@ -29,8 +35,14 @@ internal sealed class GetResultsHandler(ApplicationDbContext context)
         if (attempt is null)
             return Result.Failure<AttemptResultResponse>(ExamAttemptErrors.AttemptNotFound);
 
+        // Allow access if the user is the attempt owner
         if (attempt.UserId != userId)
-            return Result.Failure<AttemptResultResponse>(ExamAttemptErrors.NotAttemptOwner);
+        {
+            // Check if user has a privileged role (Admin / SuperAdmin / CourseOwner / CoInstructor)
+            var hasAccess = await HasPrivilegedAccessAsync(userId, attempt, ct);
+            if (!hasAccess)
+                return Result.Failure<AttemptResultResponse>(ExamAttemptErrors.NotAttemptOwner);
+        }
 
         if (attempt.Status == AttemptStatus.InProgress)
             return Result.Failure<AttemptResultResponse>(ExamAttemptErrors.ResultsNotAvailable);
@@ -134,5 +146,32 @@ internal sealed class GetResultsHandler(ApplicationDbContext context)
         };
 
         return Result.Success(response);
+    }
+
+    /// <summary>
+    ///     Checks whether the user has Admin, SuperAdmin, CourseOwner, or CoInstructor access.
+    /// </summary>
+    private async Task<bool> HasPrivilegedAccessAsync(
+        string userId, ExamAttempt attempt, CancellationToken ct)
+    {
+        // 1. Check global roles: Admin / SuperAdmin
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return false;
+
+        if (await userManager.IsInRoleAsync(user, DefaultRoles.SuperAdmin) ||
+            await userManager.IsInRoleAsync(user, DefaultRoles.Admin))
+            return true;
+
+        // 2. Check course-level roles: CourseOwner (Level 4) or CoInstructor (Level 3)
+        var courseId = attempt.Exam.Lesson.Section.CourseId;
+
+        var courseUser = await context.CourseUsers
+            .AsNoTracking()
+            .Include(cu => cu.CourseRole)
+            .FirstOrDefaultAsync(cu => cu.CourseId == courseId && cu.UserId == userId, ct);
+
+        return courseUser is not null &&
+               courseUser.CourseRole.Level >= (int)CourseRoleType.CoInstructor;
     }
 }
