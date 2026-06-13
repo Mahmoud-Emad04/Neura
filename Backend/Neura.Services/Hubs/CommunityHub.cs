@@ -6,6 +6,7 @@ using Neura.Core.Contracts.Community;
 using Neura.Core.Hubs;
 using System.Collections.Concurrent;
 using System.Security.Claims;
+using Neura.Services.Helpers;
 
 namespace Neura.Services.Hubs;
 
@@ -34,6 +35,7 @@ public sealed class CommunityHub(
     IChatService chatService,
     IVoiceChannelService voiceService,
     IServiceScopeFactory scopeFactory,
+    IServiceHelpers serviceHelpers, 
     ILogger<CommunityHub> logger)
     : Hub<ICommunityHubClient>
 {
@@ -506,14 +508,25 @@ public sealed class CommunityHub(
     //             "A valid courseId query parameter is required to connect to CommunityHub.");
     // }
 
-        private string GetCourseId()
+        private int GetCourseId()
     {
         var raw = Context.GetHttpContext()?.Request.Query["courseId"].ToString();
 
-        return !string.IsNullOrWhiteSpace(raw)
-            ? raw
-            : throw new InvalidOperationException(
+        if (string.IsNullOrWhiteSpace(raw))
+            throw new InvalidOperationException(
                 "A valid courseId query parameter is required to connect to CommunityHub.");
+
+        // Try numeric first (backwards compat)
+        if (int.TryParse(raw, out var numericId) && numericId > 0)
+            return numericId;
+
+        // Decode Hashids key (e.g. "24jlry4wNqW" → 5)
+        var decoded = serviceHelpers.DecodeHash(raw);
+        if (decoded.Length > 0 && decoded[0] > 0)
+            return decoded[0];
+
+        throw new InvalidOperationException(
+            $"Could not decode courseId from value: {raw}");
     }
 
     /// <summary>
