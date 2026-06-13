@@ -496,22 +496,12 @@ public sealed class CommunityHub(
     ///     ⚠️  Validated here but NOT trusted for authorization decisions.
     ///     Authorization uses the JWT userId cross-referenced against CourseUser in SQL.
     /// </summary>
-    // private int GetCourseId()
-    // {
-    //     var raw = Context.GetHttpContext()?.Request.Query["courseId"].ToString();
-
-    //     return int.TryParse(raw, out var courseId) && courseId > 0
-    //         ? courseId
-    //         : throw new InvalidOperationException(
-    //             "A valid courseId query parameter is required to connect to CommunityHub.");
-    // }
-
-        private string GetCourseId()
+    private int GetCourseId()
     {
         var raw = Context.GetHttpContext()?.Request.Query["courseId"].ToString();
 
-        return !string.IsNullOrWhiteSpace(raw)
-            ? raw
+        return int.TryParse(raw, out var courseId) && courseId > 0
+            ? courseId
             : throw new InvalidOperationException(
                 "A valid courseId query parameter is required to connect to CommunityHub.");
     }
