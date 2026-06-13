@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Neura.Core.Contracts.Webhook;
 
@@ -18,4 +18,7 @@ public class CheatingAlertRequest
 
     [JsonPropertyName("reason")]
     public string Reason { get; set; } = string.Empty;
+
+    [JsonPropertyName("frame_data")]
+    public string? FrameData { get; set; } // Base64 encoded JPEG frame
 }

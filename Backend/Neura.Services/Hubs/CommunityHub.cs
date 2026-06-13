@@ -292,7 +292,7 @@ public sealed class CommunityHub(
         await Clients
             .GroupExcept(HubGroups.Course(courseId), Context.ConnectionId)
             .UnreadNotification(new UnreadNotificationDto(
-                CourseId: courseId,
+                CourseId: hashids.Encode(courseId),
                 ChannelId: request.ChannelId,
                 ChannelName: string.Empty
             ));

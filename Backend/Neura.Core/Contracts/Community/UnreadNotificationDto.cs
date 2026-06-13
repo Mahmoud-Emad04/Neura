@@ -1,7 +1,7 @@
-﻿namespace Neura.Core.Contracts.Community;
+namespace Neura.Core.Contracts.Community;
 
 public sealed record UnreadNotificationDto(
-    int CourseId,
+    string CourseId,
     int ChannelId,
     string ChannelName
 );

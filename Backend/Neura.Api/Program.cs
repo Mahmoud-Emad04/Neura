@@ -69,6 +69,16 @@ catch (Exception e)
 
 app.UseExceptionHandler();
 
+// Enable request body buffering for webhook endpoints (required for HMAC-SHA256 signature validation)
+app.UseWhen(
+    context => context.Request.Path.StartsWithSegments("/api/webhooks"),
+    appBuilder => appBuilder.Use(async (context, next) =>
+    {
+        context.Request.EnableBuffering();
+        await next();
+    })
+);
+
 app.UseSerilogRequestLogging();
 
 app.UseCors();

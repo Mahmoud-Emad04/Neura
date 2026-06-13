@@ -1,4 +1,4 @@
-﻿namespace Neura.Core.Entities;
+namespace Neura.Core.Entities;
 
 public class ExamViolation : AuditableEntity
 {
@@ -13,6 +13,7 @@ public class ExamViolation : AuditableEntity
     public DateTime DetectedAt { get; set; }
 
     public bool CausedAutoSubmit { get; set; }
+    public string? FrameImagePath { get; set; }
 
     // Navigation
     public Exam Exam { get; set; } = null!;

@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Neura.Core.Abstractions;
@@ -12,9 +13,12 @@ namespace Neura.Api.Features.Webhooks.HandleCheatingAlert;
 
 internal sealed class HandleCheatingAlertHandler(
     ApplicationDbContext context,
+    IWebHostEnvironment environment,
     ILogger<HandleCheatingAlertHandler> logger)
     : IRequestHandler<HandleCheatingAlertCommand, Result>
 {
+    private const string ViolationFramesFolder = "Images/Violations";
+
     public async Task<Result> Handle(HandleCheatingAlertCommand command, CancellationToken ct)
     {
         var request = command.Request;
@@ -59,7 +63,37 @@ internal sealed class HandleCheatingAlertHandler(
             .FromUnixTimeSeconds((long)request.Timestamp)
             .UtcDateTime;
 
-        // 6. Create violation record
+        // 6. Decode and save the suspicious frame (if provided)
+        string? frameImagePath = null;
+
+        if (!string.IsNullOrEmpty(request.FrameData))
+        {
+            try
+            {
+                var imageBytes = Convert.FromBase64String(request.FrameData);
+                var fileName = $"{examId}_{request.StudentId}_{detectedAt:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.jpg";
+                var folderPath = Path.Combine(environment.WebRootPath, ViolationFramesFolder);
+
+                Directory.CreateDirectory(folderPath);
+
+                var filePath = Path.Combine(folderPath, fileName);
+                await File.WriteAllBytesAsync(filePath, imageBytes, ct);
+
+                frameImagePath = $"{ViolationFramesFolder}/{fileName}";
+
+                logger.LogInformation(
+                    "Saved suspicious frame for Exam={ExamId}, Student={StudentId} at {Path}",
+                    examId, request.StudentId, frameImagePath);
+            }
+            catch (FormatException ex)
+            {
+                logger.LogWarning(ex, "Invalid Base64 frameData for Exam={ExamId}, Student={StudentId}",
+                    examId, request.StudentId);
+                // Continue processing — frame storage failure should not reject the alert
+            }
+        }
+
+        // 7. Create violation record
         var violation = new ExamViolation
         {
             ExamId = examId,
@@ -67,12 +101,13 @@ internal sealed class HandleCheatingAlertHandler(
             ExamAttemptId = activeAttempt?.Id,
             Severity = request.Severity,
             Reason = request.Reason,
-            DetectedAt = detectedAt
+            DetectedAt = detectedAt,
+            FrameImagePath = frameImagePath
         };
 
         context.ExamViolations.Add(violation);
 
-        // 7. Auto-submit logic
+        // 8. Auto-submit logic
         if (activeAttempt is not null && ShouldAutoSubmit(exam, activeAttempt, request.Severity))
         {
             activeAttempt.Status = AttemptStatus.Submitted;
