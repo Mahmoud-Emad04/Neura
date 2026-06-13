@@ -89,28 +89,24 @@ public class CoursesController(ISender sender) : ControllerBase
     }
 
     /// <summary>
-    ///     Retrieves the full content of a course including learning outcomes, prerequisites,
+    ///     Retrieves the full content of all courses including learning outcomes, prerequisites,
     ///     sections with their lessons, and article text for article-type lessons.
     /// </summary>
     /// <remarks>
     ///     Returns the complete course hierarchy with lesson text only for article-type lessons.
     ///     Non-article lessons will have null for LessonText.
-    ///     Provide the public HashId (e.g., "Xy7zK"), not the integer database ID.
+    ///     CourseId is the raw integer database ID.
     /// </remarks>
-    /// <param name="courseId">The hashed string ID of the course.</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list containing the full course content.</returns>
-    /// <response code="200">Returns the full course content.</response>
-    /// <response code="404">Course not found or HashId is invalid.</response>
+    /// <returns>A list of all courses with their full content.</returns>
+    /// <response code="200">Returns the full content of all courses.</response>
     [ProducesResponseType(typeof(List<CourseFullContentResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
-    [HttpGet("{courseId}/full-content")]
+    [HttpGet("full-content")]
     [AllowAnonymous]
     public async Task<IActionResult> GetFullContent(
-        [FromRoute] string courseId,
         CancellationToken ct)
     {
-        var query = new GetCourseFullContentQuery(courseId);
+        var query = new GetCourseFullContentQuery();
         var result = await sender.Send(query, ct);
 
         return result.IsSuccess

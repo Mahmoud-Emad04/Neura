@@ -5,15 +5,12 @@ using Microsoft.EntityFrameworkCore;
 using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Course;
 using Neura.Core.Enums;
-using Neura.Core.Errors;
 using Neura.Repository.Persistence;
-using Neura.Services.Helpers;
 
 namespace Neura.Api.Features.Courses.GetCourseFullContent;
 
 internal sealed partial class GetCourseFullContentHandler(
-    ApplicationDbContext context,
-    IServiceHelpers helpers)
+    ApplicationDbContext context)
     : IRequestHandler<GetCourseFullContentQuery, Result<List<CourseFullContentResponse>>>
 {
     [GeneratedRegex("<[^>]+>")]
@@ -27,15 +24,13 @@ internal sealed partial class GetCourseFullContentHandler(
         var text = HtmlTagsRegex().Replace(html, string.Empty);
         return WebUtility.HtmlDecode(text).Trim();
     }
+
     public async Task<Result<List<CourseFullContentResponse>>> Handle(
         GetCourseFullContentQuery request, CancellationToken ct)
     {
-        if (!TryDecodeCourseId(request.CourseIdKey, out var courseId))
-            return Result.Failure<List<CourseFullContentResponse>>(CourseErrors.CourseNotFound);
-
-        var course = await context.Courses
+        var courses = await context.Courses
             .AsNoTracking()
-            .Where(c => c.Id == courseId && !c.IsDeleted)
+            .Where(c => !c.IsDeleted)
             .Select(c => new
             {
                 c.Id,
@@ -63,12 +58,9 @@ internal sealed partial class GetCourseFullContentHandler(
                             }).ToList()
                     }).ToList()
             })
-            .FirstOrDefaultAsync(ct);
+            .ToListAsync(ct);
 
-        if (course is null)
-            return Result.Failure<List<CourseFullContentResponse>>(CourseErrors.CourseNotFound);
-
-        var response = new CourseFullContentResponse(
+        var response = courses.Select(course => new CourseFullContentResponse(
             CourseId: course.Id,
             CourseTitle: course.Title,
             LearningOutcomes: course.LearningOutcomes,
@@ -84,20 +76,8 @@ internal sealed partial class GetCourseFullContentHandler(
                     LessonText: l.Type == LessonType.Article ? StripHtml(l.ArticleContent) : null
                 )).ToList()
             )).ToList()
-        );
+        )).ToList();
 
-        return Result.Success(new List<CourseFullContentResponse> { response });
-    }
-
-    private bool TryDecodeCourseId(string keyId, out int courseId)
-    {
-        var numbers = helpers.DecodeHash(keyId);
-        if (numbers.Length == 0)
-        {
-            courseId = 0;
-            return false;
-        }
-        courseId = numbers[0];
-        return true;
+        return Result.Success(response);
     }
 }
