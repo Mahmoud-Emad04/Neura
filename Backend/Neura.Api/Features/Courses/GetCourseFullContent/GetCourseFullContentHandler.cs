@@ -6,11 +6,13 @@ using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Course;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
+using Neura.Services.Helpers;
 
 namespace Neura.Api.Features.Courses.GetCourseFullContent;
 
 internal sealed partial class GetCourseFullContentHandler(
-    ApplicationDbContext context)
+    ApplicationDbContext context,
+    IServiceHelpers helpers)
     : IRequestHandler<GetCourseFullContentQuery, Result<List<CourseFullContentResponse>>>
 {
     [GeneratedRegex("<[^>]+>")]
@@ -61,7 +63,7 @@ internal sealed partial class GetCourseFullContentHandler(
             .ToListAsync(ct);
 
         var response = courses.Select(course => new CourseFullContentResponse(
-            CourseId: course.Id,
+            CourseId: helpers.Encode(course.Id),
             CourseTitle: course.Title,
             LearningOutcomes: course.LearningOutcomes,
             Prerequisites: course.Prerequisites,
