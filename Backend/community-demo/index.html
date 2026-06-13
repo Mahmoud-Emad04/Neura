@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neura Community — Integration Demo</title>
+    <meta name="description" content="End-to-end integration demo for Neura Community text channels: login, channel CRUD, messaging via REST & SignalR." />
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- SignalR client -->
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+
+    <!-- Hashids for encoding courseId → keyId -->
+    <script src="https://cdn.jsdelivr.net/npm/hashids@2.3.0/dist/hashids.min.js"></script>
+
+    <style>
+        /* ════════════════════════════════════════════════════════════════
+           Design Tokens
+           ════════════════════════════════════════════════════════════════ */
+        :root {
+            --bg-primary: #0b0e14;
+            --bg-secondary: #111827;
+            --bg-card: #1a1f2e;
+            --bg-card-hover: #1e2538;
+            --bg-input: #141a29;
+            --border: #2a3040;
+            --border-focus: #6366f1;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-glow: rgba(99, 102, 241, .35);
+            --success: #22c55e;
+            --success-bg: rgba(34, 197, 94, .12);
+            --error: #ef4444;
+            --error-bg: rgba(239, 68, 68, .12);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, .12);
+            --info: #3b82f6;
+            --info-bg: rgba(59, 130, 246, .12);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --radius-xs: 6px;
+            --shadow-lg: 0 12px 40px rgba(0,0,0,.5);
+            --transition: .2s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ════════════════════════════════════════════════════════════════
+           Reset & Base
+           ════════════════════════════════════════════════════════════════ */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 15px; scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* ════════════════════════════════════════════════════════════════
+           Layout
+           ════════════════════════════════════════════════════════════════ */
+        .app-header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(11, 14, 20, .82);
+            backdrop-filter: blur(16px) saturate(180%);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+            height: 64px;
+        }
+        .app-header h1 {
+            font-size: 1.25rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -.02em;
+        }
+        .app-header .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 100px;
+            font-size: .75rem; font-weight: 600;
+        }
+        .badge--online  { background: var(--success-bg); color: var(--success); }
+        .badge--offline { background: var(--error-bg);   color: var(--error); }
+        .badge--online::before, .badge--offline::before {
+            content: ''; width: 7px; height: 7px; border-radius: 50%;
+            background: currentColor;
+        }
+        .badge--online::before { animation: pulse 2s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+
+        .container {
+            max-width: 1360px; margin: 0 auto; padding: 2rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+        }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+
+        /* ════════════════════════════════════════════════════════════════
+           Cards
+           ════════════════════════════════════════════════════════════════ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        .card:hover { border-color: rgba(99,102,241,.25); box-shadow: 0 0 0 1px var(--accent-glow); }
+
+        .card__header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: .65rem;
+        }
+        .card__header .icon {
+            width: 32px; height: 32px; border-radius: var(--radius-xs);
+            display: grid; place-items: center;
+            font-size: 1rem;
+        }
+        .card__header h2 { font-size: .95rem; font-weight: 600; }
+        .card__header p  { font-size: .78rem; color: var(--text-muted); }
+
+        .card__body { padding: 1.25rem; }
+
+        /* ════════════════════════════════════════════════════════════════
+           Form Elements
+           ════════════════════════════════════════════════════════════════ */
+        label {
+            display: block; font-size: .78rem; font-weight: 600;
+            color: var(--text-secondary); margin-bottom: 4px;
+            text-transform: uppercase; letter-spacing: .05em;
+        }
+        input[type="text"], input[type="password"], input[type="email"],
+        input[type="number"], textarea, select {
+            width: 100%; padding: .65rem .85rem;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); color: var(--text-primary);
+            font-family: inherit; font-size: .9rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        textarea { resize: vertical; min-height: 60px; }
+
+        .form-row { margin-bottom: 1rem; }
+        .form-row-inline { display: flex; gap: .75rem; margin-bottom: 1rem; }
+        .form-row-inline > * { flex: 1; }
+
+        /* ════════════════════════════════════════════════════════════════
+           Buttons
+           ════════════════════════════════════════════════════════════════ */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: .6rem 1.2rem; border: none; border-radius: var(--radius-sm);
+            font-family: inherit; font-size: .85rem; font-weight: 600;
+            cursor: pointer; transition: all var(--transition);
+            white-space: nowrap;
+        }
+        .btn:active { transform: scale(.97); }
+        .btn--primary   { background: var(--accent); color: #fff; }
+        .btn--primary:hover { background: var(--accent-hover); box-shadow: 0 4px 20px var(--accent-glow); }
+        .btn--success   { background: var(--success); color: #fff; }
+        .btn--success:hover { filter: brightness(1.15); }
+        .btn--danger    { background: var(--error); color: #fff; }
+        .btn--danger:hover { filter: brightness(1.15); }
+        .btn--warning   { background: var(--warning); color: #1a1a1a; }
+        .btn--warning:hover { filter: brightness(1.15); }
+        .btn--outline   { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn--outline:hover { border-color: var(--accent); color: var(--accent); }
+        .btn--sm { padding: .4rem .8rem; font-size: .78rem; }
+        .btn--block { width: 100%; }
+        .btn:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+
+        .btn-group { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+
+        /* ════════════════════════════════════════════════════════════════
+           Log Panel
+           ════════════════════════════════════════════════════════════════ */
+        .log-panel {
+            grid-column: 1 / -1;
+        }
+        #log {
+            background: var(--bg-input);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: .85rem; font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: .78rem; line-height: 1.7;
+            max-height: 420px; overflow-y: auto;
+            color: var(--text-secondary);
+        }
+        .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(42,48,64,.3); }
+        .log-entry:last-child { border-bottom: none; }
+        .log-entry .ts  { color: var(--text-muted); margin-right: 8px; }
+        .log-entry.ok   { color: var(--success); }
+        .log-entry.err  { color: var(--error); }
+        .log-entry.warn { color: var(--warning); }
+        .log-entry.info { color: var(--info); }
+        .log-entry.hub  { color: #a78bfa; }
+
+        /* ════════════════════════════════════════════════════════════════
+           Misc
+           ════════════════════════════════════════════════════════════════ */
+        .channel-list {
+            list-style: none; margin-top: .75rem;
+        }
+        .channel-list li {
+            padding: .5rem .75rem; border-radius: var(--radius-xs);
+            background: var(--bg-input); border: 1px solid var(--border);
+            margin-bottom: .4rem; font-size: .85rem;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background var(--transition);
+        }
+        .channel-list li:hover { background: var(--bg-card-hover); }
+        .channel-list .ch-name { font-weight: 600; }
+        .channel-list .ch-meta { font-size: .73rem; color: var(--text-muted); }
+
+        .msg-list { list-style: none; margin-top: .75rem; }
+        .msg-list li {
+            padding: .6rem .85rem; border-radius: var(--radius-xs);
+            background: var(--bg-input); border: 1px solid var(--border);
+            margin-bottom: .4rem; font-size: .85rem;
+        }
+        .msg-list .msg-sender { font-weight: 600; color: var(--accent); }
+        .msg-list .msg-time   { font-size: .73rem; color: var(--text-muted); margin-left: 8px; }
+        .msg-list .msg-content { margin-top: 3px; }
+
+        .member-list { list-style: none; margin-top: .5rem; }
+        .member-list li {
+            display: flex; align-items: center; gap: 8px;
+            padding: .35rem 0; font-size: .85rem;
+        }
+        .member-list .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .dot--online  { background: var(--success); }
+        .dot--offline { background: var(--text-muted); }
+
+        .hidden { display: none !important; }
+        .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+
+        .status-bar {
+            display: flex; align-items: center; gap: .5rem;
+            padding: .5rem .85rem; border-radius: var(--radius-xs);
+            font-size: .8rem; margin-bottom: 1rem;
+        }
+        .status-bar.connected    { background: var(--success-bg); color: var(--success); }
+        .status-bar.disconnected { background: var(--error-bg); color: var(--error); }
+        .status-bar.connecting   { background: var(--warning-bg); color: var(--warning); }
+
+        .hub-events {
+            margin-top: .75rem;
+        }
+        .hub-events .event-item {
+            padding: .5rem .75rem; border-radius: var(--radius-xs);
+            background: rgba(167, 139, 250, .08); border: 1px solid rgba(167, 139, 250, .15);
+            margin-bottom: .4rem; font-size: .82rem; color: #c4b5fd;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ── Header ────────────────────────────────────────────────────── -->
+    <header class="app-header">
+        <h1>⚡ Neura Community Demo</h1>
+        <span id="connectionBadge" class="badge badge--offline">Offline</span>
+    </header>
+
+    <!-- ── Main Grid ─────────────────────────────────────────────────── -->
+    <main class="container">
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ 1. AUTH                                                 ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card" id="authCard">
+            <div class="card__header">
+                <div class="icon" style="background:var(--info-bg);color:var(--info);">🔐</div>
+                <div>
+                    <h2>1 · Authentication</h2>
+                    <p>Login to get a JWT token</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <div class="form-row">
+                    <label for="loginEmail">Username or Email</label>
+                    <input type="text" id="loginEmail" placeholder="e.g. admin@neura.com" />
+                </div>
+                <div class="form-row">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" />
+                </div>
+                <button class="btn btn--primary btn--block" id="btnLogin" onclick="doLogin()">
+                    Sign In
+                </button>
+                <div id="authStatus" class="status-bar disconnected hidden" style="margin-top:1rem;">
+                    Not authenticated
+                </div>
+            </div>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ 2. SIGNALR CONNECTION                                   ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card" id="hubCard">
+            <div class="card__header">
+                <div class="icon" style="background:rgba(167,139,250,.12);color:#a78bfa;">📡</div>
+                <div>
+                    <h2>2 · SignalR Hub</h2>
+                    <p>Connect to CommunityHub</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <div class="form-row">
+                    <label for="hubCourseId">Course ID (integer)</label>
+                    <input type="number" id="hubCourseId" placeholder="e.g. 1" min="1" />
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn--success" id="btnConnect" onclick="connectHub()" disabled>Connect</button>
+                    <button class="btn btn--danger" id="btnDisconnect" onclick="disconnectHub()" disabled>Disconnect</button>
+                </div>
+                <div id="hubStatus" class="status-bar disconnected" style="margin-top:1rem;">
+                    ⊘ Not connected
+                </div>
+                <!-- Real-time events -->
+                <div id="hubEvents" class="hub-events hidden">
+                    <label>Real-time Events</label>
+                    <div id="hubEventsList"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ 3. CHANNELS                                             ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card" id="channelCard">
+            <div class="card__header">
+                <div class="icon" style="background:rgba(34,197,94,.12);color:var(--success);">#</div>
+                <div>
+                    <h2>3 · Text Channels</h2>
+                    <p>Create, list, update, reorder, delete</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <!-- Get Channels -->
+                <div class="form-row">
+                    <label for="chCourseId">Course ID</label>
+                    <input type="number" id="chCourseId" placeholder="e.g. 1" min="1" />
+                </div>
+                <button class="btn btn--primary btn--sm" id="btnGetChannels" onclick="getChannels()" disabled>
+                    📋 Get Channels
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Create Channel -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--accent);">Create Channel</label>
+                <div class="form-row-inline">
+                    <div>
+                        <label for="newChName">Name</label>
+                        <input type="text" id="newChName" placeholder="general" />
+                    </div>
+                    <div>
+                        <label for="newChTopic">Topic (optional)</label>
+                        <input type="text" id="newChTopic" placeholder="Talk about anything" />
+                    </div>
+                </div>
+                <button class="btn btn--success btn--sm" id="btnCreateChannel" onclick="createChannel()" disabled>
+                    ＋ Create Text Channel
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Update Channel -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--warning);">Update Channel</label>
+                <div class="form-row-inline">
+                    <div>
+                        <label for="updateChId">Channel ID</label>
+                        <input type="number" id="updateChId" placeholder="e.g. 5" min="1" />
+                    </div>
+                    <div>
+                        <label for="updateChName">New Name</label>
+                        <input type="text" id="updateChName" placeholder="announcements" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label for="updateChTopic">New Topic</label>
+                    <input type="text" id="updateChTopic" placeholder="Important news" />
+                </div>
+                <button class="btn btn--warning btn--sm" id="btnUpdateChannel" onclick="updateChannel()" disabled>
+                    ✏️ Update Channel
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Delete Channel -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--error);">Delete Channel</label>
+                <div class="form-row">
+                    <label for="deleteChId">Channel ID</label>
+                    <input type="number" id="deleteChId" placeholder="e.g. 5" min="1" />
+                </div>
+                <button class="btn btn--danger btn--sm" id="btnDeleteChannel" onclick="deleteChannel()" disabled>
+                    🗑️ Delete Channel
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Reorder Channels -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--info);">Reorder Channels</label>
+                <div class="form-row">
+                    <label for="reorderIds">Channel IDs (comma-separated, in desired order)</label>
+                    <input type="text" id="reorderIds" placeholder="e.g. 3,1,2" />
+                </div>
+                <button class="btn btn--outline btn--sm" id="btnReorder" onclick="reorderChannels()" disabled>
+                    ↕️ Reorder
+                </button>
+
+                <!-- Channel List -->
+                <ul class="channel-list" id="channelList"></ul>
+            </div>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ 4. MESSAGING                                            ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card" id="msgCard">
+            <div class="card__header">
+                <div class="icon" style="background:rgba(245,158,11,.12);color:var(--warning);">💬</div>
+                <div>
+                    <h2>4 · Messaging</h2>
+                    <p>Send, get history, edit, delete, reply, real-time</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <!-- Join Channel (SignalR) -->
+                <div class="form-row-inline">
+                    <div>
+                        <label for="joinChannelId">Channel ID</label>
+                        <input type="number" id="joinChannelId" placeholder="e.g. 1" min="1" />
+                    </div>
+                    <div style="display:flex;align-items:flex-end;gap:.4rem;">
+                        <button class="btn btn--primary btn--sm" id="btnJoinChannel" onclick="joinChannel()" disabled>
+                            ▶ Join
+                        </button>
+                        <button class="btn btn--outline btn--sm" id="btnLeaveChannel" onclick="leaveChannel()" disabled>
+                            ◀ Leave
+                        </button>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <!-- Send Message (SignalR) -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--accent);">Send Message (via SignalR)</label>
+                <div class="form-row">
+                    <label for="msgContent">Content</label>
+                    <textarea id="msgContent" rows="2" placeholder="Hello, world!"></textarea>
+                </div>
+                <div class="form-row">
+                    <label for="msgReplyTo">Reply To Message ID (optional)</label>
+                    <input type="number" id="msgReplyTo" placeholder="Leave blank for new message" />
+                </div>
+                <button class="btn btn--success btn--sm" id="btnSendMsg" onclick="sendMessage()" disabled>
+                    📤 Send Message
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Get Message History (REST) -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--info);">Message History (REST)</label>
+                <div class="form-row-inline">
+                    <div>
+                        <label for="histChannelId">Channel ID</label>
+                        <input type="number" id="histChannelId" placeholder="e.g. 1" min="1" />
+                    </div>
+                    <div>
+                        <label for="histBefore">Before (cursor, optional)</label>
+                        <input type="number" id="histBefore" placeholder="Leave blank for latest" />
+                    </div>
+                    <div>
+                        <label for="histPageSize">Page Size</label>
+                        <input type="number" id="histPageSize" placeholder="50" value="20" min="1" max="100" />
+                    </div>
+                </div>
+                <button class="btn btn--primary btn--sm" id="btnGetMessages" onclick="getMessages()" disabled>
+                    📜 Load History
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Edit Message (REST) -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--warning);">Edit Message (REST)</label>
+                <div class="form-row-inline">
+                    <div>
+                        <label for="editMsgId">Message ID</label>
+                        <input type="number" id="editMsgId" placeholder="e.g. 42" />
+                    </div>
+                    <div>
+                        <label for="editMsgContent">New Content</label>
+                        <input type="text" id="editMsgContent" placeholder="Updated text" />
+                    </div>
+                </div>
+                <button class="btn btn--warning btn--sm" id="btnEditMsg" onclick="editMessage()" disabled>
+                    ✏️ Edit
+                </button>
+
+                <div class="divider"></div>
+
+                <!-- Delete Message (REST) -->
+                <label style="margin-bottom:.5rem; font-size:.82rem; color:var(--error);">Delete Message (REST)</label>
+                <div class="form-row">
+                    <label for="deleteMsgId">Message ID</label>
+                    <input type="number" id="deleteMsgId" placeholder="e.g. 42" />
+                </div>
+                <button class="btn btn--danger btn--sm" id="btnDeleteMsg" onclick="deleteMessage()" disabled>
+                    🗑️ Delete
+                </button>
+
+                <!-- Messages List -->
+                <ul class="msg-list" id="messageList"></ul>
+            </div>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ 5. MEMBERS                                              ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card" id="membersCard">
+            <div class="card__header">
+                <div class="icon" style="background:rgba(99,102,241,.12);color:var(--accent);">👥</div>
+                <div>
+                    <h2>5 · Course Members</h2>
+                    <p>View members & online status</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <div class="form-row">
+                    <label for="membersCourseId">Course ID</label>
+                    <input type="number" id="membersCourseId" placeholder="e.g. 1" min="1" />
+                </div>
+                <button class="btn btn--primary btn--sm" id="btnGetMembers" onclick="getMembers()" disabled>
+                    👥 Get Members
+                </button>
+                <ul class="member-list" id="memberList"></ul>
+            </div>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ 6. AUTOMATED SCENARIO                                   ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card" id="scenarioCard">
+            <div class="card__header">
+                <div class="icon" style="background:rgba(34,197,94,.12);color:var(--success);">🚀</div>
+                <div>
+                    <h2>6 · Run Full Scenario</h2>
+                    <p>Auto-runs: Create Channel → Send Messages → Edit → Delete → Cleanup</p>
+                </div>
+            </div>
+            <div class="card__body">
+                <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:1rem;">
+                    Requires: logged in + connected to a course. This will create a temp channel,
+                    send 3 messages, edit one, delete one, fetch history, then delete the channel.
+                </p>
+                <button class="btn btn--success btn--block" id="btnRunScenario" onclick="runFullScenario()" disabled>
+                    ▶ Run Full Scenario
+                </button>
+            </div>
+        </section>
+
+        <!-- ╔══════════════════════════════════════════════════════════╗
+             ║ LOG PANEL                                               ║
+             ╚══════════════════════════════════════════════════════════╝ -->
+        <section class="card log-panel">
+            <div class="card__header">
+                <div class="icon" style="background:rgba(148,163,184,.12);color:var(--text-secondary);">📋</div>
+                <div>
+                    <h2>Event Log</h2>
+                    <p>All requests, responses & hub events</p>
+                </div>
+                <button class="btn btn--outline btn--sm" style="margin-left:auto;" onclick="clearLog()">Clear</button>
+            </div>
+            <div class="card__body">
+                <div id="log"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         SCRIPTS
+         ════════════════════════════════════════════════════════════════ -->
+    <script>
+        // ─── Config ──────────────────────────────────────────────────
+        const BASE_URL   = 'https://neura-lms.runasp.net';
+        const API_URL    = `${BASE_URL}/api/community`;
+        const AUTH_URL   = `${BASE_URL}/Auth`;
+        const HUB_URL    = `${BASE_URL}/hubs/community`;
+        const HASH_SALT  = 'f1nd1ngn3m0';
+        const HASH_LEN   = 11;
+
+        // ─── State ───────────────────────────────────────────────────
+        let token          = null;
+        let authData       = null;
+        let hubConnection  = null;
+        let currentChannel = null;
+        let hashids        = null;
+
+        // Init hashids
+        try {
+            // hashids.js v2 UMD exports as window.Hashids (constructor)
+            if (typeof Hashids !== 'undefined') {
+                hashids = new Hashids(HASH_SALT, HASH_LEN);
+            } else if (typeof window.hashids !== 'undefined') {
+                hashids = new window.hashids(HASH_SALT, HASH_LEN);
+            }
+        } catch(e) {
+            console.warn('Hashids init failed, will use raw courseId', e);
+        }
+
+        function encodeCourseId(id) {
+            if (hashids) return hashids.encode(id);
+            return String(id);
+        }
+
+        // ─── Logging ─────────────────────────────────────────────────
+        const logEl = document.getElementById('log');
+
+        function log(msg, cls = '') {
+            const ts = new Date().toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 3 });
+            const div = document.createElement('div');
+            div.className = `log-entry ${cls}`;
+            div.innerHTML = `<span class="ts">[${ts}]</span> ${escapeHtml(msg)}`;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function logOk(msg)   { log('✓ ' + msg, 'ok');   }
+        function logErr(msg)  { log('✗ ' + msg, 'err');  }
+        function logWarn(msg) { log('⚠ ' + msg, 'warn'); }
+        function logInfo(msg) { log('ℹ ' + msg, 'info'); }
+        function logHub(msg)  { log('📡 ' + msg, 'hub');  }
+
+        function clearLog() { logEl.innerHTML = ''; }
+
+        function escapeHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // ─── HTTP Helper ─────────────────────────────────────────────
+        async function api(method, path, body = null, isAuthEndpoint = false) {
+            const url = isAuthEndpoint ? `${AUTH_URL}/${path}` : `${API_URL}/${path}`;
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const opts = { method, headers };
+            if (body) opts.body = JSON.stringify(body);
+
+            logInfo(`${method} ${url}`);
+            const res = await fetch(url, opts);
+
+            let data = null;
+            const ct = res.headers.get('content-type') || '';
+            if (ct.includes('json')) {
+                data = await res.json();
+            } else {
+                const txt = await res.text();
+                if (txt) data = txt;
+            }
+
+            if (res.ok) {
+                logOk(`${res.status} ${res.statusText}` + (data ? ` → ${JSON.stringify(data).substring(0, 200)}` : ''));
+            } else {
+                logErr(`${res.status} ${res.statusText}` + (data ? ` → ${JSON.stringify(data).substring(0, 300)}` : ''));
+            }
+
+            return { ok: res.ok, status: res.status, data };
+        }
+
+        // ─── Button State ────────────────────────────────────────────
+        function updateButtons() {
+            const loggedIn  = !!token;
+            const connected = hubConnection && hubConnection.state === signalR.HubConnectionState.Connected;
+            const inChannel = !!currentChannel;
+
+            document.getElementById('btnConnect').disabled       = !loggedIn;
+            document.getElementById('btnDisconnect').disabled     = !connected;
+            document.getElementById('btnGetChannels').disabled    = !loggedIn;
+            document.getElementById('btnCreateChannel').disabled  = !loggedIn;
+            document.getElementById('btnUpdateChannel').disabled  = !loggedIn;
+            document.getElementById('btnDeleteChannel').disabled  = !loggedIn;
+            document.getElementById('btnReorder').disabled        = !loggedIn;
+            document.getElementById('btnJoinChannel').disabled    = !connected;
+            document.getElementById('btnLeaveChannel').disabled   = !connected || !inChannel;
+            document.getElementById('btnSendMsg').disabled        = !connected || !inChannel;
+            document.getElementById('btnGetMessages').disabled    = !loggedIn;
+            document.getElementById('btnEditMsg').disabled        = !loggedIn;
+            document.getElementById('btnDeleteMsg').disabled      = !loggedIn;
+            document.getElementById('btnGetMembers').disabled     = !loggedIn;
+            document.getElementById('btnRunScenario').disabled    = !connected;
+        }
+
+        // ─── 1. Auth ─────────────────────────────────────────────────
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass  = document.getElementById('loginPassword').value;
+
+            if (!email || !pass) { logWarn('Email and password are required.'); return; }
+
+            const { ok, data } = await api('POST', 'login', {
+                userNameOrEmail: email,
+                password: pass
+            }, true);
+
+            const statusEl = document.getElementById('authStatus');
+            statusEl.classList.remove('hidden');
+
+            if (ok && data?.token) {
+                token    = data.token;
+                authData = data;
+                statusEl.className = 'status-bar connected';
+                statusEl.textContent = `✓ Logged in as ${data.username || data.email} (expires in ${data.expiresin}s)`;
+                logOk(`JWT obtained for ${data.username}. Token length: ${token.length}`);
+            } else {
+                statusEl.className = 'status-bar disconnected';
+                statusEl.textContent = `✗ Login failed`;
+                logErr('Login failed — check credentials');
+            }
+            updateButtons();
+        }
+
+        // ─── 2. SignalR ──────────────────────────────────────────────
+        async function connectHub() {
+            const courseId = parseInt(document.getElementById('hubCourseId').value);
+            if (!courseId || courseId < 1) { logWarn('Enter a valid Course ID.'); return; }
+
+            const statusEl = document.getElementById('hubStatus');
+            statusEl.className = 'status-bar connecting';
+            statusEl.textContent = '⟳ Connecting…';
+
+            hubConnection = new signalR.HubConnectionBuilder()
+                .withUrl(`${HUB_URL}?courseId=${courseId}`, {
+                    accessTokenFactory: () => token
+                })
+                .withAutomaticReconnect([0, 2000, 5000, 10000])
+                .configureLogging(signalR.LogLevel.Warning)
+                .build();
+
+            // ── Register all Hub events ──────────────────────────────
+            hubConnection.on('ReceiveMessage', (msg) => {
+                logHub(`ReceiveMessage → ch:${msg.channelId} from:${msg.senderName} → "${msg.content}"`);
+                addHubEvent(`💬 ${msg.senderName}: ${msg.content}`);
+                appendMessageToList(msg);
+            });
+
+            hubConnection.on('MessageEdited', (edit) => {
+                logHub(`MessageEdited → id:${edit.id} ch:${edit.channelId} → "${edit.newContent}"`);
+                addHubEvent(`✏️ Msg #${edit.id} edited → "${edit.newContent}"`);
+            });
+
+            hubConnection.on('MessageDeleted', (del) => {
+                logHub(`MessageDeleted → id:${del.id} ch:${del.channelId}`);
+                addHubEvent(`🗑️ Msg #${del.id} deleted`);
+            });
+
+            hubConnection.on('PresenceChanged', (update) => {
+                logHub(`PresenceChanged → user:${update.userId} online:${update.isOnline}`);
+                addHubEvent(`${update.isOnline ? '🟢' : '⚫'} User ${update.userId} ${update.isOnline ? 'came online' : 'went offline'}`);
+            });
+
+            hubConnection.on('InitialPresenceSync', (userIds) => {
+                logHub(`InitialPresenceSync → ${userIds.length} users online: [${userIds.join(', ')}]`);
+                addHubEvent(`👥 ${userIds.length} users online`);
+            });
+
+            hubConnection.on('UnreadNotification', (notif) => {
+                logHub(`UnreadNotification → course:${notif.courseId} ch:${notif.channelId} "${notif.channelName}"`);
+                addHubEvent(`🔔 Unread in ch:${notif.channelId}`);
+            });
+
+            hubConnection.on('ChannelCreated', (ch) => {
+                logHub(`ChannelCreated → #${ch.name} (id:${ch.id})`);
+                addHubEvent(`➕ Channel created: #${ch.name}`);
+            });
+
+            hubConnection.on('ChannelUpdated', (ch) => {
+                logHub(`ChannelUpdated → #${ch.name} (id:${ch.id})`);
+                addHubEvent(`✏️ Channel updated: #${ch.name}`);
+            });
+
+            hubConnection.on('ChannelDeleted', (chId) => {
+                logHub(`ChannelDeleted → id:${chId}`);
+                addHubEvent(`🗑️ Channel deleted: ${chId}`);
+            });
+
+            hubConnection.on('Error', (errMsg) => {
+                logErr(`Hub Error → ${errMsg}`);
+                addHubEvent(`❌ ${errMsg}`);
+            });
+
+            // Connection lifecycle
+            hubConnection.onclose((err) => {
+                logWarn('Hub connection closed' + (err ? `: ${err}` : ''));
+                statusEl.className = 'status-bar disconnected';
+                statusEl.textContent = '⊘ Disconnected';
+                setBadge(false);
+                currentChannel = null;
+                updateButtons();
+            });
+
+            hubConnection.onreconnecting((err) => {
+                logWarn('Hub reconnecting…' + (err ? `: ${err}` : ''));
+                statusEl.className = 'status-bar connecting';
+                statusEl.textContent = '⟳ Reconnecting…';
+                setBadge(false);
+            });
+
+            hubConnection.onreconnected((connId) => {
+                logOk(`Hub reconnected (${connId})`);
+                statusEl.className = 'status-bar connected';
+                statusEl.textContent = `✓ Connected (${connId.substring(0,8)}…)`;
+                setBadge(true);
+                updateButtons();
+            });
+
+            try {
+                await hubConnection.start();
+                logOk(`Connected to CommunityHub for course ${courseId}`);
+                statusEl.className = 'status-bar connected';
+                statusEl.textContent = `✓ Connected (${hubConnection.connectionId.substring(0,8)}…)`;
+                setBadge(true);
+                document.getElementById('hubEvents').classList.remove('hidden');
+            } catch (err) {
+                logErr(`Hub connection failed: ${err.message}`);
+                statusEl.className = 'status-bar disconnected';
+                statusEl.textContent = `✗ Connection failed`;
+            }
+            updateButtons();
+        }
+
+        async function disconnectHub() {
+            if (hubConnection) {
+                await hubConnection.stop();
+                logInfo('Hub disconnected manually');
+            }
+            currentChannel = null;
+            updateButtons();
+        }
+
+        function setBadge(online) {
+            const b = document.getElementById('connectionBadge');
+            b.className = `badge ${online ? 'badge--online' : 'badge--offline'}`;
+            b.textContent = online ? 'Connected' : 'Offline';
+        }
+
+        function addHubEvent(text) {
+            const list = document.getElementById('hubEventsList');
+            const div = document.createElement('div');
+            div.className = 'event-item';
+            const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+            div.textContent = `[${ts}] ${text}`;
+            list.prepend(div);
+            // Keep max 30 events
+            while (list.children.length > 30) list.removeChild(list.lastChild);
+        }
+
+        // ─── 3. Channels ────────────────────────────────────────────
+        async function getChannels() {
+            const courseId = parseInt(document.getElementById('chCourseId').value);
+            if (!courseId) { logWarn('Enter Course ID'); return; }
+
+            const keyId = encodeCourseId(courseId);
+            const { ok, data } = await api('GET', `courses/${keyId}/channels`);
+
+            const list = document.getElementById('channelList');
+            list.innerHTML = '';
+            if (ok && Array.isArray(data)) {
+                data.filter(ch => ch.type === 0).forEach(ch => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>
+                            <span class="ch-name"># ${escapeHtml(ch.name)}</span>
+                            <span class="ch-meta"> — ${escapeHtml(ch.topic || 'no topic')}</span>
+                        </span>
+                        <span class="ch-meta">ID: ${ch.id} | Pos: ${ch.position}</span>
+                    `;
+                    list.appendChild(li);
+                });
+                logOk(`Loaded ${data.filter(ch => ch.type === 0).length} text channels`);
+            }
+            return data;
+        }
+
+        async function createChannel(name, topic) {
+            const courseId = parseInt(document.getElementById('chCourseId').value);
+            if (!courseId) { logWarn('Enter Course ID first'); return null; }
+
+            const chName  = name  || document.getElementById('newChName').value.trim();
+            const chTopic = topic || document.getElementById('newChTopic').value.trim();
+            if (!chName) { logWarn('Channel name is required'); return null; }
+
+            const keyId = encodeCourseId(courseId);
+            const { ok, data } = await api('POST', `courses/${keyId}/channels`, {
+                name: chName,
+                topic: chTopic || null,
+                type: 0 // Text
+            });
+
+            if (ok) await getChannels();
+            return ok ? data : null;
+        }
+
+        async function updateChannel() {
+            const chId   = parseInt(document.getElementById('updateChId').value);
+            const chName = document.getElementById('updateChName').value.trim();
+            if (!chId || !chName) { logWarn('Channel ID and Name required'); return; }
+
+            await api('PUT', `channels/${chId}`, {
+                name: chName,
+                topic: document.getElementById('updateChTopic').value.trim() || null
+            });
+        }
+
+        async function deleteChannel(channelId) {
+            const chId = channelId || parseInt(document.getElementById('deleteChId').value);
+            if (!chId) { logWarn('Channel ID required'); return; }
+
+            await api('DELETE', `channels/${chId}`);
+        }
+
+        async function reorderChannels() {
+            const courseId = parseInt(document.getElementById('chCourseId').value);
+            const raw     = document.getElementById('reorderIds').value.trim();
+            if (!courseId || !raw) { logWarn('Course ID and channel IDs required'); return; }
+
+            const ids = raw.split(',').map(s => parseInt(s.trim())).filter(n => n > 0);
+            if (!ids.length) { logWarn('Invalid channel IDs'); return; }
+
+            const keyId = encodeCourseId(courseId);
+            await api('PUT', `courses/${keyId}/channels/reorder`, {
+                channelIds: ids
+            });
+        }
+
+        // ─── 4. Messaging ────────────────────────────────────────────
+        async function joinChannel() {
+            const chId = parseInt(document.getElementById('joinChannelId').value);
+            if (!chId) { logWarn('Enter Channel ID'); return; }
+
+            try {
+                await hubConnection.invoke('JoinChannel', chId);
+                currentChannel = chId;
+                logOk(`Joined channel ${chId}`);
+                updateButtons();
+            } catch (err) {
+                logErr(`JoinChannel failed: ${err.message}`);
+            }
+        }
+
+        async function leaveChannel() {
+            if (!currentChannel) return;
+            try {
+                await hubConnection.invoke('LeaveChannel', currentChannel);
+                logOk(`Left channel ${currentChannel}`);
+                currentChannel = null;
+                updateButtons();
+            } catch (err) {
+                logErr(`LeaveChannel failed: ${err.message}`);
+            }
+        }
+
+        async function sendMessage(content, replyTo) {
+            const text    = content || document.getElementById('msgContent').value.trim();
+            const replyId = replyTo || parseInt(document.getElementById('msgReplyTo').value) || null;
+            if (!text) { logWarn('Message content is required'); return; }
+
+            try {
+                await hubConnection.invoke('SendMessage', {
+                    channelId: currentChannel,
+                    content: text,
+                    replyToMessageId: replyId
+                });
+                logOk(`Message sent to ch:${currentChannel}`);
+                document.getElementById('msgContent').value = '';
+            } catch (err) {
+                logErr(`SendMessage failed: ${err.message}`);
+            }
+        }
+
+        async function getMessages() {
+            const chId     = parseInt(document.getElementById('histChannelId').value);
+            const before   = parseInt(document.getElementById('histBefore').value) || null;
+            const pageSize = parseInt(document.getElementById('histPageSize').value) || 20;
+            if (!chId) { logWarn('Enter Channel ID'); return; }
+
+            let path = `channels/${chId}/messages?pageSize=${pageSize}`;
+            if (before) path += `&before=${before}`;
+
+            const { ok, data } = await api('GET', path);
+
+            const list = document.getElementById('messageList');
+            list.innerHTML = '';
+            if (ok && data?.messages) {
+                data.messages.forEach(msg => appendMessageToList(msg));
+                logOk(`Loaded ${data.messages.length} messages (hasMore: ${data.hasMore}, nextCursor: ${data.nextCursor})`);
+            }
+            return data;
+        }
+
+        function appendMessageToList(msg) {
+            const list = document.getElementById('messageList');
+            const li = document.createElement('li');
+            const time = new Date(msg.sentAt).toLocaleTimeString('en-US', { hour12: false });
+            li.innerHTML = `
+                <span class="msg-sender">${escapeHtml(msg.senderName)}</span>
+                <span class="msg-time">${time} · ID: ${msg.id}</span>
+                ${msg.replyToMessageId ? `<span class="msg-time">↩ reply to #${msg.replyToMessageId}</span>` : ''}
+                ${msg.editedAt ? `<span class="msg-time">(edited)</span>` : ''}
+                <div class="msg-content">${escapeHtml(msg.content)}</div>
+            `;
+            list.appendChild(li);
+        }
+
+        async function editMessage() {
+            const msgId = parseInt(document.getElementById('editMsgId').value);
+            const text  = document.getElementById('editMsgContent').value.trim();
+            if (!msgId || !text) { logWarn('Message ID and content required'); return; }
+
+            await api('PATCH', `messages/${msgId}`, { newContent: text });
+        }
+
+        async function deleteMessage(msgId) {
+            const id = msgId || parseInt(document.getElementById('deleteMsgId').value);
+            if (!id) { logWarn('Message ID required'); return; }
+
+            await api('DELETE', `messages/${id}`);
+        }
+
+        // ─── 5. Members ─────────────────────────────────────────────
+        async function getMembers() {
+            const courseId = parseInt(document.getElementById('membersCourseId').value);
+            if (!courseId) { logWarn('Enter Course ID'); return; }
+
+            const keyId = encodeCourseId(courseId);
+            const { ok, data } = await api('GET', `courses/${keyId}/members`);
+
+            const list = document.getElementById('memberList');
+            list.innerHTML = '';
+            if (ok && Array.isArray(data)) {
+                data.forEach(m => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="dot ${m.isOnline ? 'dot--online' : 'dot--offline'}"></span>
+                        <strong>${escapeHtml(m.displayName)}</strong>
+                        <span style="color:var(--text-muted);font-size:.78rem;">(${escapeHtml(m.roleName)})</span>
+                    `;
+                    list.appendChild(li);
+                });
+                logOk(`Loaded ${data.length} members`);
+            }
+        }
+
+        // ─── 6. Full Scenario ────────────────────────────────────────
+        async function runFullScenario() {
+            const btn = document.getElementById('btnRunScenario');
+            btn.disabled = true;
+            btn.textContent = '⟳ Running…';
+
+            const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+            try {
+                logInfo('═══ SCENARIO START ═══');
+
+                // Step 1: Create channel
+                logInfo('Step 1/8: Creating temporary text channel…');
+                const ch = await createChannel('demo-test-' + Date.now(), 'Automated test channel');
+                if (!ch) throw new Error('Failed to create channel');
+                logOk(`Created channel #${ch.name} (id: ${ch.id})`);
+                await sleep(500);
+
+                // Step 2: Join channel via SignalR
+                logInfo('Step 2/8: Joining channel via SignalR…');
+                document.getElementById('joinChannelId').value = ch.id;
+                await hubConnection.invoke('JoinChannel', ch.id);
+                currentChannel = ch.id;
+                logOk(`Joined channel ${ch.id}`);
+                updateButtons();
+                await sleep(500);
+
+                // Step 3: Send 3 messages
+                logInfo('Step 3/8: Sending 3 messages…');
+                await hubConnection.invoke('SendMessage', {
+                    channelId: ch.id,
+                    content: '🧪 Test message #1 — Hello from the demo!',
+                    replyToMessageId: null
+                });
+                await sleep(600);
+
+                await hubConnection.invoke('SendMessage', {
+                    channelId: ch.id,
+                    content: '🧪 Test message #2 — This is the second message.',
+                    replyToMessageId: null
+                });
+                await sleep(600);
+
+                await hubConnection.invoke('SendMessage', {
+                    channelId: ch.id,
+                    content: '🧪 Test message #3 — And a third one!',
+                    replyToMessageId: null
+                });
+                logOk('3 messages sent');
+                await sleep(800);
+
+                // Step 4: Fetch message history
+                logInfo('Step 4/8: Fetching message history via REST…');
+                const histResp = await api('GET', `channels/${ch.id}/messages?pageSize=10`);
+                let messages = [];
+                if (histResp.ok && histResp.data?.messages) {
+                    messages = histResp.data.messages;
+                    logOk(`Got ${messages.length} messages from history`);
+                }
+                await sleep(500);
+
+                // Step 5: Edit the first message
+                if (messages.length > 0) {
+                    const firstMsg = messages[messages.length - 1]; // oldest
+                    logInfo(`Step 5/8: Editing message #${firstMsg.id}…`);
+                    await api('PATCH', `messages/${firstMsg.id}`, {
+                        newContent: '🧪 [EDITED] This message was edited by the demo!'
+                    });
+                    await sleep(500);
+                } else {
+                    logWarn('Step 5/8: Skipped — no messages to edit');
+                }
+
+                // Step 6: Reply to the second message
+                if (messages.length >= 2) {
+                    const secondMsg = messages[messages.length - 2];
+                    logInfo(`Step 6/8: Sending reply to message #${secondMsg.id}…`);
+                    await hubConnection.invoke('SendMessage', {
+                        channelId: ch.id,
+                        content: '↩ This is a reply to msg #2!',
+                        replyToMessageId: secondMsg.id
+                    });
+                    await sleep(600);
+                } else {
+                    logWarn('Step 6/8: Skipped — not enough messages for reply');
+                }
+
+                // Step 7: Delete the third message
+                if (messages.length >= 3) {
+                    const thirdMsg = messages[messages.length - 3];
+                    logInfo(`Step 7/8: Deleting message #${thirdMsg.id}…`);
+                    await api('DELETE', `messages/${thirdMsg.id}`);
+                    await sleep(500);
+                } else {
+                    logWarn('Step 7/8: Skipped — no message to delete');
+                }
+
+                // Step 8: Leave channel + delete it
+                logInfo('Step 8/8: Leaving channel & cleaning up…');
+                await hubConnection.invoke('LeaveChannel', ch.id);
+                currentChannel = null;
+                await sleep(300);
+                await api('DELETE', `channels/${ch.id}`);
+                logOk('Temp channel deleted');
+
+                logInfo('═══ SCENARIO COMPLETE ═══');
+
+            } catch (err) {
+                logErr(`Scenario failed: ${err.message}`);
+            }
+
+            btn.disabled = false;
+            btn.textContent = '▶ Run Full Scenario';
+            updateButtons();
+        }
+
+        // ─── Init ────────────────────────────────────────────────────
+        updateButtons();
+        logInfo(`Demo ready — target server: ${BASE_URL}`);
+    </script>
+</body>
+</html>
