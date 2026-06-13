@@ -73,3 +73,4 @@ public class PaymentsController(ISender sender) : ControllerBase
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 }
+

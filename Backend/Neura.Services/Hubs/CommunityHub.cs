@@ -34,7 +34,8 @@ public sealed class CommunityHub(
     IChatService chatService,
     IVoiceChannelService voiceService,
     IServiceScopeFactory scopeFactory,
-    ILogger<CommunityHub> logger)
+    ILogger<CommunityHub> logger,
+    HashidsNet.IHashids hashids)
     : Hub<ICommunityHubClient>
 {
     // -------------------------------------------------------------------------
@@ -500,10 +501,22 @@ public sealed class CommunityHub(
     {
         var raw = Context.GetHttpContext()?.Request.Query["courseId"].ToString();
 
-        return int.TryParse(raw, out var courseId) && courseId > 0
-            ? courseId
-            : throw new InvalidOperationException(
-                "A valid courseId query parameter is required to connect to CommunityHub.");
+        if (string.IsNullOrWhiteSpace(raw))
+            throw new InvalidOperationException("A valid courseId query parameter is required to connect to CommunityHub.");
+
+        var decodedArray = hashids.Decode(raw);
+        if (decodedArray.Length > 0 && decodedArray[0] > 0)
+        {
+            return decodedArray[0];
+        }
+
+        if (int.TryParse(raw, out var courseId) && courseId > 0)
+        {
+            return courseId;
+        }
+        
+        throw new InvalidOperationException(
+            "A valid courseId query parameter is required to connect to CommunityHub.");
     }
 
     /// <summary>

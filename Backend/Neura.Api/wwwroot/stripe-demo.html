@@ -370,7 +370,9 @@
 </footer>
 
 <script>
-    const API = window.location.origin;
+    const API = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+        ? window.location.origin
+        : 'https://neura-lms.runasp.net';
     let JWT = '';
     let currentCourseId = '';
     let currentStatus = null;

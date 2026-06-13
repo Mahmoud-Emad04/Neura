@@ -1,15 +1,11 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Payment;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
-using Neura.Core.Services;
 using Neura.Core.Settings;
-using Neura.Repository.Persistence;
+using Neura.Services.Helpers;
 using Stripe;
 using Stripe.Checkout;
+
 
 namespace Neura.Services.Services;
 
@@ -18,15 +14,18 @@ public class StripeService : IStripeService
     private readonly ApplicationDbContext _context;
     private readonly StripeSettings _settings;
     private readonly ILogger<StripeService> _logger;
+    private readonly IServiceHelpers _helpers;
 
     public StripeService(
         ApplicationDbContext context,
         IOptions<StripeSettings> settings,
-        ILogger<StripeService> logger)
+        ILogger<StripeService> logger,
+        IServiceHelpers helpers)
     {
         _context = context;
         _settings = settings.Value;
         _logger = logger;
+        _helpers = helpers;
 
         StripeConfiguration.ApiKey = _settings.SecretKey;
     }
@@ -42,6 +41,36 @@ public class StripeService : IStripeService
         try
         {
             var sessionService = new SessionService();
+
+            // Check if there is an existing pending payment
+            var existingPayment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.CourseId == courseId
+                                          && p.UserId == userId
+                                          && p.Status == PaymentStatus.Pending, ct);
+
+            if (existingPayment != null)
+            {
+                var existingSession = await sessionService.GetAsync(existingPayment.StripeSessionId, cancellationToken: ct);
+
+                if (existingSession.Status == "open")
+                {
+                    _logger.LogInformation("Reusing existing open Stripe session {SessionId} for user {UserId}, course {CourseId}",
+                        existingSession.Id, userId, courseId);
+
+                    return Result.Success(new CreateCheckoutSessionResponse
+                    {
+                        SessionId = existingSession.Id,
+                        SessionUrl = existingSession.Url,
+                        PublishableKey = _settings.PublishableKey
+                    });
+                }
+                else
+                {
+                    // Update status if it's expired or completed so we don't pick it up again
+                    existingPayment.Status = existingSession.Status == "complete" ? PaymentStatus.Completed : PaymentStatus.Failed;
+                    await _context.SaveChangesAsync(ct);
+                }
+            }
 
             var options = new SessionCreateOptions
             {
@@ -70,7 +99,7 @@ public class StripeService : IStripeService
                     { "userId", userId },
                     { "courseId", courseId.ToString() }
                 },
-                SuccessUrl = $"{_settings.SuccessUrl}?session_id={{CHECKOUT_SESSION_ID}}",
+                SuccessUrl = $"{_settings.SuccessUrl}{_helpers.Encode(courseId)}",
                 CancelUrl = _settings.CancelUrl
             };
 
