@@ -1,7 +1,7 @@
 namespace Neura.Core.Contracts.Course;
 
 public record CourseFullContentResponse(
-    int CourseId,
+    string CourseId,
     string CourseTitle,
     List<string> LearningOutcomes,
     List<string> Prerequisites,
