@@ -170,9 +170,6 @@ public sealed class CommunityHub(
     {
         var userId = GetUserId();
 
-        // Security: verify the user belongs to the course that owns this channel.
-        // A malicious client could call JoinChannel with any channelId.
-        // Admins/SuperAdmins bypass via the role check inside IsCourseMemberAsync.
         var isMember = await chatService.IsCourseMemberAsync(userId, channelId);
         if (!isMember)
         {
@@ -180,19 +177,8 @@ public sealed class CommunityHub(
             return;
         }
 
-        // Remove from the previously active channel group (if switching channels)
-        var previousChannelId = await presenceTracker.UpdateCurrentChannelAsync(
-            Context.ConnectionId, channelId);
-
-        if (previousChannelId.HasValue)
-        {
-            await Groups.RemoveFromGroupAsync(
-                Context.ConnectionId,
-                HubGroups.Channel(previousChannelId.Value));
-        }
-
-        // Join the new channel group — from this point forward, this connection
-        // will receive full MessageDto payloads for this channel
+        // Simply add to the channel group
+        // so the client stays subscribed to ALL joined channels simultaneously
         await Groups.AddToGroupAsync(
             Context.ConnectionId,
             HubGroups.Channel(channelId));
