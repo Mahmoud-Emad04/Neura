@@ -184,6 +184,15 @@ public sealed class CommunityHub(
             HubGroups.Channel(channelId));
     }
 
+    public async Task DebugGroups()
+{
+    await Clients.Caller.Error(
+        $"ConnectionId: {Context.ConnectionId} | You are connected. Check server logs for group info.");
+    
+    logger.LogInformation(
+        " DebugGroups called by {UserId} with connectionId {ConnectionId}",
+        GetUserId(), Context.ConnectionId);
+}
     /// <summary>
     ///     Called when a user navigates AWAY from a channel without leaving the course
     ///     (e.g., clicking on the course overview page, or a Voice channel tab).
@@ -224,7 +233,6 @@ public sealed class CommunityHub(
     {
         var userId = GetUserId();
 
-        // ── 1. Manual input validation (SignalR skips DataAnnotations) ────
         if (request.ChannelId <= 0)
         {
             await Clients.Caller.Error("Invalid channel ID.");
@@ -237,7 +245,6 @@ public sealed class CommunityHub(
             return;
         }
 
-        // ── 2. Rate limiting ─────────────────────────────────────────────
         var now = DateTime.UtcNow;
         if (_lastMessageTime.TryGetValue(userId, out var lastTime)
             && (now - lastTime) < MinMessageInterval)
@@ -247,7 +254,6 @@ public sealed class CommunityHub(
         }
         _lastMessageTime[userId] = now;
 
-        // ── 3. Persist to SQL via service layer ──────────────────────────
         MessageDto messageDto;
         try
         {
@@ -262,26 +268,42 @@ public sealed class CommunityHub(
             await Clients.Caller.Error("You are not authorized to send messages in this channel.");
             return;
         }
+        catch (Exception ex)
+        {
+            await Clients.Caller.Error($"SaveMessage failed: {ex.GetType().Name}: {ex.Message}");
+            return;
+        }
 
-        // ── 4. Broadcast full message to channel-{id} subscribers ────────
-        await Clients
-            .Group(HubGroups.Channel(request.ChannelId))
-            .ReceiveMessage(messageDto);
+        try
+        {
+            await Clients
+                .Group(HubGroups.Channel(request.ChannelId))
+                .ReceiveMessage(messageDto);
 
-        // ── 5. Broadcast unread badge to course-{id} group ───────────────
-        // SignalR's GroupExcept only accepts connection IDs, not group names.
-        // We exclude only the SENDER's own connection here.
-        // Users actively in the channel group will ignore the UnreadNotification
-        // client-side because their channel is already active/focused.
-        var courseId = await chatService.GetCourseIdForChannelAsync(request.ChannelId);
+            logger.LogInformation("Broadcasted ReceiveMessage to group channel-{ChannelId}", request.ChannelId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to broadcast ReceiveMessage");
+            await Clients.Caller.Error($"Broadcast failed: {ex.Message}");
+            return;
+        }
 
-        await Clients
-            .GroupExcept(HubGroups.Course(courseId), Context.ConnectionId)
-            .UnreadNotification(new UnreadNotificationDto(
-                CourseId: hashids.Encode(courseId),
-                ChannelId: request.ChannelId,
-                ChannelName: string.Empty
-            ));
+        try
+        {
+            var courseId = await chatService.GetCourseIdForChannelAsync(request.ChannelId);
+            await Clients
+                .GroupExcept(HubGroups.Course(courseId), Context.ConnectionId)
+                .UnreadNotification(new UnreadNotificationDto(
+                    CourseId: hashids.Encode(courseId),
+                    ChannelId: request.ChannelId,
+                    ChannelName: string.Empty
+                ));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to send UnreadNotification");
+        }
     }
 
     // -------------------------------------------------------------------------
