@@ -1,4 +1,4 @@
-﻿using Neura.Core.Enums;
+using Neura.Core.Enums;
 
 namespace Neura.Core.Entities;
 
@@ -9,6 +9,7 @@ public class Question
 
     public string QuestionText { get; set; } = string.Empty;
     public QuestionType QuestionType { get; set; }
+    public QuestionLevel Level { get; set; } = QuestionLevel.Easy;
     public decimal Points { get; set; }
     public int Order { get; set; }
 

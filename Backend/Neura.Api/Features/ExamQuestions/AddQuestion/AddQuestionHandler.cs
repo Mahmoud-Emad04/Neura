@@ -46,6 +46,7 @@ internal sealed class AddQuestionHandler(
             ExamId = exam.Id,
             QuestionText = sanitizer.Sanitize(request.QuestionText),
             QuestionType = request.QuestionType,
+            Level = request.Level,
             Points = request.Points,
             Order = maxOrder + 1,
             AnswerOptions = request.Options.Select((opt, index) => new AnswerOption
