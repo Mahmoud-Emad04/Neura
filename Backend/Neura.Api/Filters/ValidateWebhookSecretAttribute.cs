@@ -17,7 +17,7 @@ public class ValidateWebhookSecretAttribute : Attribute, IAsyncActionFilter
 
         if (string.IsNullOrEmpty(hmacSecret))
         {
-            context.Result = new StatusCodeResult(500);
+            context.Result = new StatusCodeResult(statusCode: 500);
             return;
         }
 

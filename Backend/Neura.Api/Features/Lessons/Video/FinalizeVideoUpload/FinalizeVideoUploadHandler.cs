@@ -51,8 +51,12 @@ internal sealed class FinalizeVideoUploadHandler(
         lesson.UpdatedOn = DateTime.UtcNow;
         lesson.UpdatedById = userId;
         lesson.Status = LessonStatus.Active;
+        lesson.MarkVideoProcessing();
 
         await context.SaveChangesAsync(ct);
+
+        Hangfire.BackgroundJob.Enqueue<Neura.Services.Jobs.NotifyVideoProcessorJob>(
+            job => job.ExecuteAsync(lessonId, request.VideoUrl));
 
         logger.LogInformation("Finalized video upload for lesson {LessonId} with public ID {PublicId}", lessonId, request.PublicId);
 

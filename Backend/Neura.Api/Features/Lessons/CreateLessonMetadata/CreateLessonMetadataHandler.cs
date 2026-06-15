@@ -1,8 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -10,7 +6,7 @@ using Neura.Repository.Persistence;
 namespace Neura.Api.Features.Lessons.CreateLessonMetadata;
 
 internal sealed class CreateLessonMetadataHandler(
-    ApplicationDbContext context) 
+    ApplicationDbContext context)
     : IRequestHandler<CreateLessonMetadataCommand, Result<int>>
 {
     public async Task<Result<int>> Handle(
@@ -30,11 +26,11 @@ internal sealed class CreateLessonMetadataHandler(
         if (section is null)
             return Result.Failure<int>(SectionErrors.SectionNotFound);
 
-        var positionConflict = await context.Lessons
-            .AnyAsync(l => l.SectionId == sectionId && l.OrderIndex == request.Position, ct);
-            
-        if (positionConflict)
-            return Result.Failure<int>(LessonErrors.LessonPositionConflict);
+        //var positionConflict = await context.Lessons
+        //    .AnyAsync(l => l.SectionId == sectionId && l.OrderIndex == request.Position, ct);
+
+        //if (positionConflict)
+        //    return Result.Failure<int>(LessonErrors.LessonPositionConflict);
 
         var lastOrder = await context.Lessons
             .Where(l => l.SectionId == sectionId)

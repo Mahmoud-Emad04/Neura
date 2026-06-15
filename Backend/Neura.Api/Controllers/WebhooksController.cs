@@ -1,10 +1,8 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+using Neura.Api.Features.Webhooks.HandleCheatingAlert;
+using Neura.Api.Features.Webhooks.HandleVideoTranscription;
 using Neura.Api.Filters;
 using Neura.Core.Contracts.Webhook;
-using Neura.Api.Extensions;
-using Neura.Api.Features.Webhooks.HandleCheatingAlert;
 
 namespace Neura.Api.Controllers;
 
@@ -20,6 +18,20 @@ public class WebhooksController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var command = new HandleCheatingAlertCommand(request);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Ok(new { status = "success" })
+            : result.ToProblem();
+    }
+
+    [HttpPost("video_transcription")]
+    //[ValidateWebhookSecret]
+    public async Task<IActionResult> VideoTranscription(
+        [FromBody] VideoTranscriptionRequest request,
+        CancellationToken ct)
+    {
+        var command = new HandleVideoTranscriptionCommand(request);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess
