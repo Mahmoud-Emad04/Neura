@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.DeleteTag;
 
-internal sealed class DeleteTagHandler(ApplicationDbContext context) 
+internal sealed class DeleteTagHandler(ApplicationDbContext context)
     : IRequestHandler<DeleteTagCommand, Result>
 {
     public async Task<Result> Handle(
@@ -24,7 +22,7 @@ internal sealed class DeleteTagHandler(ApplicationDbContext context)
         if (courseCount > 0 && !command.Force)
             return Result.Failure(TagErrors.CannotDeleteTagWithCourses);
 
-        if (command.Force && courseCount > 0) 
+        if (command.Force && courseCount > 0)
             tag.Courses.Clear();
 
         tag.IsDeleted = true;

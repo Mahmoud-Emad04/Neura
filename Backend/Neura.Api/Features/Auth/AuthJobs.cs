@@ -1,7 +1,4 @@
-using Hangfire;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Neura.Core.Entities;
 using Neura.Services.Helpers;
 
 namespace Neura.Api.Features.Auth;

@@ -1,11 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Errors;
 using Neura.Core.Contracts.Enrollment;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
+using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
 
@@ -14,7 +11,7 @@ namespace Neura.Api.Features.Enrollment.GetEnrollmentStatus;
 internal sealed class GetEnrollmentStatusHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetEnrollmentStatusQuery, Result<EnrollmentStatusResponse>>
 {
     public async Task<Result<EnrollmentStatusResponse>> Handle(

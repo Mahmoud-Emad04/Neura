@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
@@ -10,7 +8,7 @@ namespace Neura.Api.Features.Enrollment.GetMyEnrolledCourses;
 
 internal sealed class GetMyEnrolledCoursesHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetMyEnrolledCoursesQuery, Result<PaginatedList<MyEnrolledCourseResponse>>>
 {
     public async Task<Result<PaginatedList<MyEnrolledCourseResponse>>> Handle(
@@ -18,7 +16,7 @@ internal sealed class GetMyEnrolledCoursesHandler(
     {
         var baseUrl = helpers.GetBaseUrl();
         var filters = request.Filters;
-        
+
         var enrollments = context.CourseUsers
             .AsNoTracking()
             .Include(cu => cu.Course)

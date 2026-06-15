@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Errors;
@@ -11,7 +9,7 @@ namespace Neura.Api.Features.Announcements.UpdatePostComment;
 
 internal sealed class UpdatePostCommentHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<UpdatePostCommentCommand, Result<PostCommentResponse>>
 {
     public async Task<Result<PostCommentResponse>> Handle(

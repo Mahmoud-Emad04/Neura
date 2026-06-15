@@ -1,11 +1,10 @@
 using MediatR;
 using Neura.Api.Features.CourseProgress.GetCourseProgress;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Lessons;
 
 namespace Neura.Api.Features.CourseProgress.GetNextLesson;
 
-internal sealed class GetNextLessonHandler(ISender sender) 
+internal sealed class GetNextLessonHandler(ISender sender)
     : IRequestHandler<GetNextLessonQuery, Result<NextLessonResponse?>>
 {
     public async Task<Result<NextLessonResponse?>> Handle(

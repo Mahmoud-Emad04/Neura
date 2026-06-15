@@ -1,14 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.CreateTag;
 
-internal sealed class CreateTagHandler(ApplicationDbContext context) 
+internal sealed class CreateTagHandler(ApplicationDbContext context)
     : IRequestHandler<CreateTagCommand, Result<TagResponse>>
 {
     public async Task<Result<TagResponse>> Handle(

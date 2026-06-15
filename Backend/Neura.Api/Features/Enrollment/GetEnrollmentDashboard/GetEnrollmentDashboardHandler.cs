@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Enrollment.GetEnrollmentDashboard;
 
-internal sealed class GetEnrollmentDashboardHandler(ApplicationDbContext context) 
+internal sealed class GetEnrollmentDashboardHandler(ApplicationDbContext context)
     : IRequestHandler<GetEnrollmentDashboardQuery, Result<EnrollmentDashboardResponse>>
 {
     public async Task<Result<EnrollmentDashboardResponse>> Handle(
@@ -29,7 +27,10 @@ internal sealed class GetEnrollmentDashboardHandler(ApplicationDbContext context
         {
             return Result.Success(new EnrollmentDashboardResponse
             {
-                TotalCourses = 0, CompletedCourses = 0, InProgressCourses = 0, TotalHours = 0
+                TotalCourses = 0,
+                CompletedCourses = 0,
+                InProgressCourses = 0,
+                TotalHours = 0
             });
         }
 

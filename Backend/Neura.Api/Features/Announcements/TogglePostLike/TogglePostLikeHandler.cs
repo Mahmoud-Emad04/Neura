@@ -1,13 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Announcements.TogglePostLike;
 
-internal sealed class TogglePostLikeHandler(ApplicationDbContext context) 
+internal sealed class TogglePostLikeHandler(ApplicationDbContext context)
     : IRequestHandler<TogglePostLikeCommand, Result>
 {
     public async Task<Result> Handle(

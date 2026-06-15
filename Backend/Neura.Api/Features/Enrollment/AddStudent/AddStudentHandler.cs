@@ -1,13 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
-using Neura.Core.Errors;
 using Neura.Core.Contracts.Enrollment;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
+using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Enrollment.AddStudent;
@@ -15,7 +11,7 @@ namespace Neura.Api.Features.Enrollment.AddStudent;
 internal sealed class AddStudentHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<AddStudentHandler> logger) 
+    ILogger<AddStudentHandler> logger)
     : IRequestHandler<AddStudentCommand, Result<EnrollmentResponse>>
 {
     public async Task<Result<EnrollmentResponse>> Handle(
@@ -69,7 +65,7 @@ internal sealed class AddStudentHandler(
 
         context.CourseUsers.Add(courseUser);
         await context.SaveChangesAsync(ct);
-        
+
         logger.LogInformation("User {RequesterId} added student {UserId} to course {CourseId}", request.RequesterId, user.Id, request.CourseId);
 
         return Result.Success(await MapToEnrollmentResponseAsync(courseUser, course, user));

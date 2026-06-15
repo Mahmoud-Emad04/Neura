@@ -1,10 +1,5 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Neura.Api.Extensions;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Contracts.Tags;
 using Neura.Api.Features.Tags.BulkDeleteTags;
 using Neura.Api.Features.Tags.BulkToggleTagsActive;
 using Neura.Api.Features.Tags.BulkUpdateTagsOrder;
@@ -17,6 +12,8 @@ using Neura.Api.Features.Tags.GetTagBySlug;
 using Neura.Api.Features.Tags.GetTags;
 using Neura.Api.Features.Tags.ToggleTagActive;
 using Neura.Api.Features.Tags.UpdateTag;
+using Neura.Core.Authorization.Attributes;
+using Neura.Core.Contracts.Tags;
 
 namespace Neura.Api.Controllers;
 

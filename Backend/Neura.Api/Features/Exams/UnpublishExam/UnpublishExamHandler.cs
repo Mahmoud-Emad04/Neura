@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Exams.UnpublishExam;
 
-internal sealed class UnpublishExamHandler(ApplicationDbContext context) 
+internal sealed class UnpublishExamHandler(ApplicationDbContext context)
     : IRequestHandler<UnpublishExamCommand, Result>
 {
     public async Task<Result> Handle(

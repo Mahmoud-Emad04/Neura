@@ -1,11 +1,7 @@
 using Ganss.Xss;
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Exam;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -14,7 +10,7 @@ namespace Neura.Api.Features.Exams.CreateExam;
 
 internal sealed class CreateExamHandler(
     ApplicationDbContext context,
-    HtmlSanitizer sanitizer) 
+    HtmlSanitizer sanitizer)
     : IRequestHandler<CreateExamCommand, Result<ExamResponse>>
 {
     public async Task<Result<ExamResponse>> Handle(

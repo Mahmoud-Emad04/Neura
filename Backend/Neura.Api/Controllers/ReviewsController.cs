@@ -1,13 +1,8 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Contracts.Review;
 using Neura.Api.Extensions;
 using Neura.Api.Features.Reviews.AddReview;
 using Neura.Api.Features.Reviews.GetReviews;
-using Neura.Core.Abstractions;
+using Neura.Core.Contracts.Review;
 
 namespace Neura.Api.Controllers;
 

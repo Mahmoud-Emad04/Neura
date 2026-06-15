@@ -1,4 +1,5 @@
 using Neura.Core.Entities;
+using Neura.Core.Enums;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
@@ -14,6 +15,13 @@ public class LessonConfiguration : IEntityTypeConfiguration<Lesson>
 
         builder.Property(x => x.Description)
             .HasMaxLength(1000);
+
+        builder.Property(x => x.VideoText)
+            .HasColumnType("nvarchar(max)");
+
+        builder.Property(x => x.VideoProcessingStatus)
+            .HasConversion<byte>()
+            .HasDefaultValue(VideoProcessingStatus.None);
 
         //builder.Property(x => x.VideoUrl)
         //    .HasMaxLength(500);

@@ -1,21 +1,17 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
+using Neura.Api.Features.CourseTeam;
 using Neura.Core.Contracts.CourseTeam;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
-using Neura.Api.Features.CourseTeam;
 
 namespace Neura.Api.Features.Invitations.AcceptInvitation;
 
 internal sealed class AcceptInvitationHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<AcceptInvitationHandler> logger) 
+    ILogger<AcceptInvitationHandler> logger)
     : IRequestHandler<AcceptInvitationCommand, Result<TeamMemberResponse>>
 {
     public async Task<Result<TeamMemberResponse>> Handle(

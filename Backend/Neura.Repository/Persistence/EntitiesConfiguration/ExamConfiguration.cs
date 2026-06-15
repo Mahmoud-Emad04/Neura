@@ -1,4 +1,4 @@
-﻿using Neura.Core.Entities;
+using Neura.Core.Entities;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
@@ -29,6 +29,9 @@ public class ExamConfiguration : IEntityTypeConfiguration<Exam>
                .HasDefaultValue(true);
 
         builder.Property(e => e.IsPublished)
+               .HasDefaultValue(false);
+
+        builder.Property(e => e.AreGradesPublished)
                .HasDefaultValue(false);
 
         builder.HasMany(e => e.Questions)

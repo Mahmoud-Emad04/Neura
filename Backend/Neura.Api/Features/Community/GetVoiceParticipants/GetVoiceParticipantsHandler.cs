@@ -3,7 +3,7 @@ using Neura.Core.Contracts.Community;
 
 namespace Neura.Api.Features.Community.GetVoiceParticipants;
 
-internal sealed class GetVoiceParticipantsHandler(IVoiceChannelService voiceService) 
+internal sealed class GetVoiceParticipantsHandler(IVoiceChannelService voiceService)
     : IRequestHandler<GetVoiceParticipantsQuery, IReadOnlyList<VoiceParticipantDto>>
 {
     public async Task<IReadOnlyList<VoiceParticipantDto>> Handle(

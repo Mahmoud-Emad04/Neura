@@ -1,4 +1,4 @@
-﻿using Neura.Core.Enums;
+using Neura.Core.Enums;
 
 namespace Neura.Core.Entities;
 
@@ -16,6 +16,10 @@ public class Lesson : AuditableEntity
     public string? CloudinaryPublicId { get; set; }
     public bool IsVideoPrivate { get; set; } = false;
 
+    // Video processing / transcription
+    public string? VideoText { get; set; }
+    public VideoProcessingStatus VideoProcessingStatus { get; set; } = VideoProcessingStatus.None;
+
     public string? ArticleContent { get; set; }
     public TimeSpan Duration { get; set; } = TimeSpan.Zero;
 
@@ -32,4 +36,23 @@ public class Lesson : AuditableEntity
     public Exam? Exam { get; set; }
 
     public ICollection<LessonCompletion> Completions { get; set; } = [];
+
+    public void SetVideoTranscription(string videoText)
+    {
+        VideoText = videoText;
+        VideoProcessingStatus = VideoProcessingStatus.Completed;
+        UpdatedOn = DateTime.UtcNow;
+    }
+
+    public void MarkVideoProcessing()
+    {
+        VideoProcessingStatus = VideoProcessingStatus.Processing;
+        UpdatedOn = DateTime.UtcNow;
+    }
+
+    public void MarkVideoProcessingFailed()
+    {
+        VideoProcessingStatus = VideoProcessingStatus.Failed;
+        UpdatedOn = DateTime.UtcNow;
+    }
 }

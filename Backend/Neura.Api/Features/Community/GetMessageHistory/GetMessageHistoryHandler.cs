@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Community;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Community.GetMessageHistory;
 
-internal sealed class GetMessageHistoryHandler(ApplicationDbContext db) 
+internal sealed class GetMessageHistoryHandler(ApplicationDbContext db)
     : IRequestHandler<GetMessageHistoryQuery, Result<PagedMessagesDto>>
 {
     public async Task<Result<PagedMessagesDto>> Handle(
@@ -35,9 +33,9 @@ internal sealed class GetMessageHistoryHandler(ApplicationDbContext db)
             .OrderByDescending(m => m.Id)
             .Take(request.PageSize + 1)
             .Select(m => new MessageDto(
-                m.Id, m.ChannelId, m.SenderId, 
-                m.Sender.FirstName + " " + m.Sender.LastName, 
-                m.Sender.ImageUrl, m.Content, m.SentAt, 
+                m.Id, m.ChannelId, m.SenderId,
+                m.Sender.FirstName + " " + m.Sender.LastName,
+                m.Sender.ImageUrl, m.Content, m.SentAt,
                 m.EditedAt, m.IsDeleted, m.ReplyToMessageId, null))
             .ToListAsync(ct);
 

@@ -1,18 +1,15 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
-using Neura.Core.Services;
 
 namespace Neura.Api.Features.Courses.UpdateCourseImage;
 
 internal sealed class UpdateCourseImageHandler(
     ApplicationDbContext context,
     IFileService fileService,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<UpdateCourseImageCommand, Result>
 {
     public async Task<Result> Handle(
@@ -36,7 +33,7 @@ internal sealed class UpdateCourseImageHandler(
             command.Request.Image,
             ImageConsts.Course,
             ct);
-            
+
         course.UpdatedOn = DateTime.UtcNow;
         course.UpdatedById = command.UserId;
 

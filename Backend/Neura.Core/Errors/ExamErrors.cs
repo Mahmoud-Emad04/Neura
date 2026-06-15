@@ -1,4 +1,4 @@
-﻿using Neura.Core.Abstractions;
+using Neura.Core.Abstractions;
 
 namespace Neura.Core.Errors;
 
@@ -67,4 +67,16 @@ public static class ExamErrors
 
     public static readonly Error Forbidden =
         new("Exam.Forbidden", "You do not have permission to manage this exam.", StatusCodes.Status403Forbidden);
+
+    // ══════════════════════════════════════════════════════════════
+    // Grade Publishing
+    // ══════════════════════════════════════════════════════════════
+
+    public static readonly Error GradesAlreadyPublished =
+        new("Exam.GradesAlreadyPublished",
+            "Grades for this exam are already published.", StatusCodes.Status400BadRequest);
+
+    public static readonly Error GradesAlreadyHidden =
+        new("Exam.GradesAlreadyHidden",
+            "Grades for this exam are already hidden.", StatusCodes.Status400BadRequest);
 }

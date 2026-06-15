@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.BulkToggleTagsActive;
 
-internal sealed class BulkToggleTagsActiveHandler(ApplicationDbContext context) 
+internal sealed class BulkToggleTagsActiveHandler(ApplicationDbContext context)
     : IRequestHandler<BulkToggleTagsActiveCommand, Result>
 {
     public async Task<Result> Handle(

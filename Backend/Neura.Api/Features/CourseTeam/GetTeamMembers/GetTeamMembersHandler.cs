@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.GetTeamMembers;
 
-internal sealed class GetTeamMembersHandler(ApplicationDbContext context) 
+internal sealed class GetTeamMembersHandler(ApplicationDbContext context)
     : IRequestHandler<GetTeamMembersQuery, Result<List<TeamMemberResponse>>>
 {
     public async Task<Result<List<TeamMemberResponse>>> Handle(

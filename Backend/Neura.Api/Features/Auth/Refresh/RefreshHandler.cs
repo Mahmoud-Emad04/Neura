@@ -1,9 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Neura.Core.Abstractions;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -14,7 +12,7 @@ internal sealed class RefreshHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
     IJwtProvider jwtProvider,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<RefreshCommand, Result<AuthResponse>>
 {
     private const int RefreshTokenExpiryDays = 14;
@@ -52,17 +50,17 @@ internal sealed class RefreshHandler(
         });
 
         await userManager.UpdateAsync(user);
-        
+
         string baseUrl = helpers.GetBaseUrl();
         var response = new AuthResponse(
-            user.Id, 
-            user.UserName!, 
-            $"{baseUrl}/{user.ImageUrl}", 
-            user.DiscordHandle, 
-            user.Email!, 
+            user.Id,
+            user.UserName!,
+            $"{baseUrl}/{user.ImageUrl}",
+            user.DiscordHandle,
+            user.Email!,
             user.FirstName,
-            user.LastName, 
-            newtoken, 
+            user.LastName,
+            newtoken,
             expires,
             newrefreshToken,
             refreshTokenExpiry);

@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -10,7 +8,7 @@ namespace Neura.Api.Features.Announcements.TogglePostVisibility;
 
 internal sealed class TogglePostVisibilityHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<TogglePostVisibilityCommand, Result>
 {
     public async Task<Result> Handle(

@@ -1,8 +1,7 @@
 using MediatR;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Authentication;
 
 namespace Neura.Api.Features.Auth.ResetPassword;
 
-public sealed record ResetPasswordCommand(ResetPasswordRequest Request) 
+public sealed record ResetPasswordCommand(ResetPasswordRequest Request)
     : IRequest<Result>;

@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -10,7 +8,7 @@ namespace Neura.Api.Features.Announcements.GetCurrentUserPosts;
 
 internal sealed class GetCurrentUserPostsHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetCurrentUserPostsQuery, Result<PaginatedList<PostResponse>>>
 {
     public async Task<Result<PaginatedList<PostResponse>>> Handle(

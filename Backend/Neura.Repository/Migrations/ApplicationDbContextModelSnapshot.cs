@@ -732,6 +732,11 @@ namespace Neura.Repository.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("AreGradesPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("CreatedById")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -822,6 +827,18 @@ namespace Neura.Repository.Migrations
                     b.Property<int>("ExamId")
                         .HasColumnType("int");
 
+                    b.Property<decimal?>("FinalScore")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("decimal(7,2)");
+
+                    b.Property<string>("InstructorNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<decimal?>("OriginalScore")
+                        .HasPrecision(7, 2)
+                        .HasColumnType("decimal(7,2)");
+
                     b.Property<bool?>("Passed")
                         .HasColumnType("bit");
 
@@ -851,6 +868,10 @@ namespace Neura.Repository.Migrations
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ViolationReason")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.HasKey("Id");
 
@@ -890,6 +911,9 @@ namespace Neura.Repository.Migrations
 
                     b.Property<int>("ExamId")
                         .HasColumnType("int");
+
+                    b.Property<string>("FrameImagePath")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -1057,6 +1081,14 @@ namespace Neura.Repository.Migrations
 
                     b.Property<DateTime?>("UpdatedOn")
                         .HasColumnType("datetime2");
+
+                    b.Property<byte>("VideoProcessingStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint")
+                        .HasDefaultValue((byte)0);
+
+                    b.Property<string>("VideoText")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

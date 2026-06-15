@@ -1,9 +1,5 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Section;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -12,7 +8,7 @@ namespace Neura.Api.Features.Sections.CreateSection;
 
 internal sealed class CreateSectionHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<CreateSectionCommand, Result<SectionResponse>>
 {
     public async Task<Result<SectionResponse>> Handle(
@@ -28,7 +24,7 @@ internal sealed class CreateSectionHandler(
 
         var exists = await context.Sections.AnyAsync(
             s => s.CourseId == courseId && s.Position == request.Position && !s.IsDeleted, ct);
-            
+
         if (exists)
             return Result.Failure<SectionResponse>(SectionErrors.SectionPositionConflict);
 

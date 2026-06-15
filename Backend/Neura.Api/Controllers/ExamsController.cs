@@ -1,18 +1,16 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Contracts.Exam;
 using Neura.Api.Extensions;
 using Neura.Api.Features.Exams.CreateExam;
 using Neura.Api.Features.Exams.DeleteExam;
 using Neura.Api.Features.Exams.GetExamById;
 using Neura.Api.Features.Exams.GetExamByLessonId;
+using Neura.Api.Features.Exams.HideExamGrades;
 using Neura.Api.Features.Exams.PublishExam;
+using Neura.Api.Features.Exams.PublishExamGrades;
 using Neura.Api.Features.Exams.UnpublishExam;
 using Neura.Api.Features.Exams.UpdateExamSettings;
-using System.Security.Claims;
+using Neura.Core.Authorization.Attributes;
+using Neura.Core.Contracts.Exam;
 
 namespace Neura.Api.Controllers;
 
@@ -143,6 +141,44 @@ public class ExamsController(ISender sender) : ControllerBase
     {
         var userId = User.GetUserId()!;
         var command = new DeleteExamCommand(lessonId, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    // ==========================================
+    //  PUT /api/exams/{examId}/grades/publish
+    //  Instructor publishes grades to students
+    // ==========================================
+    [HttpPut("{examId:int}/grades/publish")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PublishGrades([FromRoute] int examId, CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var command = new PublishExamGradesCommand(examId, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    // ==========================================
+    //  PUT /api/exams/{examId}/grades/hide
+    //  Instructor hides grades from students
+    // ==========================================
+    [HttpPut("{examId:int}/grades/hide")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> HideGrades([FromRoute] int examId, CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var command = new HideExamGradesCommand(examId, userId);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess ? Ok() : result.ToProblem();

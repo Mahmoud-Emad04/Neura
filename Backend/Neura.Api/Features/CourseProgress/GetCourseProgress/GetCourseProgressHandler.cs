@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -11,7 +9,7 @@ namespace Neura.Api.Features.CourseProgress.GetCourseProgress;
 
 internal sealed class GetCourseProgressHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetCourseProgressQuery, Result<CourseProgressResponse>>
 {
     public async Task<Result<CourseProgressResponse>> Handle(

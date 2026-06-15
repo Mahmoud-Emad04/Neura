@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.ToggleTagActive;
 
-internal sealed class ToggleTagActiveHandler(ApplicationDbContext context) 
+internal sealed class ToggleTagActiveHandler(ApplicationDbContext context)
     : IRequestHandler<ToggleTagActiveCommand, Result<TagResponse>>
 {
     public async Task<Result<TagResponse>> Handle(

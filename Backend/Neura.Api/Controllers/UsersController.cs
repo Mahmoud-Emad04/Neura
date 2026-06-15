@@ -1,11 +1,6 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Contracts.Instructor;
-using Neura.Api.Extensions;
 using Neura.Api.Features.Users.GetInstructorByCourseId;
-using Neura.Core.Abstractions;
+using Neura.Core.Contracts.Instructor;
 
 namespace Neura.Api.Controllers;
 

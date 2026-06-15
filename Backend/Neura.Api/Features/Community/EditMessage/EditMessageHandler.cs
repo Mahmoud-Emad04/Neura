@@ -8,7 +8,7 @@ namespace Neura.Api.Features.Community.EditMessage;
 
 internal sealed class EditMessageHandler(
     IChatService chatService,
-    IHubContext<CommunityHub, ICommunityHubClient> hubContext) 
+    IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : IRequestHandler<EditMessageCommand, MessageEditedDto>
 {
     public async Task<MessageEditedDto> Handle(

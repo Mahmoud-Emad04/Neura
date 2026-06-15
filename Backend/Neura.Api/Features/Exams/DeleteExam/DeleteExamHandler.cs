@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Exams.DeleteExam;
 
-internal sealed class DeleteExamHandler(ApplicationDbContext context) 
+internal sealed class DeleteExamHandler(ApplicationDbContext context)
     : IRequestHandler<DeleteExamCommand, Result>
 {
     public async Task<Result> Handle(

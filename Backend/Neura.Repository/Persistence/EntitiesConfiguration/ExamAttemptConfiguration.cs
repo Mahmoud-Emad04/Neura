@@ -1,4 +1,4 @@
-﻿using Neura.Core.Entities;
+using Neura.Core.Entities;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
@@ -17,6 +17,18 @@ public class ExamAttemptConfiguration : IEntityTypeConfiguration<ExamAttempt>
 
         builder.Property(a => a.ScorePercentage)
                .HasPrecision(5, 2);
+
+        builder.Property(a => a.OriginalScore)
+               .HasPrecision(7, 2);
+
+        builder.Property(a => a.FinalScore)
+               .HasPrecision(7, 2);
+
+        builder.Property(a => a.ViolationReason)
+               .HasMaxLength(2000);
+
+        builder.Property(a => a.InstructorNotes)
+               .HasMaxLength(2000);
 
         // JSON columns for shuffle order storage
         builder.Property(a => a.QuestionOrder)

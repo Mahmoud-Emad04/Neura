@@ -1,8 +1,5 @@
 using Ganss.Xss;
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Exam;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -11,7 +8,7 @@ namespace Neura.Api.Features.Exams.UpdateExamSettings;
 
 internal sealed class UpdateExamSettingsHandler(
     ApplicationDbContext context,
-    HtmlSanitizer sanitizer) 
+    HtmlSanitizer sanitizer)
     : IRequestHandler<UpdateExamSettingsCommand, Result<ExamResponse>>
 {
     public async Task<Result<ExamResponse>> Handle(

@@ -1,13 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Contracts.common;
-using Neura.Core.Contracts.Enrollment;
-using Neura.Core.Enums;
-using System.Security.Claims;
-using Neura.Api.Extensions;
 using Neura.Api.Features.Enrollment.AddStudent;
 using Neura.Api.Features.Enrollment.Enroll;
 using Neura.Api.Features.Enrollment.GetCourseStudents;
@@ -17,6 +8,11 @@ using Neura.Api.Features.Enrollment.GetMyEnrolledCourses;
 using Neura.Api.Features.Enrollment.GetMyTeachingCourses;
 using Neura.Api.Features.Enrollment.RemoveStudent;
 using Neura.Api.Features.Enrollment.Unenroll;
+using Neura.Core.Authorization.Attributes;
+using Neura.Core.Contracts.common;
+using Neura.Core.Contracts.Enrollment;
+using Neura.Core.Enums;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 

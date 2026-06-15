@@ -1,12 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Payment;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Services;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
 

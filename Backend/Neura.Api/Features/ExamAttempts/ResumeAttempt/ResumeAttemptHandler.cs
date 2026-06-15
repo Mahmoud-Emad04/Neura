@@ -1,18 +1,15 @@
-using System.Text.Json;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.ExamAttempt;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Services;
 using Neura.Repository.Persistence;
+using System.Text.Json;
 
 namespace Neura.Api.Features.ExamAttempts.ResumeAttempt;
 
 internal sealed class ResumeAttemptHandler(
     ApplicationDbContext context,
-    IGradingService gradingService) 
+    IGradingService gradingService)
     : IRequestHandler<ResumeAttemptCommand, Result<StartAttemptResponse>>
 {
     public async Task<Result<StartAttemptResponse>> Handle(

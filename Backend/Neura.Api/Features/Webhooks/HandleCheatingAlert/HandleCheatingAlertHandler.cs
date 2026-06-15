@@ -1,10 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Webhook;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -96,28 +90,29 @@ internal sealed class HandleCheatingAlertHandler(
         // 7. Create violation record
         var violation = new ExamViolation
         {
-            ExamId = examId,
+            ExamId = exam.Id,
             StudentId = request.StudentId,
             ExamAttemptId = activeAttempt?.Id,
             Severity = request.Severity,
             Reason = request.Reason,
             DetectedAt = detectedAt,
-            FrameImagePath = frameImagePath
+            FrameImagePath = frameImagePath,
+            CreatedById = request.StudentId
         };
 
         context.ExamViolations.Add(violation);
 
         // 8. Auto-submit logic
-        if (activeAttempt is not null && ShouldAutoSubmit(exam, activeAttempt, request.Severity))
-        {
-            activeAttempt.Status = AttemptStatus.Submitted;
-            activeAttempt.SubmittedAt = DateTime.UtcNow;
-            violation.CausedAutoSubmit = true;
+        //if (activeAttempt is not null && ShouldAutoSubmit(exam, activeAttempt, request.Severity))
+        //{
+        //    activeAttempt.Status = AttemptStatus.Submitted;
+        //    activeAttempt.SubmittedAt = DateTime.UtcNow;
+        //    violation.CausedAutoSubmit = true;
 
-            logger.LogWarning(
-                "Auto-submitted attempt {AttemptId} for student {StudentId} due to {Severity} violation",
-                activeAttempt.Id, request.StudentId, request.Severity);
-        }
+        //    logger.LogWarning(
+        //        "Auto-submitted attempt {AttemptId} for student {StudentId} due to {Severity} violation",
+        //        activeAttempt.Id, request.StudentId, request.Severity);
+        //}
 
         await context.SaveChangesAsync(ct);
 
@@ -128,7 +123,7 @@ internal sealed class HandleCheatingAlertHandler(
         return Result.Success();
     }
 
-    private static bool ShouldAutoSubmit(Core.Entities.Exam exam, ExamAttempt attempt, string severity)
+    private static bool ShouldAutoSubmit(Exam exam, ExamAttempt attempt, string severity)
     {
         if (severity.Equals("Critical", StringComparison.OrdinalIgnoreCase))
             return true;

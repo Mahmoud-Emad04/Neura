@@ -1,14 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.CourseTeam;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Authorization;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.InviteTeamMember;
@@ -16,7 +11,7 @@ namespace Neura.Api.Features.CourseTeam.InviteTeamMember;
 internal sealed class InviteTeamMemberHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<InviteTeamMemberHandler> logger) 
+    ILogger<InviteTeamMemberHandler> logger)
     : IRequestHandler<InviteTeamMemberCommand, Result<CourseInvitationResponse>>
 {
     public async Task<Result<CourseInvitationResponse>> Handle(

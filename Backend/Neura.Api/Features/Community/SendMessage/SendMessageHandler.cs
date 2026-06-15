@@ -1,14 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Community;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Community.SendMessage;
 
-internal sealed class SendMessageHandler(ApplicationDbContext db) 
+internal sealed class SendMessageHandler(ApplicationDbContext db)
     : IRequestHandler<SendMessageCommand, Result<MessageDto>>
 {
     public async Task<Result<MessageDto>> Handle(
@@ -31,7 +28,7 @@ internal sealed class SendMessageHandler(ApplicationDbContext db)
             .Where(c => c.Id == request.ChannelId)
             .Select(c => new { c.Id, c.Type })
             .FirstOrDefaultAsync(ct);
-            
+
         if (channel == null)
             return Result.Failure<MessageDto>(new Error("NotFound", $"Channel {request.ChannelId} not found.", 404));
 
@@ -40,7 +37,7 @@ internal sealed class SendMessageHandler(ApplicationDbContext db)
 
         var message = Message.Create(
             request.ChannelId, request.UserId, request.Content, request.ReplyToMessageId);
-        
+
         db.Messages.Add(message);
         await db.SaveChangesAsync(ct);
 
@@ -48,9 +45,9 @@ internal sealed class SendMessageHandler(ApplicationDbContext db)
             .AsNoTracking()
             .Where(m => m.Id == message.Id)
             .Select(m => new MessageDto(
-                m.Id, m.ChannelId, m.SenderId, 
-                m.Sender.FirstName + " " + m.Sender.LastName, 
-                m.Sender.ImageUrl, m.Content, m.SentAt, 
+                m.Id, m.ChannelId, m.SenderId,
+                m.Sender.FirstName + " " + m.Sender.LastName,
+                m.Sender.ImageUrl, m.Content, m.SentAt,
                 m.EditedAt, m.IsDeleted, m.ReplyToMessageId, null))
             .FirstAsync(ct));
     }

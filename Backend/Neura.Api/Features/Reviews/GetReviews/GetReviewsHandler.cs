@@ -1,16 +1,14 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Review;
 using Neura.Core.Errors;
-using Neura.Services.Helpers;
 using Neura.Repository.Persistence;
+using Neura.Services.Helpers;
 
 namespace Neura.Api.Features.Reviews.GetReviews;
 
 internal sealed class GetReviewsHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetReviewsQuery, Result<PaginatedList<CourseFeedbackResponse>>>
 {
     public async Task<Result<PaginatedList<CourseFeedbackResponse>>> Handle(

@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.GetTagBySlug;
 
-internal sealed class GetTagBySlugHandler(ApplicationDbContext context) 
+internal sealed class GetTagBySlugHandler(ApplicationDbContext context)
     : IRequestHandler<GetTagBySlugQuery, Result<TagResponse>>
 {
     public async Task<Result<TagResponse>> Handle(

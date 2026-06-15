@@ -1,16 +1,13 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
-using Neura.Core.Errors;
 using Neura.Core.Contracts.Enrollment;
 using Neura.Core.Enums;
+using Neura.Core.Errors;
 using Neura.Repository.Persistence;
-using Neura.Services.Helpers;
 
 namespace Neura.Api.Features.Enrollment.GetCourseStudents;
 
-internal sealed class GetCourseStudentsHandler(ApplicationDbContext context) 
+internal sealed class GetCourseStudentsHandler(ApplicationDbContext context)
     : IRequestHandler<GetCourseStudentsQuery, Result<CourseStudentsListResponse>>
 {
     public async Task<Result<CourseStudentsListResponse>> Handle(

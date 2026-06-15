@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
@@ -12,7 +10,7 @@ namespace Neura.Api.Features.Announcements.UpdatePostCommentImage;
 internal sealed class UpdatePostCommentImageHandler(
     ApplicationDbContext context,
     IFileService fileService,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<UpdatePostCommentImageCommand, Result>
 {
     public async Task<Result> Handle(

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Routing;
-
 namespace Neura.Api.Infrastructure;
 
 public interface IEndpoint

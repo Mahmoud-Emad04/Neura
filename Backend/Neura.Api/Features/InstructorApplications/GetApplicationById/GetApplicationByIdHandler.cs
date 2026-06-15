@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Core.InstructorApplication;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.InstructorApplications.GetApplicationById;
 
-internal sealed class GetApplicationByIdHandler(ApplicationDbContext context) 
+internal sealed class GetApplicationByIdHandler(ApplicationDbContext context)
     : IRequestHandler<GetApplicationByIdQuery, Result<ApplicationResponse>>
 {
     public async Task<Result<ApplicationResponse>> Handle(

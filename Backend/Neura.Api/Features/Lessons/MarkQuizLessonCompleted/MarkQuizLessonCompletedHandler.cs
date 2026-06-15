@@ -1,9 +1,5 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Lessons;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 

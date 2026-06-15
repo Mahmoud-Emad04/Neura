@@ -1,24 +1,20 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Authorization;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.RemoveTeamMember;
 
 internal sealed class RemoveTeamMemberHandler(
     ApplicationDbContext context,
-    ILogger<RemoveTeamMemberHandler> logger) 
+    ILogger<RemoveTeamMemberHandler> logger)
     : IRequestHandler<RemoveTeamMemberCommand, Result>
 {
     public async Task<Result> Handle(
         RemoveTeamMemberCommand command, CancellationToken ct)
     {
-        if (command.UserId == command.RequesterId) 
+        if (command.UserId == command.RequesterId)
             return Result.Failure(CourseTeamErrors.CannotRemoveSelf);
 
         var requester = await context.CourseUsers

@@ -1,5 +1,4 @@
 using MediatR;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.ExamAttempt;
 
 namespace Neura.Api.Features.ExamAnalytics.GetStudentAttemptDetail;

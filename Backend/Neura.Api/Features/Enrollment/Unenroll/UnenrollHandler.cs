@@ -1,16 +1,13 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Errors;
 using Neura.Core.Enums;
+using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Enrollment.Unenroll;
 
 internal sealed class UnenrollHandler(
     ApplicationDbContext context,
-    ILogger<UnenrollHandler> logger) 
+    ILogger<UnenrollHandler> logger)
     : IRequestHandler<UnenrollCommand, Result>
 {
     public async Task<Result> Handle(

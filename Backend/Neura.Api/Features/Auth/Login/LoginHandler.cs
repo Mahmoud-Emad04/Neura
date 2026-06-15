@@ -1,11 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -17,7 +13,7 @@ internal sealed class LoginHandler(
     UserManager<ApplicationUser> userManager,
     IJwtProvider jwtProvider,
     IServiceHelpers helpers,
-    ILogger<LoginHandler> logger) 
+    ILogger<LoginHandler> logger)
     : IRequestHandler<LoginCommand, Result<AuthResponse>>
 {
     private const int RefreshTokenExpiryDays = 14;

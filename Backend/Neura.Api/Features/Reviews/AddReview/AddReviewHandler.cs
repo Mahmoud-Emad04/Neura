@@ -1,17 +1,13 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Review;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
-using Neura.Services.Helpers;
 using Neura.Repository.Persistence;
+using Neura.Services.Helpers;
 
 namespace Neura.Api.Features.Reviews.AddReview;
 
 internal sealed class AddReviewHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<AddReviewCommand, Result>
 {
     public async Task<Result> Handle(

@@ -1,7 +1,4 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Exam;
 using Neura.Core.Contracts.Question;
 using Neura.Core.Errors;
@@ -9,7 +6,7 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Exams.GetExamByLessonId;
 
-internal sealed class GetExamByLessonIdHandler(ApplicationDbContext context) 
+internal sealed class GetExamByLessonIdHandler(ApplicationDbContext context)
     : IRequestHandler<GetExamByLessonIdQuery, Result<ExamDetailResponse>>
 {
     public async Task<Result<ExamDetailResponse>> Handle(

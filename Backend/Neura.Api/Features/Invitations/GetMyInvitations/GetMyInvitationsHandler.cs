@@ -1,14 +1,12 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
+using Neura.Api.Features.CourseTeam;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
-using Neura.Api.Features.CourseTeam;
 
 namespace Neura.Api.Features.Invitations.GetMyInvitations;
 
-internal sealed class GetMyInvitationsHandler(ApplicationDbContext context) 
+internal sealed class GetMyInvitationsHandler(ApplicationDbContext context)
     : IRequestHandler<GetMyInvitationsQuery, Result<MyInvitationsResponse>>
 {
     public async Task<Result<MyInvitationsResponse>> Handle(

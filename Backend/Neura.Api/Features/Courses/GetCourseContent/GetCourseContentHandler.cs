@@ -1,7 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Contracts.Section;
 using Neura.Core.Enums;
@@ -13,7 +10,7 @@ namespace Neura.Api.Features.Courses.GetCourseContent;
 
 internal sealed class GetCourseContentHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetCourseContentQuery, Result<CourseResponse>>
 {
     public async Task<Result<CourseResponse>> Handle(

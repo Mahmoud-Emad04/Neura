@@ -8,7 +8,7 @@ namespace Neura.Api.Features.Community.DeleteMessage;
 
 internal sealed class DeleteMessageHandler(
     IChatService chatService,
-    IHubContext<CommunityHub, ICommunityHubClient> hubContext) 
+    IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : IRequestHandler<DeleteMessageCommand, MessageDeletedDto>
 {
     public async Task<MessageDeletedDto> Handle(

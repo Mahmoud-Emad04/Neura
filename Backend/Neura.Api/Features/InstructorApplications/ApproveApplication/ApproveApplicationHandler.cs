@@ -1,11 +1,6 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Core.InstructorApplication;
@@ -16,7 +11,7 @@ namespace Neura.Api.Features.InstructorApplications.ApproveApplication;
 internal sealed class ApproveApplicationHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<ApproveApplicationHandler> logger) 
+    ILogger<ApproveApplicationHandler> logger)
     : IRequestHandler<ApproveApplicationCommand, Result<ApplicationResponse>>
 {
     public async Task<Result<ApplicationResponse>> Handle(

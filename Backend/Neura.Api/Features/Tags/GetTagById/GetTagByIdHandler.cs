@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.GetTagById;
 
-internal sealed class GetTagByIdHandler(ApplicationDbContext context) 
+internal sealed class GetTagByIdHandler(ApplicationDbContext context)
     : IRequestHandler<GetTagByIdQuery, Result<TagResponse>>
 {
     public async Task<Result<TagResponse>> Handle(

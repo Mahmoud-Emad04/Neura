@@ -1,6 +1,4 @@
 using MediatR;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Course;
 
 namespace Neura.Api.Features.Courses.GetCourseFullContent;
 

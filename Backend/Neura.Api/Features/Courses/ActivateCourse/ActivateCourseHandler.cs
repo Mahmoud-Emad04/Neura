@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Courses;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -10,7 +8,7 @@ namespace Neura.Api.Features.Courses.ActivateCourse;
 
 internal sealed class ActivateCourseHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<ActivateCourseCommand, Result<CourseStatusUpdateResponse>>
 {
     public async Task<Result<CourseStatusUpdateResponse>> Handle(

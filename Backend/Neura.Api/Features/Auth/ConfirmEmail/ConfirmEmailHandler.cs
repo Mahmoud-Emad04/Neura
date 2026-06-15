@@ -1,12 +1,9 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -18,7 +15,7 @@ internal sealed class ConfirmEmailHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
     IJwtProvider jwtProvider,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<ConfirmEmailCommand, Result<AuthResponse>>
 {
     private const int RefreshTokenExpiryDays = 14;

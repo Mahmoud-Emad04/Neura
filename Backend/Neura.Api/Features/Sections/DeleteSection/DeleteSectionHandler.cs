@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Sections.DeleteSection;
 
 internal sealed class DeleteSectionHandler(
-    ApplicationDbContext context) 
+    ApplicationDbContext context)
     : IRequestHandler<DeleteSectionCommand, Result>
 {
     public async Task<Result> Handle(

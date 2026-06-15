@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Errors;
@@ -11,7 +9,7 @@ namespace Neura.Api.Features.Announcements.GetPostById;
 
 internal sealed class GetPostByIdHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetPostByIdQuery, Result<PostResponse>>
 {
     public async Task<Result<PostResponse>> Handle(

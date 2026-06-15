@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -8,7 +6,7 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.GetPendingInvitations;
 
-internal sealed class GetPendingInvitationsHandler(ApplicationDbContext context) 
+internal sealed class GetPendingInvitationsHandler(ApplicationDbContext context)
     : IRequestHandler<GetPendingInvitationsQuery, Result<List<CourseInvitationResponse>>>
 {
     public async Task<Result<List<CourseInvitationResponse>>> Handle(

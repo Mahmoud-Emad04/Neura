@@ -1,8 +1,5 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Files;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Services.Helpers;
@@ -12,7 +9,7 @@ namespace Neura.Api.Features.Auth.UpdateImage;
 internal sealed class UpdateImageHandler(
     UserManager<ApplicationUser> userManager,
     IFileService fileService,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<UpdateImageCommand, Result<string>>
 {
     public async Task<Result<string>> Handle(

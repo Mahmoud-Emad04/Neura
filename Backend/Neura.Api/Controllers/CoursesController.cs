@@ -18,7 +18,6 @@ using Neura.Api.Features.Courses.UpdateCourseDetails;
 using Neura.Api.Features.Courses.UpdateCourseImage;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.common;
-using Neura.Core.Contracts.Course;
 using Neura.Core.Contracts.Courses;
 using Neura.Core.Contracts.Files;
 using Neura.Core.Enums;

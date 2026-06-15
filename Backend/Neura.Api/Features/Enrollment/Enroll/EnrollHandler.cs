@@ -1,10 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Enrollment;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -16,7 +12,7 @@ internal sealed class EnrollHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
     ILogger<EnrollHandler> logger,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<EnrollCommand, Result<EnrollmentResponse>>
 {
     public async Task<Result<EnrollmentResponse>> Handle(

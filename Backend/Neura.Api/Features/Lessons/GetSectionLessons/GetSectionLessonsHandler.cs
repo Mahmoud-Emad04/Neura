@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -8,7 +6,7 @@ using Neura.Repository.Persistence;
 namespace Neura.Api.Features.Lessons.GetSectionLessons;
 
 internal sealed class GetSectionLessonsHandler(
-    ApplicationDbContext context) 
+    ApplicationDbContext context)
     : IRequestHandler<GetSectionLessonsQuery, Result<List<LessonWithPositionResponse>>>
 {
     public async Task<Result<List<LessonWithPositionResponse>>> Handle(

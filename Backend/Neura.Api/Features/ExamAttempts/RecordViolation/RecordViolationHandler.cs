@@ -1,18 +1,12 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.ExamAttempt;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Services;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.ExamAttempts.RecordViolation;
 
-internal sealed class RecordViolationHandler(
-    ApplicationDbContext context,
-    IGradingService gradingService) 
+internal sealed class RecordViolationHandler(ApplicationDbContext context)
     : IRequestHandler<RecordViolationCommand, Result<ViolationResponse>>
 {
     public async Task<Result<ViolationResponse>> Handle(
@@ -25,8 +19,6 @@ internal sealed class RecordViolationHandler(
         var attempt = await context.ExamAttempts
             .Include(a => a.Exam)
             .Include(a => a.Violations)
-            .Include(a => a.AttemptAnswers)
-                .ThenInclude(aa => aa.SelectedOptions)
             .FirstOrDefaultAsync(a => a.Id == attemptId, ct);
 
         if (attempt is null)
@@ -48,25 +40,18 @@ internal sealed class RecordViolationHandler(
         context.AttemptViolations.Add(violation);
 
         var totalViolations = attempt.Violations.Count + 1;
-        var autoSubmitted = false;
-
-        if (attempt.Exam.EnableTabSwitchDetection
+        var isCheating = attempt.Exam.EnableTabSwitchDetection
             && attempt.Exam.MaxViolationsBeforeAutoSubmit.HasValue
-            && totalViolations >= attempt.Exam.MaxViolationsBeforeAutoSubmit.Value)
-        {
-            await gradingService.GradeAttemptAsync(attempt, AttemptStatus.AutoSubmitted);
-            autoSubmitted = true;
-        }
-        else
-        {
-            await context.SaveChangesAsync(ct);
-        }
+            && totalViolations >= attempt.Exam.MaxViolationsBeforeAutoSubmit.Value;
+
+        await context.SaveChangesAsync(ct);
 
         var response = new ViolationResponse
         {
             TotalViolations = totalViolations,
             MaxViolationsBeforeAutoSubmit = attempt.Exam.MaxViolationsBeforeAutoSubmit,
-            AttemptAutoSubmitted = autoSubmitted
+            AttemptAutoSubmitted = false,
+            IsCheating = isCheating
         };
 
         return Result.Success(response);

@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.GetActiveTags;
 
-internal sealed class GetActiveTagsHandler(ApplicationDbContext context) 
+internal sealed class GetActiveTagsHandler(ApplicationDbContext context)
     : IRequestHandler<GetActiveTagsQuery, Result<IEnumerable<TagSummaryResponse>>>
 {
     public async Task<Result<IEnumerable<TagSummaryResponse>>> Handle(

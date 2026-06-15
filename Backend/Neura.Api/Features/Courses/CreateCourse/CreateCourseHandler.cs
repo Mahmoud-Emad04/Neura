@@ -1,18 +1,10 @@
-using Mapster;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Courses;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
-using Neura.Core.Services;
 
 namespace Neura.Api.Features.Courses.CreateCourse;
 
@@ -21,7 +13,7 @@ internal sealed class CreateCourseHandler(
     UserManager<ApplicationUser> userManager,
     IFileService fileService,
     IServiceHelpers helpers,
-    ILogger<CreateCourseHandler> logger) 
+    ILogger<CreateCourseHandler> logger)
     : IRequestHandler<CreateCourseCommand, Result<CourseMetadataResponse>>
 {
     public async Task<Result<CourseMetadataResponse>> Handle(
