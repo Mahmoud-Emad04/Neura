@@ -1,4 +1,4 @@
-﻿using Neura.Core.Abstractions;
+using Neura.Core.Abstractions;
 
 namespace Neura.Core.Errors;
 
@@ -78,5 +78,34 @@ public static class ExamAttemptErrors
     public static readonly Error NotAttemptOwner =
         new("Attempt.NotAttemptOwner",
             "You do not have permission to access this attempt.",
+            StatusCodes.Status403Forbidden);
+
+    // ══════════════════════════════════════════════════════════════
+    // Violation Workflow
+    // ══════════════════════════════════════════════════════════════
+
+    public static readonly Error AttemptNotGraded =
+        new("Attempt.NotGraded",
+            "Only graded attempts can be flagged for violation.",
+            StatusCodes.Status400BadRequest);
+
+    public static readonly Error AttemptNotFlagged =
+        new("Attempt.NotFlagged",
+            "Only violation-flagged attempts can be resolved.",
+            StatusCodes.Status400BadRequest);
+
+    public static readonly Error ViolationReasonRequired =
+        new("Attempt.ViolationReasonRequired",
+            "A reason for the violation is required.",
+            StatusCodes.Status400BadRequest);
+
+    public static readonly Error InstructorNotesRequired =
+        new("Attempt.InstructorNotesRequired",
+            "Instructor notes are required when resolving a violation.",
+            StatusCodes.Status400BadRequest);
+
+    public static readonly Error GradesNotPublished =
+        new("Attempt.GradesNotPublished",
+            "Grades are not yet available for this exam.",
             StatusCodes.Status403Forbidden);
 }

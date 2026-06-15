@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Analytics;
 using Neura.Core.Contracts.ExamAttempt;

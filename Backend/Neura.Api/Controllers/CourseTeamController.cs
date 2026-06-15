@@ -1,12 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Contracts.CourseTeam;
-using Neura.Core.Enums;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Api.Extensions;
 using Neura.Api.Features.CourseTeam.CancelInvitation;
 using Neura.Api.Features.CourseTeam.ChangeTeamRole;
 using Neura.Api.Features.CourseTeam.GetPendingInvitations;
@@ -17,6 +9,10 @@ using Neura.Api.Features.CourseTeam.InviteTeamMember;
 using Neura.Api.Features.CourseTeam.RemoveTeamMember;
 using Neura.Api.Features.CourseTeam.ResendInvitation;
 using Neura.Api.Features.CourseTeam.TransferOwnership;
+using Neura.Core.Authorization.Attributes;
+using Neura.Core.Contracts.CourseTeam;
+using Neura.Core.Enums;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 

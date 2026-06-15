@@ -3,7 +3,7 @@ using Neura.Core.Contracts.Community;
 
 namespace Neura.Api.Features.Community.ReorderChannels;
 
-internal sealed class ReorderChannelsHandler(IChatService chatService) 
+internal sealed class ReorderChannelsHandler(IChatService chatService)
     : IRequestHandler<ReorderChannelsCommand, IReadOnlyList<ChannelDto>>
 {
     public async Task<IReadOnlyList<ChannelDto>> Handle(

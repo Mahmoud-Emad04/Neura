@@ -1,8 +1,5 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Announcement;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
@@ -13,7 +10,7 @@ namespace Neura.Api.Features.Announcements.AddPostComment;
 internal sealed class AddPostCommentHandler(
     ApplicationDbContext context,
     IFileService fileService,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<AddPostCommentCommand, Result<PostCommentResponse>>
 {
     public async Task<Result<PostCommentResponse>> Handle(

@@ -1,18 +1,14 @@
-using System.Text.Json;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Services;
 using Neura.Repository.Persistence;
+using System.Text.Json;
 
 namespace Neura.Api.Features.ExamAttempts.SaveAnswer;
 
 internal sealed class SaveAnswerHandler(
     ApplicationDbContext context,
-    IGradingService gradingService) 
+    IGradingService gradingService)
     : IRequestHandler<SaveAnswerCommand, Result>
 {
     public async Task<Result> Handle(

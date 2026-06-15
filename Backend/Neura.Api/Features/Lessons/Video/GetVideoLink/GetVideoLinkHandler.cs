@@ -1,10 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Lessons;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
@@ -12,7 +9,7 @@ namespace Neura.Api.Features.Lessons.Video.GetVideoLink;
 
 internal sealed class GetVideoLinkHandler(
     ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager) 
+    UserManager<ApplicationUser> userManager)
     : IRequestHandler<GetVideoLinkQuery, Result<VideoLinkResponse>>
 {
     public async Task<Result<VideoLinkResponse>> Handle(
@@ -65,7 +62,7 @@ internal sealed class GetVideoLinkHandler(
             return true;
         if (user is not null && await userManager.IsInRoleAsync(user, DefaultRoles.Admin))
             return true;
-            
+
         var lesson = await context.Lessons
             .AsNoTracking()
             .Include(l => l.Section).ThenInclude(s => s.Course)

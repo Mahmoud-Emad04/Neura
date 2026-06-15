@@ -1,8 +1,5 @@
 using Ganss.Xss;
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -11,7 +8,7 @@ namespace Neura.Api.Features.Lessons.UpdateArticleContent;
 
 internal sealed class UpdateArticleContentHandler(
     ApplicationDbContext context,
-    HtmlSanitizer sanitizer) 
+    HtmlSanitizer sanitizer)
     : IRequestHandler<UpdateArticleContentCommand, Result>
 {
     public async Task<Result> Handle(

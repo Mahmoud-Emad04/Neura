@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.BulkDeleteTags;
 
-internal sealed class BulkDeleteTagsHandler(ApplicationDbContext context) 
+internal sealed class BulkDeleteTagsHandler(ApplicationDbContext context)
     : IRequestHandler<BulkDeleteTagsCommand, Result>
 {
     public async Task<Result> Handle(

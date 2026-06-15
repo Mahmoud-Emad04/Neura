@@ -1,4 +1,4 @@
-﻿using Neura.Core.Enums;
+using Neura.Core.Enums;
 
 namespace Neura.Core.Contracts.ExamAttempt;
 
@@ -9,7 +9,7 @@ public class AttemptResultResponse
     public decimal ScorePercentage { get; set; }
     public decimal TotalPoints { get; set; }
     public decimal PassingScorePercentage { get; set; }
-    public bool Passed { get; set; }
+    public bool? Passed { get; set; }
     public string Status { get; set; } = string.Empty;
     public DateTime StartedAt { get; set; }
     public DateTime SubmittedAt { get; set; }
@@ -18,6 +18,13 @@ public class AttemptResultResponse
     public int WrongAnswers { get; set; }
     public int Unanswered { get; set; }
     public int ViolationCount { get; set; }
+
+    // ── Grade Publishing & Violation Workflow ──
+    public bool AreGradesPublished { get; set; }
+    public decimal? OriginalScore { get; set; }
+    public decimal? FinalScore { get; set; }
+    public string? ViolationReason { get; set; }
+    public string? InstructorNotes { get; set; }
 
     public List<QuestionResultResponse> Questions { get; set; } = new();
 }

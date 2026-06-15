@@ -1,15 +1,13 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Neura.Core.Abstractions;
 using Neura.Core.Authentication;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 
 namespace Neura.Api.Features.Auth.RevokeToken;
 
 internal sealed class RevokeTokenHandler(
     UserManager<ApplicationUser> userManager,
-    IJwtProvider jwtProvider) 
+    IJwtProvider jwtProvider)
     : IRequestHandler<RevokeTokenCommand, Result>
 {
     public async Task<Result> Handle(

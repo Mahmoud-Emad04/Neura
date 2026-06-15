@@ -1,4 +1,4 @@
-﻿namespace Neura.Core.Entities;
+namespace Neura.Core.Entities;
 //TODO ADD : AuditableEntity
 public class Exam : AuditableEntity
 {
@@ -22,8 +22,29 @@ public class Exam : AuditableEntity
     public bool ShowCorrectAnswersAfterSubmit { get; set; } = true;
     public bool IsPublished { get; set; }
 
+    // ── Grade Visibility ──
+    public bool AreGradesPublished { get; private set; }
+
     // Navigation
     public Lesson Lesson { get; set; } = null!;
     public ICollection<Question> Questions { get; set; } = new List<Question>();
     public ICollection<ExamAttempt> Attempts { get; set; } = new List<ExamAttempt>();
+
+    // ── DDD Behavior ──
+
+    public void PublishGrades()
+    {
+        if (AreGradesPublished)
+            throw new InvalidOperationException("Grades are already published.");
+
+        AreGradesPublished = true;
+    }
+
+    public void HideGrades()
+    {
+        if (!AreGradesPublished)
+            throw new InvalidOperationException("Grades are already hidden.");
+
+        AreGradesPublished = false;
+    }
 }

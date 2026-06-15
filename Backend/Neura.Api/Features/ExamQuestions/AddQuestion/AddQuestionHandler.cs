@@ -1,11 +1,7 @@
 using Ganss.Xss;
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Question;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
@@ -13,7 +9,7 @@ namespace Neura.Api.Features.ExamQuestions.AddQuestion;
 
 internal sealed class AddQuestionHandler(
     ApplicationDbContext context,
-    HtmlSanitizer sanitizer) 
+    HtmlSanitizer sanitizer)
     : IRequestHandler<AddQuestionCommand, Result<QuestionResponse>>
 {
     public async Task<Result<QuestionResponse>> Handle(

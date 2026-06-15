@@ -1,5 +1,4 @@
 using Neura.Core.Contracts.CourseTeam;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 
 namespace Neura.Api.Features.CourseTeam;

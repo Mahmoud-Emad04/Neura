@@ -103,16 +103,16 @@ internal sealed class HandleCheatingAlertHandler(
         context.ExamViolations.Add(violation);
 
         // 8. Auto-submit logic
-        if (activeAttempt is not null && ShouldAutoSubmit(exam, activeAttempt, request.Severity))
-        {
-            activeAttempt.Status = AttemptStatus.Submitted;
-            activeAttempt.SubmittedAt = DateTime.UtcNow;
-            violation.CausedAutoSubmit = true;
+        //if (activeAttempt is not null && ShouldAutoSubmit(exam, activeAttempt, request.Severity))
+        //{
+        //    activeAttempt.Status = AttemptStatus.Submitted;
+        //    activeAttempt.SubmittedAt = DateTime.UtcNow;
+        //    violation.CausedAutoSubmit = true;
 
-            logger.LogWarning(
-                "Auto-submitted attempt {AttemptId} for student {StudentId} due to {Severity} violation",
-                activeAttempt.Id, request.StudentId, request.Severity);
-        }
+        //    logger.LogWarning(
+        //        "Auto-submitted attempt {AttemptId} for student {StudentId} due to {Severity} violation",
+        //        activeAttempt.Id, request.StudentId, request.Severity);
+        //}
 
         await context.SaveChangesAsync(ct);
 

@@ -1,15 +1,13 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
+using Neura.Api.Features.CourseTeam;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
-using Neura.Api.Features.CourseTeam;
 
 namespace Neura.Api.Features.Invitations.GetInvitationByToken;
 
-internal sealed class GetInvitationByTokenHandler(ApplicationDbContext context) 
+internal sealed class GetInvitationByTokenHandler(ApplicationDbContext context)
     : IRequestHandler<GetInvitationByTokenQuery, Result<InvitationDetailsResponse>>
 {
     public async Task<Result<InvitationDetailsResponse>> Handle(

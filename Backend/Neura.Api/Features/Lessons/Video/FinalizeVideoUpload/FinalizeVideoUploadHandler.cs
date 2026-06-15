@@ -1,12 +1,7 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Lessons;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -16,7 +11,7 @@ namespace Neura.Api.Features.Lessons.Video.FinalizeVideoUpload;
 internal sealed class FinalizeVideoUploadHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<FinalizeVideoUploadHandler> logger) 
+    ILogger<FinalizeVideoUploadHandler> logger)
     : IRequestHandler<FinalizeVideoUploadCommand, Result<FinalizeVideoUploadResponse>>
 {
     public async Task<Result<FinalizeVideoUploadResponse>> Handle(
@@ -77,7 +72,7 @@ internal sealed class FinalizeVideoUploadHandler(
             return true;
         if (user is not null && await userManager.IsInRoleAsync(user, DefaultRoles.Admin))
             return true;
-            
+
         var lesson = await context.Lessons
             .AsNoTracking()
             .Include(l => l.Section).ThenInclude(s => s.Course)

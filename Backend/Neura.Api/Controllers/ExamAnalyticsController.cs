@@ -1,19 +1,19 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Authorization.Attributes;
-using Neura.Core.Contracts.Analytics;
-using Neura.Core.Contracts.ExamAttempt;
 using Neura.Api.Extensions;
 using Neura.Api.Features.ExamAnalytics.GetExamAnalytics;
+using Neura.Api.Features.ExamAnalytics.GetExamViolationById;
+using Neura.Api.Features.ExamAnalytics.GetExamViolations;
 using Neura.Api.Features.ExamAnalytics.GetScoreDistribution;
 using Neura.Api.Features.ExamAnalytics.GetStudentAttemptDetail;
 using Neura.Api.Features.ExamAnalytics.GetStudentAttempts;
 using Neura.Api.Features.ExamAnalytics.GetStudentExamAnalytics;
-using Neura.Api.Features.ExamAnalytics.GetStudentScoreDistribution;
 using Neura.Api.Features.ExamAnalytics.GetStudentOwnAttempts;
+using Neura.Api.Features.ExamAnalytics.GetStudentScoreDistribution;
+using Neura.Api.Features.ExamAttempts.FlagAttemptViolation;
+using Neura.Api.Features.ExamAttempts.ResolveViolation;
+using Neura.Core.Authorization.Attributes;
+using Neura.Core.Contracts.Analytics;
+using Neura.Core.Contracts.ExamAttempt;
 
 namespace Neura.Api.Controllers;
 
@@ -156,6 +156,91 @@ public class ExamAnalyticsController(ISender sender) : ControllerBase
     {
         var userId = User.GetUserId()!;
         var query = new GetStudentOwnAttemptsQuery(examId, userId, page, pageSize, sortBy, descending);
+        var result = await sender.Send(query, ct);
+
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    // ==========================================
+    //  PUT /api/exams/{examId}/analytics/attempts/{attemptId}/flag-violation
+    //  Instructor flags an attempt for cheating/violation
+    // ==========================================
+    [HttpPut("attempts/{attemptId:int}/flag-violation")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> FlagViolation(
+        [FromRoute] int examId,
+        [FromRoute] int attemptId,
+        [FromBody] FlagAttemptViolationRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var command = new FlagAttemptViolationCommand(attemptId, request.Reason, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    // ==========================================
+    //  PUT /api/exams/{examId}/analytics/attempts/{attemptId}/resolve-violation
+    //  Instructor resolves a violation and overrides the grade
+    // ==========================================
+    [HttpPut("attempts/{attemptId:int}/resolve-violation")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResolveViolation(
+        [FromRoute] int examId,
+        [FromRoute] int attemptId,
+        [FromBody] ResolveViolationRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var command = new ResolveViolationCommand(attemptId, request.NewScore, request.Notes, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
+
+    // ==========================================
+    //  GET /api/exams/{examId}/analytics/violations
+    //  Course owner retrieves all violations for an exam
+    // ==========================================
+    [HttpGet("violations")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
+    [ProducesResponseType(typeof(ExamViolationsListResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetViolations([FromRoute] int examId, CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var query = new GetExamViolationsQuery(examId, userId);
+        var result = await sender.Send(query, ct);
+
+        return result.IsSuccess ? Ok(result.Value) : result.ToProblem();
+    }
+
+    // ==========================================
+    //  GET /api/exams/{examId}/analytics/violations/{violationId}
+    //  Course owner retrieves a specific violation by ID
+    // ==========================================
+    [HttpGet("violations/{violationId:int}")]
+    [HasExamPermission(Core.Enums.CoursePermission.EditContent)]
+    [ProducesResponseType(typeof(ExamViolationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetViolationById(
+        [FromRoute] int examId,
+        [FromRoute] int violationId,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var query = new GetExamViolationByIdQuery(examId, violationId, userId);
         var result = await sender.Send(query, ct);
 
         return result.IsSuccess ? Ok(result.Value) : result.ToProblem();

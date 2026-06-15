@@ -1,9 +1,5 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -13,7 +9,7 @@ namespace Neura.Api.Features.Invitations.RejectInvitation;
 internal sealed class RejectInvitationHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<RejectInvitationHandler> logger) 
+    ILogger<RejectInvitationHandler> logger)
     : IRequestHandler<RejectInvitationCommand, Result>
 {
     public async Task<Result> Handle(

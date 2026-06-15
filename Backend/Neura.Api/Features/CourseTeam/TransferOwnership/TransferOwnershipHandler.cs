@@ -1,7 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -10,13 +7,13 @@ namespace Neura.Api.Features.CourseTeam.TransferOwnership;
 
 internal sealed class TransferOwnershipHandler(
     ApplicationDbContext context,
-    ILogger<TransferOwnershipHandler> logger) 
+    ILogger<TransferOwnershipHandler> logger)
     : IRequestHandler<TransferOwnershipCommand, Result>
 {
     public async Task<Result> Handle(
         TransferOwnershipCommand command, CancellationToken ct)
     {
-        if (command.Request.NewOwnerId == command.RequesterId) 
+        if (command.Request.NewOwnerId == command.RequesterId)
             return Result.Failure(CourseTeamErrors.TransferToSelf);
 
         var currentOwner = await context.CourseUsers

@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
@@ -9,7 +7,7 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.GetTeamOverview;
 
-internal sealed class GetTeamOverviewHandler(ApplicationDbContext context) 
+internal sealed class GetTeamOverviewHandler(ApplicationDbContext context)
     : IRequestHandler<GetTeamOverviewQuery, Result<TeamOverviewResponse>>
 {
     public async Task<Result<TeamOverviewResponse>> Handle(

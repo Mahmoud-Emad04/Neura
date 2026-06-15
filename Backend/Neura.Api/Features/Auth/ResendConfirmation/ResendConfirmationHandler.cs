@@ -2,9 +2,6 @@ using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using System.Text;
 
@@ -12,7 +9,7 @@ namespace Neura.Api.Features.Auth.ResendConfirmation;
 
 internal sealed class ResendConfirmationHandler(
     UserManager<ApplicationUser> userManager,
-    ILogger<ResendConfirmationHandler> logger) 
+    ILogger<ResendConfirmationHandler> logger)
     : IRequestHandler<ResendConfirmationCommand, Result>
 {
     public async Task<Result> Handle(

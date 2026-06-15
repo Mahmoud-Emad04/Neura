@@ -1,16 +1,13 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using System.Text;
 
 namespace Neura.Api.Features.Auth.ResetPassword;
 
 internal sealed class ResetPasswordHandler(
-    UserManager<ApplicationUser> userManager) 
+    UserManager<ApplicationUser> userManager)
     : IRequestHandler<ResetPasswordCommand, Result>
 {
     public async Task<Result> Handle(

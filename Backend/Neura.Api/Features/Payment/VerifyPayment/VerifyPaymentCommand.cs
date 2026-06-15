@@ -1,5 +1,4 @@
 using MediatR;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Enrollment;
 
 namespace Neura.Api.Features.Payment.VerifyPayment;

@@ -1,7 +1,4 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Lessons;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -10,7 +7,7 @@ using Neura.Repository.Persistence;
 namespace Neura.Api.Features.Lessons.GetArticleContent;
 
 internal sealed class GetArticleContentHandler(
-    ApplicationDbContext context) 
+    ApplicationDbContext context)
     : IRequestHandler<GetArticleContentQuery, Result<ArticleResponse>>
 {
     public async Task<Result<ArticleResponse>> Handle(

@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.GetTags;
 
-internal sealed class GetTagsHandler(ApplicationDbContext context) 
+internal sealed class GetTagsHandler(ApplicationDbContext context)
     : IRequestHandler<GetTagsQuery, Result<TagListResponse>>
 {
     public async Task<Result<TagListResponse>> Handle(
@@ -15,7 +13,7 @@ internal sealed class GetTagsHandler(ApplicationDbContext context)
         var filters = query.Filters;
         var queryable = context.Tags.AsNoTracking();
 
-        if (filters.IsActive.HasValue) 
+        if (filters.IsActive.HasValue)
             queryable = queryable.Where(t => t.IsActive == filters.IsActive.Value);
 
         if (!string.IsNullOrWhiteSpace(filters.SearchTerm))

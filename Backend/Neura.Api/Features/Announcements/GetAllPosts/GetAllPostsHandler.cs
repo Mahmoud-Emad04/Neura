@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Announcement;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -9,7 +7,7 @@ namespace Neura.Api.Features.Announcements.GetAllPosts;
 
 internal sealed class GetAllPostsHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetAllPostsQuery, Result<PaginatedList<PostResponse>>>
 {
     public async Task<Result<PaginatedList<PostResponse>>> Handle(

@@ -1,11 +1,8 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using Neura.Api.Extensions;
 using Neura.Api.Features.CourseAnalytics.GetEnrollmentAnalytics;
-using Neura.Api.Features.CourseAnalytics.GetProgressAnalytics;
 using Neura.Api.Features.CourseAnalytics.GetExamPerformanceAnalytics;
+using Neura.Api.Features.CourseAnalytics.GetProgressAnalytics;
 using Neura.Core.Authorization.Attributes;
 using Neura.Core.Contracts.Analytics;
 using Neura.Core.Enums;

@@ -1,12 +1,9 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 
 namespace Neura.Api.Features.Account.ChangePassword;
 
-internal sealed class ChangePasswordHandler(UserManager<ApplicationUser> userManager) 
+internal sealed class ChangePasswordHandler(UserManager<ApplicationUser> userManager)
     : IRequestHandler<ChangePasswordCommand, Result>
 {
     public async Task<Result> Handle(

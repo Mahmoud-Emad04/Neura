@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Analytics;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -25,7 +23,7 @@ internal sealed class GetStudentOwnAttemptsHandler(ApplicationDbContext context)
             return Result.Failure<ExamStudentAttemptsResponse>(AnalyticsErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        
+
         var isEnrolled = await context.CourseUsers
             .AnyAsync(cu => cu.CourseId == courseId && cu.UserId == query.UserId, ct);
 
@@ -78,23 +76,32 @@ internal sealed class GetStudentOwnAttemptsHandler(ApplicationDbContext context)
             attemptTotalPoints[attempt.Id] = points;
         }
 
-        var attemptResponses = attempts.Select(a => new StudentAttemptSummaryResponse
+        var attemptResponses = attempts.Select(a =>
         {
-            AttemptId = a.Id,
-            UserId = a.UserId,
-            StudentName = $"{a.User.FirstName} {a.User.LastName}".Trim(),
-            StudentEmail = a.User.Email,
-            Score = a.Score ?? 0,
-            ScorePercentage = a.ScorePercentage ?? 0,
-            TotalPoints = attemptTotalPoints.GetValueOrDefault(a.Id),
-            Passed = a.Passed ?? false,
-            Status = a.Status.ToString(),
-            StartedAt = a.StartedAt,
-            SubmittedAt = a.SubmittedAt,
-            DurationInSeconds = a.SubmittedAt.HasValue
-                ? (int)(a.SubmittedAt.Value - a.StartedAt).TotalSeconds
-                : null,
-            ViolationCount = a.Violations.Count
+            // ── Security: Hide grades from students ──
+            // Resolved attempts always show the overridden score.
+            var shouldHideGrades = a.Status != AttemptStatus.Resolved
+                && (!exam.AreGradesPublished
+                    || a.Status == AttemptStatus.ViolationFlagged);
+
+            return new StudentAttemptSummaryResponse
+            {
+                AttemptId = a.Id,
+                UserId = a.UserId,
+                StudentName = $"{a.User.FirstName} {a.User.LastName}".Trim(),
+                StudentEmail = a.User.Email,
+                Score = shouldHideGrades ? 0 : (a.Score ?? 0),
+                ScorePercentage = shouldHideGrades ? 0 : (a.ScorePercentage ?? 0),
+                TotalPoints = attemptTotalPoints.GetValueOrDefault(a.Id),
+                Passed = shouldHideGrades ? false : (a.Passed ?? false),
+                Status = a.Status.ToString(),
+                StartedAt = a.StartedAt,
+                SubmittedAt = a.SubmittedAt,
+                DurationInSeconds = a.SubmittedAt.HasValue
+                    ? (int)(a.SubmittedAt.Value - a.StartedAt).TotalSeconds
+                    : null,
+                ViolationCount = a.Violations.Count
+            };
         }).ToList();
 
         return Result.Success(new ExamStudentAttemptsResponse

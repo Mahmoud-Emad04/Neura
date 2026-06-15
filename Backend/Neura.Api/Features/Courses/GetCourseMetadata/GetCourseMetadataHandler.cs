@@ -1,10 +1,5 @@
-using Mapster;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Courses;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -15,7 +10,7 @@ namespace Neura.Api.Features.Courses.GetCourseMetadata;
 internal sealed class GetCourseMetadataHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetCourseMetadataQuery, Result<CourseMetadataResponse>>
 {
     public async Task<Result<CourseMetadataResponse>> Handle(

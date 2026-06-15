@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Analytics;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;

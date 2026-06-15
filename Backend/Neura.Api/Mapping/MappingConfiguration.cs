@@ -1,4 +1,4 @@
-﻿using HashidsNet;
+using HashidsNet;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Contracts.Exam;
 using Neura.Core.Contracts.Instructor;
@@ -90,6 +90,7 @@ public class MappingConfiguration : IRegister
         config.NewConfig<CreateExamRequest, Exam>()
             .Ignore(dest => dest.Id)
             .Ignore(dest => dest.IsPublished)
+            .Ignore(dest => dest.AreGradesPublished)
             .Ignore(dest => dest.ShowCorrectAnswersAfterSubmit)
             .Ignore(dest => dest.CreatedOn)
             .Ignore(dest => dest.UpdatedOn)

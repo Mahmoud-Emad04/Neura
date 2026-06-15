@@ -1,4 +1,3 @@
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.InstructorApplication;
 

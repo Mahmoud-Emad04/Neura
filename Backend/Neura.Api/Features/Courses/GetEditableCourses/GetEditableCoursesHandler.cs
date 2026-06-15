@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Courses;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
@@ -10,7 +8,7 @@ namespace Neura.Api.Features.Courses.GetEditableCourses;
 
 internal sealed class GetEditableCoursesHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetEditableCoursesQuery, Result<EditableCoursesListSummaryResponse>>
 {
     public async Task<Result<EditableCoursesListSummaryResponse>> Handle(
@@ -48,7 +46,7 @@ internal sealed class GetEditableCoursesHandler(
             _ => query
         };
 
-        if (filters.Status.HasValue) 
+        if (filters.Status.HasValue)
             query = query.Where(x => x.Course.Status == filters.Status.Value);
 
         if (!string.IsNullOrWhiteSpace(filters.SearchTerm))

@@ -1,11 +1,8 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Neura.Api.Features.Lessons.MarkQuizLessonCompleted;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.ExamAttempt;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Services;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.ExamAttempts.SubmitAttempt;
@@ -13,7 +10,7 @@ namespace Neura.Api.Features.ExamAttempts.SubmitAttempt;
 internal sealed class SubmitAttemptHandler(
     ApplicationDbContext context,
     IGradingService gradingService,
-    ISender sender) 
+    ISender sender)
     : IRequestHandler<SubmitAttemptCommand, Result<SubmitAttemptResponse>>
 {
     public async Task<Result<SubmitAttemptResponse>> Handle(

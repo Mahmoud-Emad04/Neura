@@ -7,7 +7,7 @@ namespace Neura.Api.Features.Community.DeleteChannel;
 
 internal sealed class DeleteChannelHandler(
     IChatService chatService,
-    IHubContext<CommunityHub, ICommunityHubClient> hubContext) 
+    IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : IRequestHandler<DeleteChannelCommand>
 {
     public async Task Handle(

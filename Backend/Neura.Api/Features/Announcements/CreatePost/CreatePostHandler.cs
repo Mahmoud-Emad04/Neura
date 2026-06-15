@@ -1,27 +1,23 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
+using Neura.Api.Features.Announcements.GetPostById;
 using Neura.Core.Contracts.Announcement;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
-using Neura.Services.Helpers;
-using Neura.Api.Features.Announcements.GetPostById;
 
 namespace Neura.Api.Features.Announcements.CreatePost;
 
 internal sealed class CreatePostHandler(
     ApplicationDbContext context,
     ISender sender,
-    IFileService fileService) 
+    IFileService fileService)
     : IRequestHandler<CreatePostCommand, Result<PostResponse>>
 {
     public async Task<Result<PostResponse>> Handle(
         CreatePostCommand command, CancellationToken ct)
     {
         var request = command.Request;
-        
+
         if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.Content))
             return Result.Failure<PostResponse>(AnnouncementErrors.PostInvalidData);
 

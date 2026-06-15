@@ -15,7 +15,7 @@
         <PackageReference Include="Hangfire.Dashboard.Basic.Authentication" Version="8.0.0" />
         <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
         <PackageReference Include="MediatR" Version="14.1.0" />
-        <PackageReference Include="MessagePack" Version="2.5.187" />
+        <PackageReference Include="MessagePack" Version="2.5.302" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.2" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.2" />

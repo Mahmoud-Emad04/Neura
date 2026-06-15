@@ -34,9 +34,9 @@ public class SectionsController(ISender sender) : ControllerBase
     {
         var query = new GetSectionsByCourseQuery(courseId);
         var result = await sender.Send(query, ct);
-        
-        return result.IsSuccess 
-            ? Ok(result.Value) 
+
+        return result.IsSuccess
+            ? Ok(result.Value)
             : result.ToProblem();
     }
 
@@ -52,14 +52,14 @@ public class SectionsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HasSectionPermission(CoursePermission.ViewContent)]
     public async Task<IActionResult> GetById(
-        [FromRoute] int sectionId, 
+        [FromRoute] int sectionId,
         CancellationToken ct)
     {
         var query = new GetSectionByIdQuery(sectionId);
         var result = await sender.Send(query, ct);
-        
-        return result.IsSuccess 
-            ? Ok(result.Value) 
+
+        return result.IsSuccess
+            ? Ok(result.Value)
             : result.ToProblem();
     }
 
@@ -77,7 +77,7 @@ public class SectionsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HasCoursePermission(CoursePermission.EditContent)]
     public async Task<IActionResult> Create(
-        [FromRoute] string courseId, 
+        [FromRoute] string courseId,
         [FromBody] SectionRequest request,
         CancellationToken ct)
     {
@@ -105,16 +105,16 @@ public class SectionsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HasSectionPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> Update(
-        [FromRoute] int sectionId, 
+        [FromRoute] int sectionId,
         [FromBody] SectionUpdateRequest request,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
         var command = new UpdateSectionCommand(sectionId, request, userId);
         var result = await sender.Send(command, ct);
-        
-        return result.IsSuccess 
-            ? NoContent() 
+
+        return result.IsSuccess
+            ? NoContent()
             : result.ToProblem();
     }
 
@@ -130,15 +130,15 @@ public class SectionsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status404NotFound)]
     [HasSectionPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> ToggleStatus(
-        [FromRoute] int sectionId, 
+        [FromRoute] int sectionId,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
         var command = new ToggleSectionStatusCommand(sectionId, userId);
         var result = await sender.Send(command, ct);
-        
-        return result.IsSuccess 
-            ? NoContent() 
+
+        return result.IsSuccess
+            ? NoContent()
             : result.ToProblem();
     }
 
@@ -155,15 +155,15 @@ public class SectionsController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(Error), StatusCodes.Status409Conflict)]
     [HasSectionPermission(CoursePermission.EditContent)]
     public async Task<IActionResult> Delete(
-        [FromRoute] int sectionId, 
+        [FromRoute] int sectionId,
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
         var command = new DeleteSectionCommand(sectionId, userId);
         var result = await sender.Send(command, ct);
-        
-        return result.IsSuccess 
-            ? NoContent() 
+
+        return result.IsSuccess
+            ? NoContent()
             : result.ToProblem();
     }
 }

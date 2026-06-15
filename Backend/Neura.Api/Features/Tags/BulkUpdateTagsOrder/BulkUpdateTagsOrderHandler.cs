@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.BulkUpdateTagsOrder;
 
-internal sealed class BulkUpdateTagsOrderHandler(ApplicationDbContext context) 
+internal sealed class BulkUpdateTagsOrderHandler(ApplicationDbContext context)
     : IRequestHandler<BulkUpdateTagsOrderCommand, Result>
 {
     public async Task<Result> Handle(

@@ -8,7 +8,7 @@ namespace Neura.Api.Features.Community.CreateChannel;
 
 internal sealed class CreateChannelHandler(
     IChatService chatService,
-    IHubContext<CommunityHub, ICommunityHubClient> hubContext) 
+    IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : IRequestHandler<CreateChannelCommand, ChannelDto>
 {
     public async Task<ChannelDto> Handle(

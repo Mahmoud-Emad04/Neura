@@ -1,8 +1,3 @@
-using FluentValidation;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-
 namespace Neura.Api.Infrastructure;
 
 public class ValidationFilter : IEndpointFilter
@@ -16,7 +11,7 @@ public class ValidationFilter : IEndpointFilter
             if (argument is null) continue;
 
             var argumentType = argument.GetType();
-            
+
             // Skip primitive types, strings, and standard value types
             if (argumentType.IsPrimitive || argumentType == typeof(string) || argumentType.IsValueType)
                 continue;
@@ -35,7 +30,7 @@ public class ValidationFilter : IEndpointFilter
                 var validationResult = await validator.ValidateAsync(validationContext, context.HttpContext.RequestAborted);
                 if (!validationResult.IsValid)
                 {
-                    logger?.LogWarning("Validation failed for {ArgumentType}: {Errors}", 
+                    logger?.LogWarning("Validation failed for {ArgumentType}: {Errors}",
                         argumentType.Name, string.Join(", ", validationResult.Errors.Select(e => e.ErrorMessage)));
 
                     var errors = validationResult.Errors

@@ -1,7 +1,5 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Neura.Api.Features.Exams.PublishExam;
-using Neura.Core.Abstractions;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -10,7 +8,7 @@ namespace Neura.Api.Features.Lessons.UpdateLessonPrivacy;
 
 internal sealed class UpdateLessonPrivacyHandler(
     ApplicationDbContext context,
-    ISender sender) 
+    ISender sender)
     : IRequestHandler<UpdateLessonPrivacyCommand, Result>
 {
     public async Task<Result> Handle(
@@ -37,7 +35,7 @@ internal sealed class UpdateLessonPrivacyHandler(
         lesson.IsPublished = !request.IsVideoPrivate;
         lesson.IsPreview = request.IsPreview;
 
-        if (lesson.Type == LessonType.Video) 
+        if (lesson.Type == LessonType.Video)
             lesson.IsVideoPrivate = request.IsVideoPrivate;
 
         await context.SaveChangesAsync(ct);

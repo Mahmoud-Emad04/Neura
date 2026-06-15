@@ -1,10 +1,6 @@
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -14,7 +10,7 @@ namespace Neura.Api.Features.Lessons.DeleteLesson;
 internal sealed class DeleteLessonHandler(
     ApplicationDbContext context,
     Cloudinary cloudinary,
-    ILogger<DeleteLessonHandler> logger) 
+    ILogger<DeleteLessonHandler> logger)
     : IRequestHandler<DeleteLessonCommand, Result>
 {
     public async Task<Result> Handle(
@@ -42,7 +38,7 @@ internal sealed class DeleteLessonHandler(
         {
             if (string.IsNullOrWhiteSpace(lesson.CloudinaryPublicId))
                 return Result.Success();
-                
+
             try
             {
                 var deleteParams = new DeletionParams(lesson.CloudinaryPublicId)
@@ -69,7 +65,7 @@ internal sealed class DeleteLessonHandler(
                     new Neura.Core.Abstractions.Error("Video.DeleteError", "Failed to delete video from Cloudinary.", StatusCodes.Status500InternalServerError));
             }
         }
-        
+
         return Result.Success();
     }
 }

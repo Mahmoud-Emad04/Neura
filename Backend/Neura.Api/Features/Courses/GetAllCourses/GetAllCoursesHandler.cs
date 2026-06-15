@@ -1,10 +1,5 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Specification;
-using Neura.Core.Contracts.common;
-using Neura.Core.Contracts.Courses;
 using Neura.Core.Enums;
 using Neura.Core.Specifications.Courses;
 using Neura.Repository.Persistence;
@@ -14,7 +9,7 @@ namespace Neura.Api.Features.Courses.GetAllCourses;
 
 internal sealed class GetAllCoursesHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetAllCoursesQuery, Result<PaginatedList<CourseSummaryResponse>>>
 {
     public async Task<Result<PaginatedList<CourseSummaryResponse>>> Handle(

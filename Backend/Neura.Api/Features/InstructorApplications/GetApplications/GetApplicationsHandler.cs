@@ -1,12 +1,10 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.InstructorApplication;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.InstructorApplications.GetApplications;
 
-internal sealed class GetApplicationsHandler(ApplicationDbContext context) 
+internal sealed class GetApplicationsHandler(ApplicationDbContext context)
     : IRequestHandler<GetApplicationsQuery, Result<PaginatedList<ApplicationListResponse>>>
 {
     public async Task<Result<PaginatedList<ApplicationListResponse>>> Handle(
@@ -21,7 +19,7 @@ internal sealed class GetApplicationsHandler(ApplicationDbContext context)
             .Include(a => a.User)
             .AsQueryable();
 
-        if (status.HasValue) 
+        if (status.HasValue)
             queryable = queryable.Where(a => a.Status == status.Value);
 
         queryable = queryable.OrderByDescending(a => a.CreatedOn);

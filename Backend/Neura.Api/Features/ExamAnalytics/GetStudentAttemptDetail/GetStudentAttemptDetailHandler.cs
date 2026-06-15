@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.ExamAttempt;
 using Neura.Core.Enums;
 using Neura.Core.Errors;

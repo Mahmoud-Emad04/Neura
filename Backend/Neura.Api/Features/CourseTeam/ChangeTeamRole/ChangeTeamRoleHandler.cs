@@ -1,19 +1,15 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Authorization;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.ChangeTeamRole;
 
 internal sealed class ChangeTeamRoleHandler(
     ApplicationDbContext context,
-    ILogger<ChangeTeamRoleHandler> logger) 
+    ILogger<ChangeTeamRoleHandler> logger)
     : IRequestHandler<ChangeTeamRoleCommand, Result<TeamMemberResponse>>
 {
     public async Task<Result<TeamMemberResponse>> Handle(

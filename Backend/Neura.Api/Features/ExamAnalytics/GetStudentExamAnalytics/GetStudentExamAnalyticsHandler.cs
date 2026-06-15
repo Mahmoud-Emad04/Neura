@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Analytics;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
@@ -24,7 +22,7 @@ internal sealed class GetStudentExamAnalyticsHandler(ApplicationDbContext contex
             return Result.Failure<StudentExamAnalyticsResponse>(AnalyticsErrors.ExamNotFound);
 
         var courseId = exam.Lesson.Section.CourseId;
-        
+
         var isEnrolled = await context.CourseUsers
             .AnyAsync(cu => cu.CourseId == courseId && cu.UserId == query.UserId, ct);
 

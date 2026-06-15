@@ -1,19 +1,17 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
+using Neura.Api.Features.Announcements.GetPostById;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Announcement;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
-using Neura.Api.Features.Announcements.GetPostById;
 
 namespace Neura.Api.Features.Announcements.UpdatePost;
 
 internal sealed class UpdatePostHandler(
     ApplicationDbContext context,
     IServiceHelpers helpers,
-    ISender sender) 
+    ISender sender)
     : IRequestHandler<UpdatePostCommand, Result<PostResponse>>
 {
     public async Task<Result<PostResponse>> Handle(

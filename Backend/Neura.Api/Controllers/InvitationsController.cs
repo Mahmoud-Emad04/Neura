@@ -1,14 +1,10 @@
 using MediatR;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Neura.Core.Contracts.CourseTeam;
-using Neura.Api.Extensions;
 using Neura.Api.Features.Invitations.AcceptInvitation;
 using Neura.Api.Features.Invitations.GetInvitationByToken;
 using Neura.Api.Features.Invitations.GetMyInvitations;
 using Neura.Api.Features.Invitations.RejectInvitation;
+using Neura.Core.Contracts.CourseTeam;
+using System.Security.Claims;
 
 namespace Neura.Api.Controllers;
 

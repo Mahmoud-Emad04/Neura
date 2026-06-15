@@ -1,13 +1,10 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
-using Neura.Core.Entities;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
 using System.Security.Cryptography;
-using Neura.Core.Abstractions;
 
 namespace Neura.Api.Features.Auth;
 

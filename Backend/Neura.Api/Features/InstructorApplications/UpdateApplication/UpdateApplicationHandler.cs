@@ -1,9 +1,5 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Core.InstructorApplication;
@@ -14,7 +10,7 @@ namespace Neura.Api.Features.InstructorApplications.UpdateApplication;
 internal sealed class UpdateApplicationHandler(
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<UpdateApplicationHandler> logger) 
+    ILogger<UpdateApplicationHandler> logger)
     : IRequestHandler<UpdateApplicationCommand, Result<ApplicationResponse>>
 {
     public async Task<Result<ApplicationResponse>> Handle(

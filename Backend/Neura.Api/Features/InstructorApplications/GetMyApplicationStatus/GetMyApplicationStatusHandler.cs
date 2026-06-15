@@ -1,9 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
-using Neura.Core.Entities;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Core.InstructorApplication;
@@ -13,7 +10,7 @@ namespace Neura.Api.Features.InstructorApplications.GetMyApplicationStatus;
 
 internal sealed class GetMyApplicationStatusHandler(
     ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager) 
+    UserManager<ApplicationUser> userManager)
     : IRequestHandler<GetMyApplicationStatusQuery, Result<MyApplicationStatusResponse>>
 {
     public async Task<Result<MyApplicationStatusResponse>> Handle(

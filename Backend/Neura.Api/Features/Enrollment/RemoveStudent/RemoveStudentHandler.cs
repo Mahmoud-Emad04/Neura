@@ -1,17 +1,14 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
-using Neura.Core.Errors;
 using Neura.Core.Enums;
+using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Enrollment.RemoveStudent;
 
 internal sealed class RemoveStudentHandler(
     ApplicationDbContext context,
-    ILogger<RemoveStudentHandler> logger) 
+    ILogger<RemoveStudentHandler> logger)
     : IRequestHandler<RemoveStudentCommand, Result>
 {
     public async Task<Result> Handle(

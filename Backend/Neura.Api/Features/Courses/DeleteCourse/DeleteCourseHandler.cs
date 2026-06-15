@@ -1,6 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -9,7 +7,7 @@ namespace Neura.Api.Features.Courses.DeleteCourse;
 
 internal sealed class DeleteCourseHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<DeleteCourseCommand, Result>
 {
     public async Task<Result> Handle(

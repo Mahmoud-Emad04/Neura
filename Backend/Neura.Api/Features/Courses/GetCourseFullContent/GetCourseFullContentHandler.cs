@@ -1,12 +1,9 @@
-using System.Net;
-using System.Text.RegularExpressions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Course;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace Neura.Api.Features.Courses.GetCourseFullContent;
 

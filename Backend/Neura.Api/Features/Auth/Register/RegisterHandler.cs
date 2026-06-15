@@ -1,14 +1,7 @@
 using Hangfire;
-using Mapster;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Authentication;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using System.Text;
 
@@ -16,7 +9,7 @@ namespace Neura.Api.Features.Auth.Register;
 
 internal sealed class RegisterHandler(
     UserManager<ApplicationUser> userManager,
-    ILogger<RegisterHandler> logger) 
+    ILogger<RegisterHandler> logger)
     : IRequestHandler<RegisterCommand, Result>
 {
     public async Task<Result> Handle(
@@ -40,7 +33,7 @@ internal sealed class RegisterHandler(
         var user = registerRequest.Adapt<ApplicationUser>();
         user.ImageUrl = AuthHelpers.DefaultUserImagePath();
         var result = await userManager.CreateAsync(user, registerRequest.Password);
-        
+
         if (result.Succeeded)
         {
             var code = await userManager.GenerateEmailConfirmationTokenAsync(user);

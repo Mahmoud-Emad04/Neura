@@ -1,10 +1,5 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Specification;
-using Neura.Core.Contracts.common;
-using Neura.Core.Contracts.Courses;
 using Neura.Core.Specifications.Courses;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -13,7 +8,7 @@ namespace Neura.Api.Features.Courses.GetBookmarkedCourses;
 
 internal sealed class GetBookmarkedCoursesHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetBookmarkedCoursesQuery, Result<PaginatedList<CourseSummaryResponse>>>
 {
     public async Task<Result<PaginatedList<CourseSummaryResponse>>> Handle(

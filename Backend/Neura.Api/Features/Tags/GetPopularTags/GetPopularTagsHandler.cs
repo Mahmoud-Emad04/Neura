@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Tags;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.GetPopularTags;
 
-internal sealed class GetPopularTagsHandler(ApplicationDbContext context) 
+internal sealed class GetPopularTagsHandler(ApplicationDbContext context)
     : IRequestHandler<GetPopularTagsQuery, Result<IEnumerable<TagSummaryResponse>>>
 {
     public async Task<Result<IEnumerable<TagSummaryResponse>>> Handle(

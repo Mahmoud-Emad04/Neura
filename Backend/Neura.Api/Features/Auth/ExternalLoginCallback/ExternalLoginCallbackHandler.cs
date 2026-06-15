@@ -1,11 +1,7 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Neura.Core.Abstractions;
 using Neura.Core.Authentication;
 using Neura.Core.Contracts.Authentication;
-using Neura.Core.Entities;
-using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
 using System.Security.Claims;
@@ -17,7 +13,7 @@ internal sealed class ExternalLoginCallbackHandler(
     SignInManager<ApplicationUser> signInManager,
     UserManager<ApplicationUser> userManager,
     IJwtProvider jwtProvider,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<ExternalLoginCallbackCommand, Result<AuthResponse>>
 {
     private const int RefreshTokenExpiryDays = 14;

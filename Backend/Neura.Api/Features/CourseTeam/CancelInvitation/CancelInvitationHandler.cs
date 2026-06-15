@@ -1,18 +1,14 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Authorization;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.CancelInvitation;
 
 internal sealed class CancelInvitationHandler(
     ApplicationDbContext context,
-    ILogger<CancelInvitationHandler> logger) 
+    ILogger<CancelInvitationHandler> logger)
     : IRequestHandler<CancelInvitationCommand, Result>
 {
     public async Task<Result> Handle(

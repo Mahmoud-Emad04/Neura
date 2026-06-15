@@ -1,4 +1,4 @@
-﻿namespace Neura.Core.Contracts.Exam;
+namespace Neura.Core.Contracts.Exam;
 
 
 public class ExamResponse
@@ -16,6 +16,7 @@ public class ExamResponse
     public bool EnableTabSwitchDetection { get; set; }
     public int? MaxViolationsBeforeAutoSubmit { get; set; }
     public bool IsPublished { get; set; }
+    public bool AreGradesPublished { get; set; }
     public int TotalQuestions { get; set; }
     public decimal TotalPoints { get; set; }
     public int TotalAttempts { get; set; }

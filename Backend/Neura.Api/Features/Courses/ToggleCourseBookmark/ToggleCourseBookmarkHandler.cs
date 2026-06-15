@@ -1,7 +1,4 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -10,7 +7,7 @@ namespace Neura.Api.Features.Courses.ToggleCourseBookmark;
 
 internal sealed class ToggleCourseBookmarkHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<ToggleCourseBookmarkCommand, Result>
 {
     public async Task<Result> Handle(
@@ -26,11 +23,11 @@ internal sealed class ToggleCourseBookmarkHandler(
         {
             await context.CourseBookmarks.AddAsync(
                 new CourseBookmark
-                { 
-                    CourseId = courseId, 
-                    UserId = command.UserId, 
-                    IsDeleted = false, 
-                    CreatedOn = DateTime.UtcNow 
+                {
+                    CourseId = courseId,
+                    UserId = command.UserId,
+                    IsDeleted = false,
+                    CreatedOn = DateTime.UtcNow
                 },
                 ct);
         }

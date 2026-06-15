@@ -1,12 +1,9 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Entities;
 
 namespace Neura.Api.Features.Account.UpdateProfile;
 
-internal sealed class UpdateProfileHandler(UserManager<ApplicationUser> userManager) 
+internal sealed class UpdateProfileHandler(UserManager<ApplicationUser> userManager)
     : IRequestHandler<UpdateProfileCommand, Result>
 {
     public async Task<Result> Handle(
@@ -17,7 +14,7 @@ internal sealed class UpdateProfileHandler(UserManager<ApplicationUser> userMana
             .ExecuteUpdateAsync(setters =>
                 setters
                     .SetProperty(x => x.FirstName, command.Request.FirstName)
-                    .SetProperty(x => x.LastName, command.Request.LastName), 
+                    .SetProperty(x => x.LastName, command.Request.LastName),
                 ct);
 
         return Result.Success();

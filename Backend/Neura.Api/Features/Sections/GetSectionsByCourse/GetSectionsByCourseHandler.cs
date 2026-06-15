@@ -1,7 +1,4 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Section;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -11,7 +8,7 @@ namespace Neura.Api.Features.Sections.GetSectionsByCourse;
 
 internal sealed class GetSectionsByCourseHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetSectionsByCourseQuery, Result<IEnumerable<SectionResponse>>>
 {
     public async Task<Result<IEnumerable<SectionResponse>>> Handle(

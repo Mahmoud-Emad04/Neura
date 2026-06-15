@@ -1,13 +1,11 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Lessons.UpdateLesson;
 
 internal sealed class UpdateLessonHandler(
-    ApplicationDbContext context) 
+    ApplicationDbContext context)
     : IRequestHandler<UpdateLessonCommand, Result>
 {
     public async Task<Result> Handle(

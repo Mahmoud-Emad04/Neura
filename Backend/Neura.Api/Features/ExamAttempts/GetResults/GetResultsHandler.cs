@@ -1,19 +1,17 @@
-using System.Text.Json;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.ExamAttempt;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
+using System.Text.Json;
 
 namespace Neura.Api.Features.ExamAttempts.GetResults;
 
 internal sealed class GetResultsHandler(
     ApplicationDbContext context,
-    UserManager<ApplicationUser> userManager) 
+    UserManager<ApplicationUser> userManager)
     : IRequestHandler<GetResultsQuery, Result<AttemptResultResponse>>
 {
     public async Task<Result<AttemptResultResponse>> Handle(
@@ -36,7 +34,9 @@ internal sealed class GetResultsHandler(
             return Result.Failure<AttemptResultResponse>(ExamAttemptErrors.AttemptNotFound);
 
         // Allow access if the user is the attempt owner
-        if (attempt.UserId != userId)
+        var isStudent = attempt.UserId == userId;
+
+        if (!isStudent)
         {
             // Check if user has a privileged role (Admin / SuperAdmin / CourseOwner / CoInstructor)
             var hasAccess = await HasPrivilegedAccessAsync(userId, attempt, ct);
@@ -46,6 +46,17 @@ internal sealed class GetResultsHandler(
 
         if (attempt.Status == AttemptStatus.InProgress)
             return Result.Failure<AttemptResultResponse>(ExamAttemptErrors.ResultsNotAvailable);
+
+        // ── Security: Determine if grades should be hidden from this student ──
+        // Students cannot see grades when:
+        //   1. AreGradesPublished is false (instructor hasn't published yet), OR
+        //   2. Status is ViolationFlagged (attempt under review)
+        // Exception: Resolved attempts always show the overridden score.
+        // Instructors/admins always see full results.
+        var shouldHideGrades = isStudent
+            && attempt.Status != AttemptStatus.Resolved
+            && (!attempt.Exam.AreGradesPublished
+                || attempt.Status == AttemptStatus.ViolationFlagged);
 
         var questionOrder = JsonSerializer.Deserialize<List<int>>(attempt.QuestionOrder) ?? new();
 
@@ -129,20 +140,29 @@ internal sealed class GetResultsHandler(
         var response = new AttemptResultResponse
         {
             AttemptId = attempt.Id,
-            Score = attempt.Score ?? 0,
-            ScorePercentage = attempt.ScorePercentage ?? 0,
+            Score = shouldHideGrades ? 0 : (attempt.Score ?? 0),
+            ScorePercentage = shouldHideGrades ? 0 : (attempt.ScorePercentage ?? 0),
             TotalPoints = totalPoints,
             PassingScorePercentage = attempt.Exam.PassingScorePercentage,
-            Passed = attempt.Passed ?? false,
+            Passed = shouldHideGrades ? null : attempt.Passed,
             Status = attempt.Status.ToString(),
             StartedAt = attempt.StartedAt,
             SubmittedAt = attempt.SubmittedAt ?? attempt.StartedAt,
             TotalQuestions = questionOrder.Count,
-            CorrectAnswers = correctCount,
-            WrongAnswers = wrongCount,
-            Unanswered = unanswered,
+            CorrectAnswers = shouldHideGrades ? 0 : correctCount,
+            WrongAnswers = shouldHideGrades ? 0 : wrongCount,
+            Unanswered = shouldHideGrades ? 0 : unanswered,
             ViolationCount = attempt.Violations.Count,
-            Questions = questionResults
+
+            // Grade publishing & violation workflow fields
+            AreGradesPublished = attempt.Exam.AreGradesPublished,
+            OriginalScore = shouldHideGrades ? null : attempt.OriginalScore,
+            FinalScore = shouldHideGrades ? null : attempt.FinalScore,
+            ViolationReason = shouldHideGrades ? null : attempt.ViolationReason,
+            InstructorNotes = shouldHideGrades ? null : attempt.InstructorNotes,
+
+            // Hide detailed question results when grades are hidden
+            Questions = shouldHideGrades ? new() : questionResults
         };
 
         return Result.Success(response);

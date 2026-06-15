@@ -1,20 +1,15 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
-using Neura.Core.Contracts.Courses;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
-using Neura.Core.Services;
 
 namespace Neura.Api.Features.Courses.UpdateCourseDetails;
 
 internal sealed class UpdateCourseDetailsHandler(
     ApplicationDbContext context,
     IFileService fileService,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<UpdateCourseDetailsCommand, Result>
 {
     public async Task<Result> Handle(

@@ -8,7 +8,7 @@ namespace Neura.Api.Features.Community.UpdateChannel;
 
 internal sealed class UpdateChannelHandler(
     IChatService chatService,
-    IHubContext<CommunityHub, ICommunityHubClient> hubContext) 
+    IHubContext<CommunityHub, ICommunityHubClient> hubContext)
     : IRequestHandler<UpdateChannelCommand, ChannelDto>
 {
     public async Task<ChannelDto> Handle(

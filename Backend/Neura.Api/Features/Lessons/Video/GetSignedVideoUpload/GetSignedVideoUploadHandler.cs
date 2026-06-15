@@ -1,13 +1,8 @@
 using CloudinaryDotNet;
 using MediatR;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Lessons;
-using Neura.Core.Entities;
 using Neura.Core.Errors;
 using Neura.Core.Settings;
 using Neura.Repository.Persistence;
@@ -19,7 +14,7 @@ internal sealed class GetSignedVideoUploadHandler(
     CloudinarySettings cloudinarySettings,
     ApplicationDbContext context,
     UserManager<ApplicationUser> userManager,
-    ILogger<GetSignedVideoUploadHandler> logger) 
+    ILogger<GetSignedVideoUploadHandler> logger)
     : IRequestHandler<GetSignedVideoUploadCommand, Result<SignedVideoUploadResponse>>
 {
     public async Task<Result<SignedVideoUploadResponse>> Handle(
@@ -84,7 +79,7 @@ internal sealed class GetSignedVideoUploadHandler(
             return true;
         if (user is not null && await userManager.IsInRoleAsync(user, DefaultRoles.Admin))
             return true;
-            
+
         var lesson = await context.Lessons
             .AsNoTracking()
             .Include(l => l.Section).ThenInclude(s => s.Course)

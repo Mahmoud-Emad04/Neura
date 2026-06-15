@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authentication;
 using Neura.Api.Extensions;
 using Neura.Api.Features.Auth.ConfirmEmail;
 using Neura.Api.Features.Auth.ExternalLoginCallback;
@@ -12,8 +13,6 @@ using Neura.Api.Features.Auth.RevokeToken;
 using Neura.Api.Features.Auth.UpdateImage;
 using Neura.Core.Contracts.Authentication;
 using Neura.Core.Contracts.Files;
-using Neura.Core.Contracts.Users;
-using Microsoft.AspNetCore.Authentication;
 
 namespace Neura.Api.Controllers;
 
@@ -157,7 +156,7 @@ public class AuthController(ISender sender, IConfiguration configuration) : Cont
         // Keep the AuthenticationProperties manually as it's purely framework level.
         var properties = new AuthenticationProperties { RedirectUri = redirectUrl };
         properties.Items["LoginProvider"] = provider;
-        
+
         return Challenge(properties, provider);
     }
 
@@ -166,7 +165,7 @@ public class AuthController(ISender sender, IConfiguration configuration) : Cont
     {
         var command = new ExternalLoginCallbackCommand();
         var result = await sender.Send(command, ct);
-        
+
         var frontendUrl = configuration["FrontendUrl"];
 
         if (!result.IsSuccess)

@@ -1,5 +1,4 @@
 using Neura.Core.Contracts.Announcement;
-using Neura.Core.Entities;
 
 namespace Neura.Api.Features.Announcements;
 

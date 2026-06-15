@@ -1,7 +1,4 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.Instructor;
 using Neura.Core.Errors;
@@ -12,7 +9,7 @@ namespace Neura.Api.Features.Users.GetInstructorByCourseId;
 
 internal sealed class GetInstructorByCourseIdHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers) 
+    IServiceHelpers helpers)
     : IRequestHandler<GetInstructorByCourseIdQuery, Result<InstructorSummaryResponse>>
 {
     public async Task<Result<InstructorSummaryResponse>> Handle(
@@ -40,9 +37,9 @@ internal sealed class GetInstructorByCourseIdHandler(
 
         var (globalStudentCount, globalRating, globalRatingDataCount) =
             await GetStudentsAndRating(context, instructorCourseIds, ct);
-            
+
         string baseUrl = helpers.GetBaseUrl();
-        
+
         return Result.Success(user.Adapt<InstructorSummaryResponse>() with
         {
             Name = $"{user.FirstName} {user.LastName}",

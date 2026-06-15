@@ -1,7 +1,4 @@
-using Mapster;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Neura.Core.Abstractions;
 using Neura.Core.Contracts.Section;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
@@ -9,7 +6,7 @@ using Neura.Repository.Persistence;
 namespace Neura.Api.Features.Sections.GetSectionById;
 
 internal sealed class GetSectionByIdHandler(
-    ApplicationDbContext context) 
+    ApplicationDbContext context)
     : IRequestHandler<GetSectionByIdQuery, Result<SectionResponse>>
 {
     public async Task<Result<SectionResponse>> Handle(
@@ -19,7 +16,7 @@ internal sealed class GetSectionByIdHandler(
             .AsNoTracking()
             .SingleOrDefaultAsync(s => s.Id == request.SectionId, ct);
 
-        if (section is null) 
+        if (section is null)
             return Result.Failure<SectionResponse>(SectionErrors.SectionNotFound);
 
         return Result.Success(section.Adapt<SectionResponse>());

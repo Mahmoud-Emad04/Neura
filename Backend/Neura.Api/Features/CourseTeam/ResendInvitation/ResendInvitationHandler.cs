@@ -1,19 +1,15 @@
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Neura.Core.Abstractions;
 using Neura.Core.Abstractions.Consts;
 using Neura.Core.Contracts.CourseTeam;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
-using Neura.Core.Authorization;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.CourseTeam.ResendInvitation;
 
 internal sealed class ResendInvitationHandler(
     ApplicationDbContext context,
-    ILogger<ResendInvitationHandler> logger) 
+    ILogger<ResendInvitationHandler> logger)
     : IRequestHandler<ResendInvitationCommand, Result<CourseInvitationResponse>>
 {
     public async Task<Result<CourseInvitationResponse>> Handle(
