@@ -62,6 +62,8 @@ internal sealed class GetMyApplicationStatusHandler(
             ApplicationId = latestApplication.Id,
             Status = latestApplication.Status,
             RejectionReason = latestApplication.RejectionReason,
+            Bio = latestApplication.Bio,
+            Experience = latestApplication.Experience,
             CreatedOn = latestApplication.CreatedOn,
             ReviewedOn = latestApplication.ReviewedOn,
             CanReapplyAfter = latestApplication.CanReapplyAfter,

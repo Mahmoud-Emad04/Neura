@@ -1,6 +1,8 @@
 using MediatR;
 using Neura.Api.Extensions;
+using Neura.Api.Features.Lessons.AskChatbot;
 using Neura.Api.Features.Lessons.CreateLessonMetadata;
+using Neura.Api.Features.Lessons.GetChatHistory;
 using Neura.Api.Features.Lessons.DeleteLesson;
 using Neura.Api.Features.Lessons.GetArticleContent;
 using Neura.Api.Features.Lessons.GetSectionLessons;
@@ -276,6 +278,40 @@ public class LessonsController(ISender sender) : ControllerBase
         var userId = User.GetUserId()!;
         var command = new MarkLessonCompletedCommand(lessonId, userId);
         var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
+
+    [HttpPost("{lessonId}/chat")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AskChatbot(
+        [FromRoute] int lessonId,
+        [FromBody] ChatRequest request,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var command = new AskChatbotCommand(lessonId, request.Question, userId);
+        var result = await sender.Send(command, ct);
+
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : result.ToProblem();
+    }
+
+    [HttpGet("{lessonId}/chat")]
+    [ProducesResponseType(typeof(IEnumerable<ChatHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetChatHistory(
+        [FromRoute] int lessonId,
+        CancellationToken ct)
+    {
+        var userId = User.GetUserId()!;
+        var query = new GetChatHistoryQuery(lessonId, userId);
+        var result = await sender.Send(query, ct);
 
         return result.IsSuccess
             ? Ok(result.Value)

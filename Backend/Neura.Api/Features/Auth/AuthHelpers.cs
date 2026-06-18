@@ -64,7 +64,7 @@ public static class AuthHelpers
         var response = new AuthResponse(
             user.Id,
             user.UserName!,
-            $"{baseUrl}/{user.ImageUrl}",
+            (user.ImageUrl!.StartsWith("Images") ? $"{baseUrl}/{user.ImageUrl}" : user.ImageUrl),
             user.DiscordHandle,
             user.Email!,
             user.FirstName,

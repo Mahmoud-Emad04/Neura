@@ -3,6 +3,7 @@ using Neura.Api.Features.InstructorApplications.ApproveApplication;
 using Neura.Api.Features.InstructorApplications.GetApplicationById;
 using Neura.Api.Features.InstructorApplications.GetApplications;
 using Neura.Api.Features.InstructorApplications.GetMyApplicationStatus;
+using Neura.Api.Features.InstructorApplications.RejectApplication;
 using Neura.Api.Features.InstructorApplications.SubmitApplication;
 using Neura.Api.Features.InstructorApplications.UpdateApplication;
 using Neura.Core.Authorization.Attributes;
@@ -108,17 +109,17 @@ public class InstructorApplicationController(ISender sender) : ControllerBase
         return result.IsSuccess ? Ok() : result.ToProblem();
     }
 
-    //[HttpPost("applications/{id:int}/reject")]
-    //[AdminOnly]
-    //public async Task<IActionResult> RejectApplication(
-    //    int id,
-    //    [FromBody] RejectApplicationRequest request,
-    //    CancellationToken ct)
-    //{
-    //    var reviewerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-    //    var command = new RejectApplicationCommand(id, request.Reason, reviewerId);
-    //    var result = await sender.Send(command, ct);
+    [HttpPost("applications/{id:int}/reject")]
+    [AdminOnly]
+    public async Task<IActionResult> RejectApplication(
+        int id,
+        [FromBody] ReviewApplicationRequest request,
+        CancellationToken ct)
+    {
+        var reviewerId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var command = new RejectApplicationCommand(id, request, reviewerId);
+        var result = await sender.Send(command, ct);
 
-    //    return result.IsSuccess ? Ok() : result.ToProblem();
-    //}
+        return result.IsSuccess ? Ok() : result.ToProblem();
+    }
 }
