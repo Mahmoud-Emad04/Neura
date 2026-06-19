@@ -38,6 +38,12 @@ internal sealed class SubmitAttemptHandler(
             ? AttemptStatus.TimedOut
             : AttemptStatus.Submitted;
 
+        var violations = await context.ExamViolations
+            .AnyAsync(v => v.ExamAttemptId == attemptId, ct);
+
+        if (violations)
+            status = AttemptStatus.ViolationFlagged;
+
         await gradingService.GradeAttemptAsync(attempt, status);
 
         var response = new SubmitAttemptResponse

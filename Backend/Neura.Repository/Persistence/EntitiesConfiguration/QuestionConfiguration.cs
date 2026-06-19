@@ -1,4 +1,5 @@
-﻿using Neura.Core.Entities;
+using Neura.Core.Entities;
+using Neura.Core.Enums;
 
 namespace Neura.Repository.Persistence.EntitiesConfiguration;
 
@@ -17,6 +18,11 @@ public class QuestionConfiguration : IEntityTypeConfiguration<Question>
         builder.Property(q => q.QuestionType)
                .HasConversion<string>()
                .HasMaxLength(50);
+
+        builder.Property(q => q.Level)
+               .HasConversion<string>()
+               .HasMaxLength(20)
+               .HasDefaultValue(QuestionLevel.Easy);
 
         builder.HasMany(q => q.AnswerOptions)
                .WithOne(a => a.Question)

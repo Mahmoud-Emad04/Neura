@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Neura.Repository.Persistence;
 
@@ -11,9 +12,11 @@ using Neura.Repository.Persistence;
 namespace Neura.Repository.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260615204452_AddQuestionLevel")]
+    partial class AddQuestionLevel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -909,14 +912,14 @@ namespace Neura.Repository.Migrations
                     b.Property<int?>("ExamAttemptId")
                         .HasColumnType("int");
 
+                    b.Property<int>("ExamId")
+                        .HasColumnType("int");
+
                     b.Property<string>("FrameImagePath")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<int>("LessonId")
-                        .HasColumnType("int");
 
                     b.Property<string>("Reason")
                         .IsRequired()
@@ -942,7 +945,7 @@ namespace Neura.Repository.Migrations
 
                     b.HasIndex("ExamAttemptId");
 
-                    b.HasIndex("LessonId");
+                    b.HasIndex("ExamId");
 
                     b.HasIndex("StudentId");
 
@@ -1099,58 +1102,6 @@ namespace Neura.Repository.Migrations
                     b.HasIndex("SectionId", "OrderIndex");
 
                     b.ToTable("Lessons");
-                });
-
-            modelBuilder.Entity("Neura.Core.Entities.LessonChatHistory", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Answer")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CreatedById")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("LessonId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UpdatedById")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("UpdatedOn")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById");
-
-                    b.HasIndex("LessonId");
-
-                    b.HasIndex("UpdatedById");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("LessonChatHistories");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.LessonCompletion", b =>
@@ -2038,9 +1989,9 @@ namespace Neura.Repository.Migrations
                         .WithMany()
                         .HasForeignKey("ExamAttemptId");
 
-                    b.HasOne("Neura.Core.Entities.Lesson", "Lesson")
+                    b.HasOne("Neura.Core.Entities.Exam", "Exam")
                         .WithMany()
-                        .HasForeignKey("LessonId")
+                        .HasForeignKey("ExamId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -2056,9 +2007,9 @@ namespace Neura.Repository.Migrations
 
                     b.Navigation("CreatedBy");
 
-                    b.Navigation("ExamAttempt");
+                    b.Navigation("Exam");
 
-                    b.Navigation("Lesson");
+                    b.Navigation("ExamAttempt");
 
                     b.Navigation("Student");
 
@@ -2106,39 +2057,6 @@ namespace Neura.Repository.Migrations
                     b.Navigation("Section");
 
                     b.Navigation("UpdatedBy");
-                });
-
-            modelBuilder.Entity("Neura.Core.Entities.LessonChatHistory", b =>
-                {
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "CreatedBy")
-                        .WithMany()
-                        .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Neura.Core.Entities.Lesson", "Lesson")
-                        .WithMany()
-                        .HasForeignKey("LessonId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "UpdatedBy")
-                        .WithMany()
-                        .HasForeignKey("UpdatedById");
-
-                    b.HasOne("Neura.Core.Entities.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-
-                    b.Navigation("Lesson");
-
-                    b.Navigation("UpdatedBy");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Neura.Core.Entities.LessonCompletion", b =>

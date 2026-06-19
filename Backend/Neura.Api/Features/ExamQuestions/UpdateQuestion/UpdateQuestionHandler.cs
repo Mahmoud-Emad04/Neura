@@ -101,6 +101,7 @@ internal sealed class UpdateQuestionHandler(
             return Result.Failure(QuestionErrors.CannotAddOptionsAfterAttempts);
 
         question.QuestionText = sanitizer.Sanitize(request.QuestionText);
+        question.Level = request.Level;
         question.Points = request.Points;
 
         foreach (var optionRequest in request.Options.Where(o => o.Id.HasValue))
@@ -119,6 +120,7 @@ internal sealed class UpdateQuestionHandler(
     {
         question.QuestionText = sanitizer.Sanitize(request.QuestionText);
         question.QuestionType = request.QuestionType;
+        question.Level = request.Level;
         question.Points = request.Points;
 
         var requestOptionIds = request.Options

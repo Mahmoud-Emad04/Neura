@@ -1,6 +1,8 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Neura.Core.Services;
+using Neura.Core.Settings;
 
 namespace Neura.Services.Services;
 
@@ -8,11 +10,13 @@ public class ExternalVideoProcessorService : IExternalVideoProcessor
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ExternalVideoProcessorService> _logger;
+    private readonly ExternalVideoProcessorSettings _settings;
 
-    public ExternalVideoProcessorService(HttpClient httpClient, ILogger<ExternalVideoProcessorService> logger)
+    public ExternalVideoProcessorService(HttpClient httpClient, ILogger<ExternalVideoProcessorService> logger, IOptions<ExternalVideoProcessorSettings> settings)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _settings = settings.Value;
     }
 
     public async Task ProcessVideoAsync(int lessonId, string downloadUrl, CancellationToken ct = default)
@@ -25,7 +29,7 @@ public class ExternalVideoProcessorService : IExternalVideoProcessor
             downloadUrl = downloadUrl
         };
 
-        var response = await _httpClient.PostAsJsonAsync("", payload, ct);
+        var response = await _httpClient.PostAsJsonAsync(_settings.ProcessEndpoint, payload, ct);
 
         response.EnsureSuccessStatusCode();
 

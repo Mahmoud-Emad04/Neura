@@ -41,7 +41,7 @@ public class ApplicationDbContext(
     public DbSet<InstructorApplication> InstructorApplications { get; set; }
     public DbSet<UploadedFile> UploadedFiles { get; set; }
     public DbSet<Payment> Payments { get; set; }
-
+    public DbSet<LessonChatHistory> LessonChatHistories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

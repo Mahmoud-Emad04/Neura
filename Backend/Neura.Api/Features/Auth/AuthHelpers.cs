@@ -17,7 +17,7 @@ public static class AuthHelpers
 
     public static string DefaultUserImagePath()
     {
-        return Path.Combine("Images", ImageConsts.User, ImageConsts.DefaultUserImage);
+        return $"Images/{ImageConsts.User}/{ImageConsts.DefaultUserImage}";
     }
 
     public static async Task<(IEnumerable<string> roles, IEnumerable<string> permissions)> GetUserRolesAndPermissionsAsync(
@@ -64,7 +64,7 @@ public static class AuthHelpers
         var response = new AuthResponse(
             user.Id,
             user.UserName!,
-            $"{baseUrl}/{user.ImageUrl}",
+            (user.ImageUrl!.StartsWith("Images") ? $"{baseUrl}/{user.ImageUrl}" : user.ImageUrl),
             user.DiscordHandle,
             user.Email!,
             user.FirstName,

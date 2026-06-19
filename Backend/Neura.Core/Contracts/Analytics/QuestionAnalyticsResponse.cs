@@ -1,4 +1,4 @@
-﻿using Neura.Core.Enums;
+using Neura.Core.Enums;
 
 namespace Neura.Core.Contracts.Analytics;
 
@@ -7,6 +7,7 @@ public class QuestionAnalyticsResponse
     public int QuestionId { get; set; }
     public string QuestionText { get; set; } = string.Empty;
     public QuestionType QuestionType { get; set; }
+    public QuestionLevel Level { get; set; }
     public decimal Points { get; set; }
     public int Order { get; set; }
 

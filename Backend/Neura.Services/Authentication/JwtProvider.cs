@@ -1,20 +1,23 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Neura.Core.Authentication;
+using Neura.Services.Helpers;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Neura.Core.Authentication;
 
 namespace Neura.Services.Authentication;
 
-public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
+public class JwtProvider(IOptions<JwtOptions> options, IServiceHelpers _serviceHelpers) : IJwtProvider
 {
     private readonly JwtOptions _options = options.Value;
 
     public (string Token, int ExpiresIn) GenerateToken(ApplicationUser applicationUser, IEnumerable<string> roles,
         IEnumerable<string> permissions)
     {
+        string baseUrl = _serviceHelpers.GetBaseUrl();
+
         Claim[] calims =
         [
             new(JwtRegisteredClaimNames.Sub, applicationUser.Id),
@@ -22,6 +25,7 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
             new(JwtRegisteredClaimNames.GivenName, applicationUser.FirstName),
             new(JwtRegisteredClaimNames.FamilyName, applicationUser.LastName),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(nameof(applicationUser.ImageUrl), applicationUser.ImageUrl!.StartsWith("Images") ? $"{baseUrl}/{applicationUser.ImageUrl}" : applicationUser.ImageUrl),
             new(nameof(roles), JsonSerializer.Serialize(roles), JsonClaimValueTypes.JsonArray),
             new(nameof(permissions), JsonSerializer.Serialize(permissions), JsonClaimValueTypes.JsonArray)
         ];
@@ -49,13 +53,13 @@ public class JwtProvider(IOptions<JwtOptions> options) : IJwtProvider
         try
         {
             tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    IssuerSigningKey = summetricSecurityKey,
-                    ValidateIssuerSigningKey = true,
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero
-                },
+            {
+                IssuerSigningKey = summetricSecurityKey,
+                ValidateIssuerSigningKey = true,
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ClockSkew = TimeSpan.Zero
+            },
                 out var validatedToken
             );
             var jwtToken = (JwtSecurityToken)validatedToken;

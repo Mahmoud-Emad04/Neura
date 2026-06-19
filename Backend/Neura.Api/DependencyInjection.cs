@@ -3,6 +3,7 @@ using Ganss.Xss;
 using Hangfire;
 using HashidsNet;
 using Infrastructure.Services.Community;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
@@ -143,6 +144,18 @@ public static class DependencyInjection
             client.BaseAddress = new Uri(settings.BaseUrl);
         });
 
+        services.AddOptions<ChatbotSettings>()
+            .BindConfiguration("Chatbot")
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddHttpClient<IChatbotService, ChatbotService>((sp, client) =>
+        {
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChatbotSettings>>().Value;
+            client.BaseAddress = new Uri(settings.BaseUrl);
+        });
+
+
         #endregion
 
         // Register Cloudinary
@@ -231,7 +244,7 @@ public static class DependencyInjection
         //services.AddTransient<IAuthorizationPolicyProvider, PermissionAuthorizationPolicyProvider>();
 
 
-        services.AddSingleton<IJwtProvider, JwtProvider>();
+        services.AddScoped<IJwtProvider, JwtProvider>();
 
         //services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddOptions<JwtOptions>()
@@ -296,6 +309,7 @@ public static class DependencyInjection
                 options.ClientId = configuration["Authentication:Google:ClientId"]!;
                 options.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
                 options.CallbackPath = "/signin-google";
+                options.ClaimActions.MapJsonKey("picture", "picture", "url");
             }).AddGitHub(options =>
             {
                 options.ClientId = configuration["Authentication:GitHub:ClientId"]!;
