@@ -35,6 +35,8 @@ internal sealed class ResolveViolationHandler(ApplicationDbContext context)
 
         attempt.ResolveViolationAndOverrideGrade(command.NewScore, totalPoints, command.Notes);
 
+
+
         await context.SaveChangesAsync(ct);
 
         return Result.Success();

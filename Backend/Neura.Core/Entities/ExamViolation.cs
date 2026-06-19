@@ -4,7 +4,7 @@ public class ExamViolation : AuditableEntity
 {
     public int Id { get; set; }
 
-    public int ExamId { get; set; }
+    public int LessonId { get; set; }
     public string StudentId { get; set; } = string.Empty;
     public int? ExamAttemptId { get; set; }
 
@@ -16,7 +16,7 @@ public class ExamViolation : AuditableEntity
     public string? FrameImagePath { get; set; }
 
     // Navigation
-    public Exam Exam { get; set; } = null!;
+    public Lesson Lesson { get; set; } = null!;
     public ApplicationUser Student { get; set; } = null!;
     public ExamAttempt? ExamAttempt { get; set; }
 }

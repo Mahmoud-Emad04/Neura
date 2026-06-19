@@ -4,5 +4,5 @@ namespace Neura.Core.Services;
 
 public interface IChatbotService
 {
-    Task<string> AskQuestionAsync(int lessonId, string question, List<ChatContextDto> history, CancellationToken ct = default);
+    Task<string> AskQuestionAsync(string courseId, int lessonId, string question, string userRole, List<ChatContextDto> history, CancellationToken ct = default);
 }

@@ -90,7 +90,7 @@ internal sealed class HandleCheatingAlertHandler(
         // 7. Create violation record
         var violation = new ExamViolation
         {
-            ExamId = exam.Id,
+            LessonId = exam.LessonId,
             StudentId = request.StudentId,
             ExamAttemptId = activeAttempt?.Id,
             Severity = request.Severity,

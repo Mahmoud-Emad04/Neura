@@ -1,10 +1,8 @@
-using System.Net.Http.Json;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Neura.Core.DTOs.Chatbot;
-using Neura.Core.Services;
 using Neura.Core.Settings;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Neura.Services.Services;
 
@@ -21,15 +19,24 @@ public class ChatbotService : IChatbotService
         _settings = settings.Value;
     }
 
-    public async Task<string> AskQuestionAsync(int lessonId, string question, List<ChatContextDto> history, CancellationToken ct = default)
+    public async Task<string> AskQuestionAsync(string courseId, int lessonId, string question, string userRole, List<ChatContextDto> history, CancellationToken ct = default)
     {
-        _logger.LogInformation("Sending question to chatbot for LessonId={LessonId}", lessonId);
+        _logger.LogInformation("Sending question to chatbot for CourseId={CourseId}, LessonId={LessonId}", courseId, lessonId);
+
+        var chatHistory = new List<object>();
+        foreach (var item in history)
+        {
+            chatHistory.Add(new { role = userRole, content = item.Question });
+            chatHistory.Add(new { role = "assistant", content = item.Answer });
+        }
 
         var payload = new
         {
-            lessonId = lessonId,
+            chat_type = "course",
+            chat_history = chatHistory,
             question = question,
-            history = history
+            course_id = courseId,
+            lesson_id = lessonId
         };
 
         var response = await _httpClient.PostAsJsonAsync(_settings.Endpoint, payload, ct);
@@ -42,7 +49,7 @@ public class ChatbotService : IChatbotService
         {
             // Try to parse as JSON first (e.g. { "answer": "..." })
             using var document = JsonDocument.Parse(responseContent);
-            if (document.RootElement.TryGetProperty("answer", out var answerElement))
+            if (document.RootElement.TryGetProperty("reply", out var answerElement))
             {
                 return answerElement.GetString() ?? responseContent;
             }

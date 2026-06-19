@@ -294,7 +294,10 @@ public class LessonsController(ISender sender) : ControllerBase
         CancellationToken ct)
     {
         var userId = User.GetUserId()!;
-        var command = new AskChatbotCommand(lessonId, request.Question, userId);
+        var isAssistant = User.IsInRole("Instructor") || User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+        var userRole = isAssistant ? "assistant" : "user";
+        
+        var command = new AskChatbotCommand(lessonId, request.Question, userId, userRole);
         var result = await sender.Send(command, ct);
 
         return result.IsSuccess

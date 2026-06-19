@@ -17,7 +17,7 @@ public static class AuthHelpers
 
     public static string DefaultUserImagePath()
     {
-        return Path.Combine("Images", ImageConsts.User, ImageConsts.DefaultUserImage);
+        return $"Images/{ImageConsts.User}/{ImageConsts.DefaultUserImage}";
     }
 
     public static async Task<(IEnumerable<string> roles, IEnumerable<string> permissions)> GetUserRolesAndPermissionsAsync(

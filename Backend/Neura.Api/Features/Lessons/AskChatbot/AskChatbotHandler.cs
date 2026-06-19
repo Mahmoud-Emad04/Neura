@@ -8,15 +8,20 @@ using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Lessons.AskChatbot;
 
-internal sealed class AskChatbotHandler(ApplicationDbContext context, IChatbotService chatbotService)
+internal sealed class AskChatbotHandler(ApplicationDbContext context, IChatbotService chatbotService, HashidsNet.IHashids hashids)
     : IRequestHandler<AskChatbotCommand, Result<string>>
 {
     public async Task<Result<string>> Handle(AskChatbotCommand command, CancellationToken ct)
     {
-        // 1. Fetch lesson to ensure it exists
-        var lessonExists = await context.Lessons.AnyAsync(l => l.Id == command.LessonId, ct);
-        if (!lessonExists)
+        // 1. Fetch lesson to ensure it exists and get CourseId
+        var lesson = await context.Lessons
+            .Include(l => l.Section)
+            .FirstOrDefaultAsync(l => l.Id == command.LessonId, ct);
+            
+        if (lesson is null)
             return Result.Failure<string>(new Error("Lesson.NotFound", "The specified lesson was not found.", 404));
+
+        var courseIdString = hashids.Encode(lesson.Section.CourseId);
 
         // 2. Retrieve last 2 chat history for context
         var pastHistory = await context.LessonChatHistories
@@ -38,7 +43,7 @@ internal sealed class AskChatbotHandler(ApplicationDbContext context, IChatbotSe
         string answer;
         try
         {
-            answer = await chatbotService.AskQuestionAsync(command.LessonId, command.Question, pastHistory, ct);
+            answer = await chatbotService.AskQuestionAsync(courseIdString, command.LessonId, command.Question, command.UserRole, pastHistory, ct);
         }
         catch (Exception ex)
         {
