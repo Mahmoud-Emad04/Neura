@@ -1,10 +1,12 @@
 using MediatR;
+using Microsoft.Extensions.Caching.Hybrid;
+using Neura.Api.Infrastructure;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.DeleteTag;
 
-internal sealed class DeleteTagHandler(ApplicationDbContext context)
+internal sealed class DeleteTagHandler(ApplicationDbContext context, HybridCache hybridCache)
     : IRequestHandler<DeleteTagCommand, Result>
 {
     public async Task<Result> Handle(
@@ -31,6 +33,10 @@ internal sealed class DeleteTagHandler(ApplicationDbContext context)
         tag.UpdatedById = command.UserId;
 
         await context.SaveChangesAsync(ct);
+
+        // Invalidate tag caches
+        foreach (var key in CacheKeys.AllTagKeys)
+            await hybridCache.RemoveAsync(key, ct);
 
         return Result.Success();
     }

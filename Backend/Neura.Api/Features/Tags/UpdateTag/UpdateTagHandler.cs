@@ -1,11 +1,13 @@
 using MediatR;
+using Microsoft.Extensions.Caching.Hybrid;
+using Neura.Api.Infrastructure;
 using Neura.Core.Contracts.Tags;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 
 namespace Neura.Api.Features.Tags.UpdateTag;
 
-internal sealed class UpdateTagHandler(ApplicationDbContext context)
+internal sealed class UpdateTagHandler(ApplicationDbContext context, HybridCache hybridCache)
     : IRequestHandler<UpdateTagCommand, Result<TagResponse>>
 {
     public async Task<Result<TagResponse>> Handle(
@@ -61,6 +63,10 @@ internal sealed class UpdateTagHandler(ApplicationDbContext context)
         tag.UpdatedById = userId;
 
         await context.SaveChangesAsync(ct);
+
+        // Invalidate tag caches
+        foreach (var key in CacheKeys.AllTagKeys)
+            await hybridCache.RemoveAsync(key, ct);
 
         return Result.Success(new TagResponse
         {

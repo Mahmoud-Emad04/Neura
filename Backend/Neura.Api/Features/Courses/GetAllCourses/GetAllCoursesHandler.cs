@@ -1,4 +1,6 @@
 using MediatR;
+using Microsoft.Extensions.Caching.Hybrid;
+using Neura.Api.Infrastructure;
 using Neura.Core.Abstractions.Specification;
 using Neura.Core.Enums;
 using Neura.Core.Specifications.Courses;
@@ -9,9 +11,16 @@ namespace Neura.Api.Features.Courses.GetAllCourses;
 
 internal sealed class GetAllCoursesHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers)
+    IServiceHelpers helpers,
+    HybridCache hybridCache)
     : IRequestHandler<GetAllCoursesQuery, Result<PaginatedList<CourseSummaryResponse>>>
 {
+    private static readonly HybridCacheEntryOptions StatsCacheOptions = new()
+    {
+        Expiration = TimeSpan.FromMinutes(2),
+        LocalCacheExpiration = TimeSpan.FromMinutes(2)
+    };
+
     public async Task<Result<PaginatedList<CourseSummaryResponse>>> Handle(
         GetAllCoursesQuery request, CancellationToken ct)
     {
@@ -32,34 +41,75 @@ internal sealed class GetAllCoursesHandler(
             ct
         );
 
-        foreach (var course in paginatedCourses.Items)
+        // ── Batch course stats (fix N+1) ─────────────────────────────
+        var courseIds = paginatedCourses.Items
+            .Select(c => TryDecodeCourseId(c.KeyId, out var id) ? id : 0)
+            .Where(id => id != 0)
+            .ToList();
+
+        if (courseIds.Count > 0)
         {
-            if (TryDecodeCourseId(course.KeyId, out var courseId))
+            var cacheKey = CacheKeys.CourseStats(courseIds);
+
+            var stats = await hybridCache.GetOrCreateAsync(
+                cacheKey,
+                async cancel =>
+                {
+                    // Fetch lesson data into memory to compute TotalHours (EF can't translate TimeSpan.TotalHours)
+                    var lessonData = await context.Lessons
+                        .AsNoTracking()
+                        .Where(l => courseIds.Contains(l.Section.CourseId) && !l.IsDeleted)
+                        .Select(l => new { l.Section.CourseId, l.Duration })
+                        .ToListAsync(cancel);
+
+                    var lessonStats = lessonData
+                        .GroupBy(l => l.CourseId)
+                        .Select(g => new
+                        {
+                            CourseId = g.Key,
+                            LessonCount = g.Count(),
+                            TotalHours = (int)g.Sum(l => l.Duration.TotalHours)
+                        })
+                        .ToDictionary(x => x.CourseId);
+
+                    // Single query for student counts per course
+                    var studentCounts = await context.CourseUsers
+                        .AsNoTracking()
+                        .Where(cu => courseIds.Contains(cu.CourseId) && !cu.IsDeleted)
+                        .GroupBy(cu => cu.CourseId)
+                        .Select(g => new { CourseId = g.Key, Count = g.Count() })
+                        .ToDictionaryAsync(x => x.CourseId, x => x.Count, cancel);
+
+                    return courseIds.ToDictionary(
+                        id => id,
+                        id => new CourseStatsEntry
+                        {
+                            NumberOfLessons = lessonStats.TryGetValue(id, out var ls) ? ls.LessonCount : 0,
+                            Hours = lessonStats.TryGetValue(id, out var lh) ? lh.TotalHours : 0,
+                            NumberOfStudents = studentCounts.GetValueOrDefault(id, 0)
+                        });
+                },
+                StatsCacheOptions,
+                cancellationToken: ct);
+
+            foreach (var course in paginatedCourses.Items)
             {
-                var lessons = await context.Lessons
-                    .Where(l => l.Section.CourseId == courseId && !l.IsDeleted)
-                    .Select(l => new { l.Duration })
-                    .ToListAsync(ct);
-
-                course.NumberOfStudents = await context.CourseUsers
-                    .CountAsync(c => c.CourseId == courseId && !c.IsDeleted, ct);
-
-                course.NumberOfLessons = lessons.Count;
-                course.Hours = (int)lessons.Sum(l => l.Duration.TotalHours);
+                if (TryDecodeCourseId(course.KeyId, out var courseId) && stats.TryGetValue(courseId, out var s))
+                {
+                    course.NumberOfLessons = s.NumberOfLessons;
+                    course.Hours = s.Hours;
+                    course.NumberOfStudents = s.NumberOfStudents;
+                }
             }
         }
 
+        // ── User-specific data (bookmarks + enrollment) ──────────────
         if (request.UserId is not null)
         {
             var bookmarkedCourseIds = await context.CourseBookmarks
                 .Where(b => b.UserId == request.UserId && !b.IsDeleted)
                 .Select(b => b.CourseId)
                 .ToListAsync(ct);
-
-            var courseIds = paginatedCourses.Items
-                .Select(c => helpers.DecodeHash(c.KeyId).FirstOrDefault())
-                .Where(id => id != 0)
-                .ToList();
 
             var enrolledCourseIds = await context.CourseUsers
                 .Where(cu => courseIds.Contains(cu.CourseId) && cu.UserId == request.UserId && !cu.IsDeleted)
@@ -91,3 +141,12 @@ internal sealed class GetAllCoursesHandler(
         return true;
     }
 }
+
+/// <summary>Serializable DTO for cached course statistics.</summary>
+public sealed class CourseStatsEntry
+{
+    public int NumberOfLessons { get; init; }
+    public int Hours { get; init; }
+    public int NumberOfStudents { get; init; }
+}
+

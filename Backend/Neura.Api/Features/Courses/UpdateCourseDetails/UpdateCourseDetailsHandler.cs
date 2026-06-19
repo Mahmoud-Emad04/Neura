@@ -1,4 +1,6 @@
 using MediatR;
+using Microsoft.Extensions.Caching.Hybrid;
+using Neura.Api.Infrastructure;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
 using Neura.Repository.Persistence;
@@ -9,7 +11,8 @@ namespace Neura.Api.Features.Courses.UpdateCourseDetails;
 internal sealed class UpdateCourseDetailsHandler(
     ApplicationDbContext context,
     IFileService fileService,
-    IServiceHelpers helpers)
+    IServiceHelpers helpers,
+    HybridCache hybridCache)
     : IRequestHandler<UpdateCourseDetailsCommand, Result>
 {
     public async Task<Result> Handle(
@@ -84,6 +87,9 @@ internal sealed class UpdateCourseDetailsHandler(
         }
 
         await context.SaveChangesAsync(ct);
+
+        // Invalidate course caches
+        await hybridCache.RemoveAsync(CacheKeys.CourseFullContent, ct);
         return Result.Success();
     }
 
