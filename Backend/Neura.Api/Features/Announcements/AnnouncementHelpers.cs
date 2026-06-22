@@ -219,6 +219,9 @@ public static class AnnouncementHelpers
         return string.Empty;
     }
 
-    private static string? BuildImageUrl(string? relativePath, string baseUrl) =>
-        string.IsNullOrEmpty(relativePath) ? null : $"{baseUrl}/{relativePath}";
+    private static string? BuildImageUrl(string? relativePath, string baseUrl)
+    {
+        if (string.IsNullOrEmpty(relativePath)) return null;
+        return relativePath!.StartsWith("Images") ? $"{baseUrl}/{relativePath}" : relativePath;
+    }
 }
