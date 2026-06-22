@@ -1,4 +1,6 @@
 using MediatR;
+using Microsoft.Extensions.Caching.Hybrid;
+using Neura.Api.Infrastructure;
 using Neura.Core.Errors;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -7,7 +9,8 @@ namespace Neura.Api.Features.Courses.DeleteCourse;
 
 internal sealed class DeleteCourseHandler(
     ApplicationDbContext context,
-    IServiceHelpers helpers)
+    IServiceHelpers helpers,
+    HybridCache hybridCache)
     : IRequestHandler<DeleteCourseCommand, Result>
 {
     public async Task<Result> Handle(
@@ -30,6 +33,10 @@ internal sealed class DeleteCourseHandler(
         course.UpdatedById = command.UserId;
 
         await context.SaveChangesAsync(ct);
+
+        // Invalidate course caches
+        await hybridCache.RemoveAsync(CacheKeys.CourseFullContent, ct);
+
         return Result.Success();
     }
 

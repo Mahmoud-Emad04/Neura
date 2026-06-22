@@ -1,5 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Hybrid;
+using Neura.Api.Infrastructure;
 using Neura.Core.Enums;
 using Neura.Core.Errors;
 using Neura.Core.FilesConsts;
@@ -13,7 +15,8 @@ internal sealed class CreateCourseHandler(
     UserManager<ApplicationUser> userManager,
     IFileService fileService,
     IServiceHelpers helpers,
-    ILogger<CreateCourseHandler> logger)
+    ILogger<CreateCourseHandler> logger,
+    HybridCache hybridCache)
     : IRequestHandler<CreateCourseCommand, Result<CourseMetadataResponse>>
 {
     public async Task<Result<CourseMetadataResponse>> Handle(
@@ -72,6 +75,9 @@ internal sealed class CreateCourseHandler(
 
         await context.CourseUsers.AddAsync(courseUser, ct);
         await context.SaveChangesAsync(ct);
+
+        // Invalidate course caches
+        await hybridCache.RemoveAsync(CacheKeys.CourseFullContent, ct);
 
         logger.LogInformation(
             "Course {CourseId} '{Title}' created by user {UserId}. Status: {Status}",

@@ -1,4 +1,5 @@
 using MediatR;
+using Neura.Api.Infrastructure;
 using Neura.Core.Enums;
 using Neura.Repository.Persistence;
 using Neura.Services.Helpers;
@@ -29,7 +30,7 @@ internal sealed partial class GetCourseFullContentHandler(
         GetCourseFullContentQuery request, CancellationToken ct)
     {
         var response = await hybridCache.GetOrCreateAsync(
-            "course-full-content",
+            CacheKeys.CourseFullContent,
             async cancel =>
             {
                 var courses = await context.Courses

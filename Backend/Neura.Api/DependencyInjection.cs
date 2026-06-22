@@ -71,7 +71,7 @@ public static class DependencyInjection
 
         services.AddOpenApiServices();
 
-        //services.AddOpenTelemetryServices(configuration);
+        services.AddOpenTelemetryServices(configuration);
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
 

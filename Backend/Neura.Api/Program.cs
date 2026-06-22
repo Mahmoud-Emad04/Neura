@@ -19,10 +19,10 @@ builder.Host.UseSerilog((context, configuration) =>
 var app = builder.Build();
 
 // ── OpenTelemetry & Metrics ──────────────────────────────────────────
-//app.UseMiddleware<MetricsMiddleware>();
-//app.MapMetricsDashboard();
-//app.MapMetricsJsonEndpoint();
-//app.UseOpenTelemetryPrometheusScrapingEndpoint("/metrics/prometheus");
+app.UseMiddleware<MetricsMiddleware>();
+app.MapMetricsDashboard();
+app.MapMetricsJsonEndpoint();
+app.UseOpenTelemetryPrometheusScrapingEndpoint("/metrics/prometheus");
 
 await DbInitializer.InitializeAsync(app.Services);
 
